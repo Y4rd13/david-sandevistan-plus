@@ -312,31 +312,46 @@ davidsapogee = {
 		end
 		return true
 	 end)
+	,RemoveAllPsychoVFX = (function(self)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
+		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoSafetyOffEffect)
+	 end)
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
 		if self.martinez == nil then return end
-		
+
 		if (not self:IsWearingApogee()) and (not self.SafetyOn) then
 			self.SafetyOn = true
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
-			-- Cyberpsycho stays on until V sleeps
 			return
 		end
-		-- MartinezFury automatically disables sandevistan, so we only need to add this for Cyberpsycho
-		if (self.CyberPsychoWarnings == 5) and (self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl)) then
-			self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
+		-- Progressive psycho VFX by level (MartinezFury is timed/automatic, these are persistent)
+		if (self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl)) then
+			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
-		elseif (self.CyberPsychoWarnings == 5) and (not self.SafetyOn) then
-			self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
+		elseif self.CyberPsychoWarnings <= 2 then
+			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
-		elseif (self.CyberPsychoWarnings == 5) then
+		elseif self.CyberPsychoWarnings == 3 then
+			self:RemoveAllPsychoVFX()
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+			self.sps:ResetNamePlates()
+		elseif self.CyberPsychoWarnings == 4 then
+			self:RemoveAllPsychoVFX()
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+			self.sps:ResetNamePlates()
+		elseif self.CyberPsychoWarnings >= 5 and (not self.SafetyOn) then
+			self:RemoveAllPsychoVFX()
+			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
+			self.sps:HideNamePlates()
+		elseif self.CyberPsychoWarnings >= 5 then
+			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoStatusEffect)
 			self.sps:HideNamePlates()
-		else
-			self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
-			self.sps:ResetNamePlates()
 		end
-		
+
 		self:UpdateUIText()
 	 end)
 	,SafeAreaChange = (function(self,SafeArea)
@@ -378,7 +393,10 @@ davidsapogee = {
 		if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
 		self.rechargeNotification = math.floor(self.runTime - oldRuntime)
 		self.rechargeNotificationTimer = 8
-		
+		if self.rechargeNotification > 0 then
+			self.bbs:SendMessage("RUNTIME RECHARGED: +"..tostring(self.rechargeNotification).."s ("..tostring(math.floor(self.runTime)).."/"..tostring(self.MaxRuntime).."s)", 3.0)
+		end
+
 		self:SaveGame('Apogee:Rested()')
 	 end)
 	,VisitedRipper = (function(self,VendorName)
@@ -417,7 +435,12 @@ davidsapogee = {
 
 		-- Activation notification
 		local dilation = self.TimeDilationActualSpeed or 85
-		self.bbs:SendMessage("SANDEVISTAN ACTIVE — "..tostring(dilation).."%", 2.0)
+		local activationMsg = "SANDEVISTAN ACTIVE — "..tostring(dilation).."%"
+		if self.CyberPsychoWarnings > 0 then
+			local levelNames = { "I", "II", "III", "IV", "V" }
+			activationMsg = activationMsg.." | PSYCHOSIS: "..tostring(levelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings)
+		end
+		self.bbs:SendMessage(activationMsg, 2.5)
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
@@ -563,8 +586,8 @@ davidsapogee = {
 		local StatusText = 'Default'
 		local outtaTime = (self.runTime < 1)
 
-		if outtaTime and self.SafetyOn then
-			Dilation = 825
+		if outtaTime then
+			Dilation = 950
 			StatusText = "Runtime Expired"
 		elseif not self.SafetyOn then
 			Dilation = self:findDilationIndex((1000 - self.cfg.safetyOffTimeDilation) / 1000)
@@ -896,15 +919,10 @@ davidsapogee = {
 						self:OutOfRuntime(true)
 					end
 				elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
-					-- Safety OFF + health critical: only kill at psycho level 5 (David's last stand)
-					if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
-						self.bbs:SendWarning("SYSTEM FAILURE — CRITICAL", 4.0)
-						self.sps:EndSandevistan()
-						self:KillV()
-					else
-						self.sps:EndSandevistan()
-						self:BleedingEffect()
-					end
+					-- Safety OFF + health critical: BleedingEffect triggers psycho escalation
+					-- Death only comes from PsychoOutburst timer expiring at level 5
+					self.sps:EndSandevistan()
+					self:BleedingEffect()
 				elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 					-- Safety OFF + low runtime + injured: bleeding warning
 					self:OutOfRuntime(true)
@@ -985,8 +1003,13 @@ davidsapogee = {
 						if self:IsWearingApogee() then
 							self.runTime = 0
 							self.sps:EndSandevistan()
-							self:Safety(true,true)
-							self:BleedingEffect()
+							if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
+								self.bbs:SendWarning("SYSTEM FAILURE — FLATLINE", 4.0)
+								self:KillV()
+							else
+								self:Safety(true,true)
+								self:BleedingEffect()
+							end
 						end
 					end
 					if self.PsychoOutburst ~= nil and (not self.SafetyOn) then
@@ -1072,6 +1095,13 @@ davidsapogee = {
 		self.OutstandingBuff = 5 -- check for sandy
 		if self.cfg.enableCyberpsychosis and (self.CyberPsychoWarnings > 0) then
 			self:Calculate_PsychoOutburst()
+			local levelNames = { "I: UNSTABLE", "II: GLITCHING", "III: LOSING IT", "IV: ON THE EDGE", "V: CYBERPSYCHO" }
+			local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
+			self.bbs:SendWarning("PSYCHOSIS ACTIVE — LEVEL "..lvl, 4.0)
+		end
+		if self:IsWearingApogee() then
+			local rt = math.floor(self.runTime)
+			self.bbs:SendMessage("SANDEVISTAN LOADED — RUNTIME: "..tostring(rt).."/"..tostring(self.MaxRuntime).."s", 3.0)
 		end
 	 end)
 	,LoadGame = (function(self,GameLoadIndex)

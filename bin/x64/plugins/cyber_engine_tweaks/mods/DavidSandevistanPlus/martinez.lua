@@ -73,6 +73,19 @@ martinez.CyberpsychoStatusEffect_FX1 = 'BaseStatusEffect.MartinezSandevistan_Cyb
 martinez.CyberpsychoStatusEffect_FX2 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX2'
 martinez.CyberpsychoStatusEffect_FX3 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX3'
 martinez.CyberpsychoStatusEffect_FX4 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX4'
+
+martinez.CyberpsychoSafetyOffEffect      = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff'
+martinez.CyberpsychoSafetyOffEffect_FX1  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX1'
+martinez.CyberpsychoSafetyOffEffect_FX2  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX2'
+martinez.CyberpsychoSafetyOffEffect_FX3  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX3'
+martinez.CyberpsychoSafetyOffEffect_FX4  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX4'
+
+martinez.PsychoWarningEffect_Light       = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light'
+martinez.PsychoWarningEffect_Light_FX1   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light_FX1'
+martinez.PsychoWarningEffect_Medium      = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium'
+martinez.PsychoWarningEffect_Medium_FX1  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX1'
+martinez.PsychoWarningEffect_Medium_FX2  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX2'
+
 martinez.OverclockStatusEffect       = 'BaseStatusEffect.MartinezSandevistan_Overclock'
 martinez.Overclock_LP                = 'BaseStatusEffect.MartinezSandevistan_Overclock_LP'
 
@@ -559,7 +572,102 @@ function martinez.CreateSandevistan(self)
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX2..'.name', 'braindance_sound_vision_mode')
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX3..'.name', 'status_drugged_medium') -- Can't use Heavy here it will conflict with Safeties Off
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_low')
-	
+
+	-- CyberpsychoSafetyOffEffect: same VFX as CyberpsychoStatusEffect but Sandy still works, no Kiroshi OFF
+	self:CreateStatusEffect(self.CyberpsychoSafetyOffEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.CyberpsychoSafetyOffEffect_FX1,self.CyberpsychoSafetyOffEffect_FX2,self.CyberpsychoSafetyOffEffect_FX3,self.CyberpsychoSafetyOffEffect_FX4}
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis','PreventLowHealthOverlay'} --gameplayTags
+		,{'BaseStats.StunImmunity','BaseStats.HasCritImmunity','BaseStats.WoundedImmunity','BaseStats.VulnerableImmunity'} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages (NO HasSandevistan=0, NO KiroshiOff)
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX2,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX3,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX4,VFX_SuperHacked)
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX1..'.name', 'hacking_glitch_low')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX2..'.name', 'braindance_sound_vision_mode')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX3..'.name', 'status_drugged_medium')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_low')
+
+	-- PsychoWarningEffect_Light: subtle persistent VFX at psycho level 3
+	self:CreateStatusEffect(self.PsychoWarningEffect_Light,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoWarningEffect_Light_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.PsychoWarningEffect_Light_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoWarningEffect_Light_FX1..'.name', 'hacking_glitch_low')
+
+	-- PsychoWarningEffect_Medium: medium persistent VFX at psycho level 4
+	self:CreateStatusEffect(self.PsychoWarningEffect_Medium,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoWarningEffect_Medium_FX1,self.PsychoWarningEffect_Medium_FX2} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.PsychoWarningEffect_Medium_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.PsychoWarningEffect_Medium_FX2,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX1..'.name', 'hacking_glitch_low')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX2..'.name', 'status_drugged_medium')
+
 	self:CreateStatusEffect(self.OverclockStatusEffect,{
 		 '' --AIData
 		,{} --SFX
