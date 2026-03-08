@@ -116,6 +116,10 @@ local function setTweaks()
 	setFlatAndUpdate(RecordName .. "_Equip3_SM3.value", cfg.headshotDamageMultiplier * 1.0)
 	setFlatAndUpdate(RecordName .. "_Equip4_SPU1.statPoolValue", cfg.healOnKill * 1.0)
 	setFlatAndUpdate(RecordName .. "_Equip4_SPU2.statPoolValue", cfg.staminaOnKill * 1.0)
+	-- Update item tooltip to show correct time dilation percentage
+	local dilationPct = math.floor((1 - cfg.timeDilationNoPerk) * 1000 + 0.5) / 10
+	setFlatAndUpdate(RecordName .. "_Equip1_Various_UI.floatValues",
+		{dilationPct, cfg.critChance * 1.0, cfg.critDamage * 1.0, cfg.headshotDamageMultiplier * 1.0, cfg.healOnKill * 1.0, cfg.staminaOnKill * 1.0, cfg.sandyDuration * 1.0})
 end
 
 -- Helper: save + apply all

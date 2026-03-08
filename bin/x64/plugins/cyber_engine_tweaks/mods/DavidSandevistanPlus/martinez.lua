@@ -96,6 +96,9 @@ martinez.TimeDilation900StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dil
 martinez.TimeDilation925StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation925'
 martinez.TimeDilation950StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation950'
 martinez.TimeDilation975StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation975'
+martinez.TimeDilation990StatusEffect  = 'BaseStatusEffect.MartinezSandevistan_Dilation990'
+martinez.TimeDilation9925StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation9925'
+martinez.TimeDilation9935StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation9935'
 martinez.TimeDilation995StatusEffect = 'BaseStatusEffect.MartinezSandevistan_Dilation995'
 martinez.TimeDilation825_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation825_LP'
 martinez.TimeDilation875_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation875_LP'
@@ -103,6 +106,9 @@ martinez.TimeDilation900_LP         = 'BaseStatusEffect.MartinezSandevistan_Dila
 martinez.TimeDilation925_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation925_LP'
 martinez.TimeDilation950_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation950_LP'
 martinez.TimeDilation975_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation975_LP'
+martinez.TimeDilation990_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation990_LP'
+martinez.TimeDilation9925_LP        = 'BaseStatusEffect.MartinezSandevistan_Dilation9925_LP'
+martinez.TimeDilation9935_LP        = 'BaseStatusEffect.MartinezSandevistan_Dilation9935_LP'
 martinez.TimeDilation995_LP         = 'BaseStatusEffect.MartinezSandevistan_Dilation995_LP'
 martinez.TimeDilation825_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation825_SM'
 martinez.TimeDilation875_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation875_SM'
@@ -110,6 +116,9 @@ martinez.TimeDilation900_SM         = 'BaseStatusEffect.MartinezSandevistan_Dila
 martinez.TimeDilation925_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation925_SM'
 martinez.TimeDilation950_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation950_SM'
 martinez.TimeDilation975_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation975_SM'
+martinez.TimeDilation990_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation990_SM'
+martinez.TimeDilation9925_SM        = 'BaseStatusEffect.MartinezSandevistan_Dilation9925_SM'
+martinez.TimeDilation9935_SM        = 'BaseStatusEffect.MartinezSandevistan_Dilation9935_SM'
 martinez.TimeDilation995_SM         = 'BaseStatusEffect.MartinezSandevistan_Dilation995_SM'
 
 martinez.martinez_fx_onscreen_frame              = 'martinez_fx_onscreen_frame'
@@ -130,6 +139,9 @@ martinez.TimeDilations = {
 	,{i=925,td=92.5,SE=martinez.TimeDilation925StatusEffect}
 	,{i=950,td=95.0,SE=martinez.TimeDilation950StatusEffect}
 	,{i=975,td=97.5,SE=martinez.TimeDilation975StatusEffect}
+	,{i=990,td=99.0,SE=martinez.TimeDilation990StatusEffect}
+	,{i=9925,td=99.25,SE=martinez.TimeDilation9925StatusEffect}
+	,{i=9935,td=99.35,SE=martinez.TimeDilation9935StatusEffect}
 	,{i=1000,td=99.5,SE=martinez.TimeDilation995StatusEffect}
 	,index = {}
 	,GetTimeDilationFromIndex = (function(self,i) -- pass in 825,850,900 etc
@@ -192,14 +204,17 @@ function martinez.CreateSandevistan(self)
 		,self.Stat_Modifier_09
 	}
 	local Sandy_Tags = { 'Cyberware', 'HideInBackpackUI', 'Sandevistan', 'Iconic_OS_CW' }
-	local Sandevistan_TimeDilation825 = martinez.TimeDilations[1].td
-	local Sandevistan_TimeDilation850 = martinez.TimeDilations[2].td
-	local Sandevistan_TimeDilation875 = martinez.TimeDilations[3].td
-	local Sandevistan_TimeDilation900 = martinez.TimeDilations[4].td
-	local Sandevistan_TimeDilation925 = martinez.TimeDilations[5].td
-	local Sandevistan_TimeDilation950 = martinez.TimeDilations[6].td
-	local Sandevistan_TimeDilation975 = martinez.TimeDilations[7].td
-	local Sandevistan_TimeDilation995 = martinez.TimeDilations[8].td
+	local Sandevistan_TimeDilation825  = martinez.TimeDilations[1].td
+	local Sandevistan_TimeDilation850  = martinez.TimeDilations[2].td
+	local Sandevistan_TimeDilation875  = martinez.TimeDilations[3].td
+	local Sandevistan_TimeDilation900  = martinez.TimeDilations[4].td
+	local Sandevistan_TimeDilation925  = martinez.TimeDilations[5].td
+	local Sandevistan_TimeDilation950  = martinez.TimeDilations[6].td
+	local Sandevistan_TimeDilation975  = martinez.TimeDilations[7].td
+	local Sandevistan_TimeDilation990  = martinez.TimeDilations[8].td
+	local Sandevistan_TimeDilation9925 = martinez.TimeDilations[9].td
+	local Sandevistan_TimeDilation9935 = martinez.TimeDilations[10].td
+	local Sandevistan_TimeDilation995  = martinez.TimeDilations[11].td
 	
 	---- let noPhone: Bool = StatusEffectSystem.ObjectHasStatusEffectWithTag(localPlayer, n"NoPhone");
 	
@@ -605,22 +620,31 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.TimeDilation925StatusEffect,self.TimeDilation900StatusEffect)
 	self:CloneRecord(self.TimeDilation950StatusEffect,self.TimeDilation900StatusEffect)
 	self:CloneRecord(self.TimeDilation975StatusEffect,self.TimeDilation900StatusEffect)
+	self:CloneRecord(self.TimeDilation990StatusEffect,self.TimeDilation900StatusEffect)
+	self:CloneRecord(self.TimeDilation9925StatusEffect,self.TimeDilation900StatusEffect)
+	self:CloneRecord(self.TimeDilation9935StatusEffect,self.TimeDilation900StatusEffect)
 	self:CloneRecord(self.TimeDilation995StatusEffect,self.TimeDilation900StatusEffect)
-	
+
 	TweakDB:SetFlat(self.TimeDilation825StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation875StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation900StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation925StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation950StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation975StatusEffect..'.uiData', RunningIcon)
+	TweakDB:SetFlat(self.TimeDilation990StatusEffect..'.uiData', RunningIcon)
+	TweakDB:SetFlat(self.TimeDilation9925StatusEffect..'.uiData', RunningIcon)
+	TweakDB:SetFlat(self.TimeDilation9935StatusEffect..'.uiData', RunningIcon)
 	TweakDB:SetFlat(self.TimeDilation995StatusEffect..'.uiData', RunningIcon)
-	
+
 	TweakDB:SetFlat(self.TimeDilation825StatusEffect..'.packages', {self.TimeDilation825_LP})
 	TweakDB:SetFlat(self.TimeDilation875StatusEffect..'.packages', {self.TimeDilation875_LP})
 	TweakDB:SetFlat(self.TimeDilation900StatusEffect..'.packages', {self.TimeDilation900_LP})
 	TweakDB:SetFlat(self.TimeDilation925StatusEffect..'.packages', {self.TimeDilation925_LP})
 	TweakDB:SetFlat(self.TimeDilation950StatusEffect..'.packages', {self.TimeDilation950_LP})
 	TweakDB:SetFlat(self.TimeDilation975StatusEffect..'.packages', {self.TimeDilation975_LP})
+	TweakDB:SetFlat(self.TimeDilation990StatusEffect..'.packages', {self.TimeDilation990_LP})
+	TweakDB:SetFlat(self.TimeDilation9925StatusEffect..'.packages', {self.TimeDilation9925_LP})
+	TweakDB:SetFlat(self.TimeDilation9935StatusEffect..'.packages', {self.TimeDilation9935_LP})
 	TweakDB:SetFlat(self.TimeDilation995StatusEffect..'.packages', {self.TimeDilation995_LP})
 	
 	self:CreateLogicPackage(self.TimeDilation825_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation825_SM} })
@@ -635,6 +659,12 @@ function martinez.CreateSandevistan(self)
 	self:CreateConstantStatModifier(self.TimeDilation950_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation950) })
 	self:CreateLogicPackage(self.TimeDilation975_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation975_SM} })
 	self:CreateConstantStatModifier(self.TimeDilation975_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation975) })
+	self:CreateLogicPackage(self.TimeDilation990_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation990_SM} })
+	self:CreateConstantStatModifier(self.TimeDilation990_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation990) })
+	self:CreateLogicPackage(self.TimeDilation9925_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation9925_SM} })
+	self:CreateConstantStatModifier(self.TimeDilation9925_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation9925) })
+	self:CreateLogicPackage(self.TimeDilation9935_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation9935_SM} })
+	self:CreateConstantStatModifier(self.TimeDilation9935_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation9935) })
 	self:CreateLogicPackage(self.TimeDilation995_LP, { '', {}, {}, {}, '' , false, {}, {self.TimeDilation995_SM} })
 	self:CreateConstantStatModifier(self.TimeDilation995_SM, { 'Multiplier', 'BaseStats.TimeDilationSandevistanTimeScale', self.TimeDilationCalculation(Sandevistan_TimeDilation850,Sandevistan_TimeDilation995) })
 

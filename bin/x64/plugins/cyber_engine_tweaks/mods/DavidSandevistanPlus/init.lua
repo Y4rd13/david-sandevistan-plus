@@ -216,9 +216,11 @@ davidsapogee = {
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
 			spdlog.info(tostring(errors))
+			print('[DSP] Init: martinez.lua failed to load: '..tostring(errors))
 		elseif self.gui == nil then
 			local obj, errors = require('./gui.lua')
 			spdlog.info(tostring(errors))
+			print('[DSP] Init: gui.lua failed to load: '..tostring(errors))
 		else
 			self.Localization:Init()
 			self.bbs:Init()
@@ -228,10 +230,10 @@ davidsapogee = {
 			--UI:Init() is done in Load3
 			self.TimeSkip.Apogee = self -- give TimeSkip a pointer so we don't have to use callback functions!
 			self:CreateDavidsApogee()
+			print('[DSP] Init: CreateDavidsApogee() complete')
 			if self.dev_mode then
 				if self.dev_mode.Init then self.dev_mode:Init(self) end
 				self.debug = true
-				print('DavidsApogee:Init() Complete')
 			end
 		end
 	 end)
@@ -511,42 +513,74 @@ davidsapogee = {
 		local Test2 = self:StatusEffect_CheckOnly(self.martinez.MartinezFury_Level5)
 		return (Test1 or Test2)
 	 end)
+	,timeScaleToIndex = {
+		[0.15]   = 850,
+		[0.10]   = 900,
+		[0.075]  = 925,
+		[0.05]   = 950,
+		[0.025]  = 975,
+		[0.01]   = 990,
+		[0.0075] = 9925,
+		[0.0065] = 9935,
+		[0.005]  = 1000,
+	}
+	,findDilationIndex = (function(self, timeScale)
+		local idx = self.timeScaleToIndex[timeScale]
+		if idx then return idx end
+		local bestIdx = 850
+		local bestDiff = 999
+		for ts, i in pairs(self.timeScaleToIndex) do
+			local diff = math.abs(ts - timeScale)
+			if diff < bestDiff then bestDiff = diff; bestIdx = i end
+		end
+		return bestIdx
+	 end)
 	,TimeDilationCalculator = (function(self,DebugInfo)
 		if DebugInfo == nil then DebugInfo = false end
 		local IsEdgeRunner = (self.sps:IsEdgeRunner() == true)
 		local timeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
+		local Dilation = self:findDilationIndex(timeScale)
 		local StatusText = 'Default'
 		local outtaTime = (self.runTime < 1)
 
 		if outtaTime and self.SafetyOn then
-			timeScale = 0.175
+			Dilation = 825
 			StatusText = "Runtime Expired"
 		elseif not self.SafetyOn then
-			timeScale = (1000 - self.cfg.safetyOffTimeDilation) / 1000
+			Dilation = self:findDilationIndex((1000 - self.cfg.safetyOffTimeDilation) / 1000)
 			StatusText = "Safety Off"
 		end
-		
-		return timeScale, StatusText
+
+		return Dilation, StatusText
 	 end)
 	,TimeDilationEffects = (function(self)
 		if self.isRunning then
-			local timeScale, StatusText = self:TimeDilationCalculator()
-			self:TimeDilationEffects_Activate(timeScale,StatusText)
+			local Dilation, StatusText = self:TimeDilationCalculator()
+			self:TimeDilationEffects_Activate(Dilation,StatusText)
 		elseif not self:IsWearingApogee() then
 			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
 		end
 	 end)
-	,TimeDilationEffects_Activate = (function(self,timeScale,Source)
-		if self.TimeDilationActiveEffect == timeScale then return end
-		if self.TimeDilationActiveEffect ~= nil then
+	,TimeDilationEffects_Activate = (function(self,TimeDilation,Source)
+		if self.TimeDilationActiveEffect == TimeDilation then return end
+		if self.TimeDilationActiveEffect ~= nil and self.TimeDilationActiveEffect ~= TimeDilation then
 			self:TimeDilationEffects_RemoveActive()
 		end
-		TweakDB:SetFlat(self.martinez.Stat_Modifier_04 .. '.value', timeScale)
-		TweakDB:Update(self.martinez.Stat_Modifier_04 .. '.value')
-		self.TimeDilationActiveEffect = timeScale
-		self.TimeDilationActualSpeed = (1 - timeScale) * 100
+		local found = false
+		local speed = 85
+		local ActualDilation, StatusEffect = self.martinez.TimeDilations:GetDataFromIndex(TimeDilation)
+		if ActualDilation ~= nil then
+			self:StatusEffect_CheckAndApply(StatusEffect)
+			speed = ActualDilation
+			found = true
+		end
+		if not found then
+			TimeDilation = nil
+		end
+		self.TimeDilationActiveEffect = TimeDilation
+		self.TimeDilationActualSpeed = speed
 	 end)
 	,TimeDilationEffects_RemoveActive = (function(self)
 		if self.TimeDilationActiveEffect == nil then return end
@@ -956,8 +990,10 @@ davidsapogee = {
 		end
 	 end)
 	,LoadGamePart1 = (function(self)
+		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		loadApogeeConfig(self.cfg)
 		self:UpdateViksLoot()
+		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingApogee()))
 		local GetRuntime = 0
 		self.TickLength = self.cfg.tickLength
 		self.MaxRuntime, GetRuntime = self.qs:LoadRuntime()
@@ -997,6 +1033,7 @@ davidsapogee = {
 	,LoadGame = (function(self,GameLoadIndex)
 		self.TriedLoadGameRun = true
 		if GameLoadIndex == nil then GameLoadIndex = 0 end
+		print('[DSP] LoadGame: index='..tostring(GameLoadIndex))
 		
 		if GameLoadIndex == 0 then -- used on Game start and CET Reinit
 			self:LoadGamePart1()
@@ -1666,6 +1703,7 @@ davidsapogee = {
 }
 
 registerForEvent('onInit', function()
+	print('[DSP] onInit: starting, martinez='..tostring(davidsapogee.martinez ~= nil)..', gui='..tostring(davidsapogee.gui ~= nil))
 	davidsapogee:Init()
 	
     Observe('SandevistanEvents', 'OnEnter', function(self, event)

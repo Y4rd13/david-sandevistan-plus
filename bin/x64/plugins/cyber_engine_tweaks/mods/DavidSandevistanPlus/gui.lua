@@ -156,8 +156,8 @@ gui.drawUIWindow = (function(self)
 				end
 			else
 				local RAMText = l.Debug_SectionRunner_Perk_RequiresCyberdeck
-					local timeScale, StatusText = self.Apogee:TimeDilationCalculator(true)
-				local ActualDilation = math.floor((1 - timeScale) * 1000 + 0.5) / 10
+					local DilationIdx, StatusText = self.Apogee:TimeDilationCalculator(true)
+				local ActualDilation = self.Apogee.martinez.TimeDilations:GetTimeDilationFromIndex(DilationIdx) or 85
 				if NetRunnerLevels.IsWearingCyberDeck then
 					RAMText = tostring(mfloor(self.Apogee.sps:getRAM()*10)/10)
 				end
