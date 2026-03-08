@@ -198,6 +198,7 @@ davidsapogee = {
 	,CyberPsychoWarnings = -1
 	,dailyActivations = 0
 	,sandyStartRuntime = 0
+	,lowRuntimeWarned = false
 	,comedownTimer = nil
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
@@ -350,11 +351,16 @@ davidsapogee = {
 		RestedHours = math.floor(RestedHours)
 		if RestedHours < 1 then return end
 		
+		local prevPsycho = self.CyberPsychoWarnings
 		if RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
 			self.CyberPsychoWarnings = 1 -- no free lunch for the cyberpsycho; full night's sleep or the psychosis cycle continues tomorrow.
 			self:Calculate_PsychoOutburst() -- reset the timer
+			self.bbs:SendWarning("SHORT SLEEP — PSYCHOSIS REDUCED BUT NOT CURED", 4.0)
 		else
 			self.CyberPsychoWarnings = 0
+			if prevPsycho > 0 then
+				self.bbs:SendMessage("FULL REST — PSYCHOSIS CLEARED", 3.0)
+			end
 		end
 		
 		self.dailyActivations = 0
@@ -405,8 +411,13 @@ davidsapogee = {
 
 		self.isRunning = true
 		self.sandyStartRuntime = self.runTime
+		self.lowRuntimeWarned = false
 		-- set initial charge level on startup!
 		self:SandevistanCharge()
+
+		-- Activation notification
+		local dilation = self.TimeDilationActualSpeed or 85
+		self.bbs:SendMessage("SANDEVISTAN ACTIVE — "..tostring(dilation).."%", 2.0)
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
@@ -421,6 +432,7 @@ davidsapogee = {
 					self:Calculate_PsychoOutburst()
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
 				end
+				self.bbs:SendWarning("OVERUSE WARNING — PSYCHOSIS ACCELERATING ("..tostring(self.dailyActivations).."/"..tostring(self.cfg.dailySafeActivations)..")", 3.0)
 				if self.dev_mode then
 					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(self.cfg.dailySafeActivations)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
 				end
@@ -448,6 +460,7 @@ davidsapogee = {
 				local duration = self.cfg.comedownBaseDuration + (self.cfg.comedownMaxDuration - self.cfg.comedownBaseDuration) * scale
 				self.comedownTimer = duration
 				self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
+				self.bbs:SendMessage("COMEDOWN — "..string.format("%.1f", duration).."s", 2.0)
 				if self.dev_mode then
 					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s')
 				end
@@ -696,8 +709,18 @@ davidsapogee = {
 		if self.runTime > 0 then
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
+			self.bbs:SendWarning("SANDEVISTAN: RUNTIME DEPLETED", 3.0)
 			if self.cfg.enableCyberpsychosis then
 				if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
+				local psychoMessages = {
+					[1] = "CYBERPSYCHOSIS — LEVEL I: UNSTABLE",
+					[2] = "CYBERPSYCHOSIS — LEVEL II: GLITCHING",
+					[3] = "CYBERPSYCHOSIS — LEVEL III: LOSING IT",
+					[4] = "CYBERPSYCHOSIS — LEVEL IV: ON THE EDGE",
+					[5] = "CYBERPSYCHO — YOU ARE LOSING YOUR MIND",
+				}
+				local msg = psychoMessages[self.CyberPsychoWarnings]
+				if msg then self.bbs:SendWarning(msg, 5.0) end
 				self:FrightenNPCs()
 			end
 			self:DisableSandevistan("BleedingEffect()")
@@ -831,6 +854,12 @@ davidsapogee = {
 				if not self.SafetyOn then self.runTime = self.runTime - (self.TickLength*self.cfg.safetyOffDrainMultiplier) end
 				if self.runTime < 1 then self.runTime = 0 end
 
+				-- Low runtime warning (once per activation)
+				if not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
+					self.lowRuntimeWarned = true
+					self.bbs:SendWarning("LOW RUNTIME: "..tostring(math.floor(self.runTime)).."s", 2.5)
+				end
+
 				self:CalcDamage()
 				self:TimeDilationEffects()
 				
@@ -866,12 +895,18 @@ davidsapogee = {
 					elseif self.runTime < 10 and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 						self:OutOfRuntime(true)
 					end
-				elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold and self.cfg.enableSafetyOffKill then
-					self.sps:EndSandevistan()
-					self:KillV()
+				elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
+					-- Safety OFF + health critical: only kill at psycho level 5 (David's last stand)
+					if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
+						self.bbs:SendWarning("SYSTEM FAILURE — CRITICAL", 4.0)
+						self.sps:EndSandevistan()
+						self:KillV()
+					else
+						self.sps:EndSandevistan()
+						self:BleedingEffect()
+					end
 				elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
-					-- Safety is off and no runtime and not bleeding and injured, safety off uses 4 ticks not 1
-					-- Turn bleeding on and give V 8 ticks of sandy time warning (8x4ticks=32)
+					-- Safety OFF + low runtime + injured: bleeding warning
 					self:OutOfRuntime(true)
 				end
 				--print('Running: '..tostring(self.runTime)..' Damage='..tostring(self.DamagePerTick)..'/'..tostring(self.RequiredHealth)..' - '..tostring(VsHealthPercent))
@@ -938,8 +973,10 @@ davidsapogee = {
 						self.CyberPsychoWarnings = self.CyberPsychoWarnings - 1
 						if self.CyberPsychoWarnings == 0 then
 							self.PsychoOutburst = nil
+							self.bbs:SendMessage("PSYCHOSIS CLEARED — SYSTEMS NOMINAL", 3.0)
 						else
 							self.PsychoOutburst = 61
+							self.bbs:SendMessage("PSYCHOSIS LEVEL DOWN — "..tostring(self.CyberPsychoWarnings), 3.0)
 						end
 						self:DisableSandevistan("PsychoOutburst")
 						self:SaveGame("Psycho Safe Area")
@@ -1485,6 +1522,15 @@ davidsapogee = {
 			MSG.isShown = true
 			MSG.duration = duration
 			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.OnscreenMessage, ToVariant(MSG), true)
+		 end)
+		,SendWarning = (function(self,message,duration)
+			local MSG = SimpleScreenMessage.new()
+			local BBS = Game.GetBlackboardSystem()
+			local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
+			MSG.message = message
+			MSG.isShown = true
+			MSG.duration = duration or 3.0
+			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.WarningMessage, ToVariant(MSG), true)
 		 end)
 		,MoneyTransfer = (function(self,title,message)
 			local V = Game.GetPlayer()
