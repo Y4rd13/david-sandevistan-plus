@@ -1238,9 +1238,11 @@ davidsapogee = {
 			local CanUnbrickSandevistan = IsWearingApogee
 			local CanBribeNCPD = IsWearingApogee and IsWearingCyberDeck
 			local ApogeeReducedRuntime = (not IsEdgeRunner)
+			local str = IsEdgeRunner and 'EdgeRunner' or 'Standard'
 
 			return {
 				 GameLoaded=GameLoaded
+				,str=str
 				,IsEdgeRunner=IsEdgeRunner
 				,IsWearingApogee=IsWearingApogee
 				,IsWearingCyberDeck=IsWearingCyberDeck
