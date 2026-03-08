@@ -178,11 +178,6 @@ gui.drawUIWindow = (function(self)
 			end
 			
 		end
-			if not NetRunnerLevels.IsWearingCyberDeck then
-				ImGui.SameLine()
-				ImGui.Text(l.Debug_SectionRunner_Perk_RequiresCyberdeck)
-			end
-		end
 		if self.Apogee.dev_mode and self.Apogee.dev_mode.gui then self.Apogee.dev_mode:gui(self.Apogee) end
 		if self.Apogee.debug and ImGui.CollapsingHeader(l.Debug_Section2_Title, ImGuiTreeNodeFlags.DefaultOpen) then
 			ImGui.Text(l.Debug_Section2_IsLvl40.." => "..tostring(sandevistandebug.IsPlayerLevel40))
