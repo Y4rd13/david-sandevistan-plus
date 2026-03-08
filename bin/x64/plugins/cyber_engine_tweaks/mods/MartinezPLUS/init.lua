@@ -6,33 +6,36 @@ local apogeeConfigFile = "../DavidSandevistanPlus/config.json"
 
 local defaults = {
 	-- TweakDB values
-	timedilationSpeed = 0.15,
-	timedilationOption = 1,
+	timedilationSpeed = 0.10,
+	timedilationOption = 2,
 	sandyDuration = 300,
 	rechargeDuration = 2.0,
-	cooldownBase = 1.0,
-	enterCost = 0.1,
-	killRechargeValue = 0.0,
-	critChance = 20,
-	critDamage = 20,
-	headshotDamageMultiplier = 1.2,
-	healOnKill = 5,
+	cooldownBase = 0.5,
+	enterCost = 0.0,
+	killRechargeValue = 2.0,
+	critChance = 30,
+	critDamage = 35,
+	headshotDamageMultiplier = 1.5,
+	healOnKill = 3,
 	staminaOnKill = 22.0,
 
 	-- Gameplay (mirrored from DavidsApogee cfg)
 	enableHealthDrain = true,
-	damageMin = 0.5,
-	damageMax = 10.0,
+	damageMin = 1.0,
+	damageMax = 15.0,
 	safetyOffExtraDamage = 5,
-	enableHealthBrake = true,
+	enableHealthBrake = false,
 	healthBrakeDefault = 50,
 	requiredHealthMin = 15,
-	safetyOffDrainMultiplier = 3,
+	safetyOffDrainMultiplier = 4,
 	enableSafetyOffKill = true,
-	safetyOffKillThreshold = 3,
-	fullRechargeHours = 24,
-	maxRechargePerSleep = 8,
+	safetyOffKillThreshold = 2,
+	fullRechargeHours = 16,
+	maxRechargePerSleep = 10,
 	enableCyberpsychosis = true,
+	dailySafeActivations = 3,
+	psychoAccelPerExtraUse = 30,
+	requireEdgeRunnerPerk = false,
 	tickLength = 1.25,
 }
 
@@ -46,7 +49,9 @@ local gameplayKeys = {
 	"enableHealthDrain", "damageMin", "damageMax", "safetyOffExtraDamage",
 	"enableHealthBrake", "healthBrakeDefault", "requiredHealthMin",
 	"safetyOffDrainMultiplier", "enableSafetyOffKill", "safetyOffKillThreshold",
-	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis", "tickLength",
+	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis",
+	"dailySafeActivations", "psychoAccelPerExtraUse",
+	"requireEdgeRunnerPerk", "tickLength",
 }
 
 -- Persistence
@@ -134,12 +139,13 @@ local function initUI()
 	local catSO = tab .. "/SafetyOff"
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
+	local catPG = tab .. "/PerkGates"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catPG}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -175,7 +181,7 @@ local function initUI()
 		catTD,
 		"Time Dilation Speed",
 		"How much time slows down while Sandevistan is active. Higher % = slower.\n"
-			.. "Default: 85%. Recommended limit: 99.35%.\n"
+			.. "Default: 90% (lore-accurate ~10x speed factor). Recommended limit: 99.35%.\n"
 			.. "Values above 99.35% may cause visual glitches.\n"
 			.. "Safety Off and Overclock still stack on top of this.",
 		timescaleLabels,
@@ -222,7 +228,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Cooldown Base",
-		"Base cooldown multiplier after Sandevistan deactivates. (Default: 1.0)\n"
+		"Base cooldown multiplier after Sandevistan deactivates. (Default: 0.5)\n"
 			.. "Lower values = shorter cooldown between activations.",
 		0.1, 10.0, 0.1, "%.1f",
 		cfg.cooldownBase,
@@ -235,8 +241,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Activation Cost",
-		"Stamina cost when activating the Sandevistan. (Default: 0.1)\n"
-			.. "Set to 0 to remove the activation cost entirely.\n"
+		"Stamina cost when activating the Sandevistan. (Default: 0.0)\n"
+			.. "Lore: David activated with no visible cost — the toll was cumulative (cyberpsychosis).\n"
 			.. "With Adrenaline Rush enabled, this cost is shunted through V's chip instead.",
 		0.0, 1.0, 0.05, "%.2f",
 		cfg.enterCost,
@@ -249,7 +255,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Kill Recharge Value",
-		"Runtime recharged per enemy killed while Sandevistan is active. (Default: 0.0)",
+		"Runtime recharged per enemy killed while Sandevistan is active. (Default: 2.0)\n"
+			.. "Lore: David was fueled by combat adrenaline — each kill kept him going.",
 		0.0, 50.0, 0.5, "%.1f",
 		cfg.killRechargeValue,
 		defaults.killRechargeValue,
@@ -266,7 +273,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catCS,
 		"Critical Chance",
-		"Bonus critical hit chance while Sandevistan is active. (Default: 20)\n"
+		"Bonus critical hit chance while Sandevistan is active. (Default: 30)\n"
 			.. "Only applies during time dilation, requires TimeDilation PSM prereq.",
 		0, 100, 1,
 		cfg.critChance,
@@ -279,7 +286,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catCS,
 		"Critical Damage",
-		"Bonus critical hit damage while Sandevistan is active. (Default: 20)\n"
+		"Bonus critical hit damage while Sandevistan is active. (Default: 35)\n"
 			.. "Only applies during time dilation, requires TimeDilation PSM prereq.",
 		0, 500, 1,
 		cfg.critDamage,
@@ -292,8 +299,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catCS,
 		"Headshot Damage Multiplier",
-		"Multiplier for headshot damage during Sandevistan. (Default: 1.2)\n"
-			.. "1.2 = 20% bonus headshot damage. Uses Cool stat scaling.",
+		"Multiplier for headshot damage during Sandevistan. (Default: 1.5)\n"
+			.. "1.5 = 50% bonus headshot damage. Uses Cool stat scaling.",
 		1.0, 5.0, 0.1, "%.1f",
 		cfg.headshotDamageMultiplier,
 		defaults.headshotDamageMultiplier,
@@ -310,7 +317,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catOK,
 		"Heal on Kill (%)",
-		"Percentage of V's health restored per kill during Sandevistan. (Default: 5)\n"
+		"Percentage of V's health restored per kill during Sandevistan. (Default: 3)\n"
 			.. "Replaces the standard duration-on-kill since Martinez has infinite duration.",
 		0.0, 50.0, 0.5, "%.1f",
 		cfg.healOnKill,
@@ -353,7 +360,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catHD,
 		"Minimum Damage per Tick (%)",
-		"Health drained per tick at full runtime (just activated). (Default: 0.5)\n"
+		"Health drained per tick at full runtime (just activated). (Default: 1.0)\n"
 			.. "Damage scales up from this value toward maximum as runtime depletes.",
 		0.0, 10.0, 0.1, "%.1f",
 		cfg.damageMin,
@@ -366,7 +373,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catHD,
 		"Maximum Damage per Tick (%)",
-		"Health drained per tick at zero runtime (fully depleted). (Default: 10.0)\n"
+		"Health drained per tick at zero runtime (fully depleted). (Default: 15.0)\n"
 			.. "At 5 minutes of use the Sandy takes ~20% health every 2.5s at default settings.",
 		0.0, 50.0, 0.5, "%.1f",
 		cfg.damageMax,
@@ -397,9 +404,9 @@ local function initUI()
 	nativeSettings.addSwitch(
 		catHB,
 		"Enable Health Brake",
-		"Auto-stop Sandevistan when V's health gets too low. (Default: ON)\n"
-			.. "When OFF, the Sandy never stops itself due to low health (Safety ON mode).\n"
-			.. "WARNING: Disabling this means V can die while the Sandy is active.",
+		"Auto-stop Sandevistan when V's health gets too low. (Default: OFF)\n"
+			.. "When ON, the Sandy stops itself when health drops below threshold.\n"
+			.. "Lore-accurate: David never had an auto-stop — he pushed to the edge.",
 		cfg.enableHealthBrake,
 		defaults.enableHealthBrake,
 		function(value)
@@ -442,8 +449,8 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catSO,
 		"Runtime Drain Multiplier",
-		"Extra runtime ticks consumed per cycle with Safety OFF. (Default: 3)\n"
-			.. "Total drain = 1 + this value. Default 3 means 5s/tick total.\n"
+		"Extra runtime ticks consumed per cycle with Safety OFF. (Default: 4)\n"
+			.. "Total drain = 1 + this value. Default 4 means 6.25s/tick total.\n"
 			.. "Set to 0 for same drain rate as Safety ON.",
 		0, 10, 1,
 		cfg.safetyOffDrainMultiplier,
@@ -468,7 +475,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catSO,
 		"Kill Threshold (%)",
-		"Health percentage at which V dies with Safety OFF. (Default: 3)\n"
+		"Health percentage at which V dies with Safety OFF. (Default: 2)\n"
 			.. "Only applies when 'V Can Die' is enabled.",
 		1, 15, 1,
 		cfg.safetyOffKillThreshold,
@@ -486,7 +493,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catRC,
 		"Full Recharge Hours",
-		"Total hours of sleep needed to fully recharge the Sandevistan. (Default: 24)\n"
+		"Total hours of sleep needed to fully recharge the Sandevistan. (Default: 16)\n"
 			.. "Spread across multiple sleep sessions (see Max Recharge per Sleep).",
 		1, 48, 1,
 		cfg.fullRechargeHours,
@@ -499,8 +506,8 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catRC,
 		"Max Recharge per Sleep",
-		"Maximum hours of recharge credited per single sleep. (Default: 8)\n"
-			.. "With defaults: 3 sleeps of 8h each = 24h = full recharge.",
+		"Maximum hours of recharge credited per single sleep. (Default: 10)\n"
+			.. "With defaults: 2 sleeps of 8h each = 16h = full recharge.",
 		1, 24, 1,
 		cfg.maxRechargePerSleep,
 		defaults.maxRechargePerSleep,
@@ -524,6 +531,53 @@ local function initUI()
 		defaults.enableCyberpsychosis,
 		function(value)
 			cfg.enableCyberpsychosis = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catCP,
+		"Safe Activations per Day",
+		"How many times V can activate the Sandevistan per day before psycho acceleration. (Default: 3)\n"
+			.. "Lore: Doc warned David not to use it more than 3 times a day.\n"
+			.. "Every activation beyond this accelerates cyberpsychosis progression.\n"
+			.. "Counter resets when V sleeps.",
+		1, 20, 1,
+		cfg.dailySafeActivations,
+		defaults.dailySafeActivations,
+		function(value)
+			cfg.dailySafeActivations = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catCP,
+		"Psycho Acceleration per Extra Use",
+		"Seconds subtracted from the Psycho Outburst timer per extra activation. (Default: 30)\n"
+			.. "Higher = faster cyberpsychosis progression when overusing the Sandevistan.\n"
+			.. "Effect stacks: 4th use = -30s, 5th = -60s, 6th = -90s, etc.",
+		5, 120, 5,
+		cfg.psychoAccelPerExtraUse,
+		defaults.psychoAccelPerExtraUse,
+		function(value)
+			cfg.psychoAccelPerExtraUse = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- PERK GATES
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catPG, "Perk Gates")
+
+	nativeSettings.addSwitch(
+		catPG,
+		"Require EdgeRunner Perk",
+		"Require the EdgeRunner perk for full runtime access. (Default: OFF)\n"
+			.. "When OFF: full runtime from the start, like David in the anime.\n"
+			.. "When ON: without the perk, only 33% of runtime is available.",
+		cfg.requireEdgeRunnerPerk,
+		defaults.requireEdgeRunnerPerk,
+		function(value)
+			cfg.requireEdgeRunnerPerk = value
 			applyAll()
 		end)
 end

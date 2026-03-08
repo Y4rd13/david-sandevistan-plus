@@ -138,26 +138,31 @@ davidsapogee = {
 	,cfg = {
 		-- Health Drain
 		enableHealthDrain = true,        -- toggle all health drain from sandevistan
-		damageMin = 0.5,                 -- minimum damage % per tick (at full runtime)
-		damageMax = 10.0,                -- maximum damage % per tick (at zero runtime)
+		damageMin = 1.0,                 -- minimum damage % per tick (at full runtime)
+		damageMax = 15.0,                -- maximum damage % per tick (at zero runtime)
 		safetyOffExtraDamage = 5,        -- extra damage per tick when safety limiters off
 
 		-- Health Brake
-		enableHealthBrake = true,        -- auto-stop sandy when V's health gets too low
+		enableHealthBrake = false,       -- auto-stop sandy when V's health gets too low
 		healthBrakeDefault = 50,         -- default health brake threshold %
 		requiredHealthMin = 15,          -- minimum required health % before brake kicks in
 
 		-- Safety Off
-		safetyOffDrainMultiplier = 3,    -- extra tick multiplier for runtime drain (total = 1 + this)
+		safetyOffDrainMultiplier = 4,    -- extra tick multiplier for runtime drain (total = 1 + this)
 		enableSafetyOffKill = true,      -- V can die when safety off + health depleted
-		safetyOffKillThreshold = 3,      -- health % threshold that triggers V's death
+		safetyOffKillThreshold = 2,      -- health % threshold that triggers V's death
 
 		-- Recharge
-		fullRechargeHours = 24,          -- hours for full recharge
-		maxRechargePerSleep = 8,         -- max hours recharged per sleep session
+		fullRechargeHours = 16,          -- hours for full recharge
+		maxRechargePerSleep = 10,        -- max hours recharged per sleep session
 
 		-- Cyberpsychosis
 		enableCyberpsychosis = true,     -- toggle entire cyberpsychosis system
+		dailySafeActivations = 3,        -- activations per day before psycho acceleration (Doc's warning)
+		psychoAccelPerExtraUse = 30,     -- seconds subtracted from PsychoOutburst per extra activation
+
+		-- Perk Gates
+		requireEdgeRunnerPerk = false,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
 
 		-- Tick
 		tickLength = 1.25,               -- main game loop tick interval in seconds
@@ -182,6 +187,7 @@ davidsapogee = {
 	,DamagePerTick = -1
 	,RAMPerTick = -1
 	,CyberPsychoWarnings = -1
+	,dailyActivations = 0
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
 	,Overclocking = false
@@ -328,6 +334,9 @@ davidsapogee = {
 			self.CyberPsychoWarnings = 0
 		end
 		
+		self.dailyActivations = 0
+		self.qs:SaveDailyActivations(0)
+
 		self:Safety(true)
 		self:DisableSandevistan()
 		if RestedHours > self.MaxRechargePerSleep then RestedHours = self.MaxRechargePerSleep end
@@ -376,12 +385,30 @@ davidsapogee = {
 	,Start = (function(self)
 		if self.martinez == nil then return end
 		if not self:IsWearingApogee() then return end
-		
+
 		self.isRunning = true
 		-- set initial charge level on startup!
 		self.OverclockExpired = false
 		self:SandevistanCharge()
-		
+
+		-- Daily activation counter — accelerate cyberpsychosis on overuse
+		if self.cfg.enableCyberpsychosis then
+			self.dailyActivations = self.dailyActivations + 1
+			if self.dailyActivations > self.cfg.dailySafeActivations then
+				local extraUses = self.dailyActivations - self.cfg.dailySafeActivations
+				if self.PsychoOutburst ~= nil then
+					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
+				elseif self.CyberPsychoWarnings > 0 then
+					self:Calculate_PsychoOutburst()
+					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
+				end
+				if self.dev_mode then
+					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(self.cfg.dailySafeActivations)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
+				end
+			end
+			self.qs:SaveDailyActivations(self.dailyActivations)
+		end
+
 		-- If you can start the sandy, you can use the Menus
 		self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 
@@ -1001,6 +1028,7 @@ davidsapogee = {
 		self.Spillover = self.qs:LoadSpillover()
 		self.AdrenalineRush = self.qs:LoadAdrenalineRush()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
+		self.dailyActivations = self.qs:LoadDailyActivations()
 		if self.HealthBrake == -1 then self.HealthBrake = self.cfg.healthBrakeDefault end
 		if self.HealthRAMBalance == -1 then self.HealthRAMBalance = 100 end
 		if self.CyberPsychoWarnings == -1 then self.CyberPsychoWarnings = 0 end
@@ -1068,6 +1096,7 @@ davidsapogee = {
 		self.qs:SaveSpillover(self.Spillover)
 		self.qs:SaveAdrenalineRush(self.AdrenalineRush)
 		self.qs:SaveCyberPsycho(self.CyberPsychoWarnings)
+		self.qs:SaveDailyActivations(self.dailyActivations)
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DavidsApogee:SaveGame() Completed')
@@ -1340,6 +1369,7 @@ davidsapogee = {
 			 }
 		 end)
 		,IsEdgeRunner = (function(self)
+			if not self.Apogee.cfg.requireEdgeRunnerPerk then return true end
 			local V = Game.GetPlayer()
 			if V == nil or (not IsDefined(V)) then return nil end
 			local PDS = PlayerDevelopmentSystem.GetInstance(V)
@@ -1354,6 +1384,7 @@ davidsapogee = {
 		,SpilloverFactName = 'martinezsandevistan_overclock_spillover'
 		,AdrenalineRushFactName = 'martinezsandevistan_overclock_adrenalinerush'
 		,CyberPsychoFactName = 'martinezsandevistan_cyberpsycho'
+		,DailyActivationsFactName = 'martinezsandevistan_dailyactivations'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
@@ -1405,6 +1436,14 @@ davidsapogee = {
 			else
 				return 0
 			end
+		 end)
+		,SaveDailyActivations = (function(self,value)
+			self:SetFactValue(self.DailyActivationsFactName,value+1)
+		 end)
+		,LoadDailyActivations = (function(self)
+			local v = self:GetFactValue(self.DailyActivationsFactName)-1
+			if v < 0 then return 0 end
+			return v
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()

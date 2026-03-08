@@ -1,69 +1,119 @@
-# Martinez Sandy+ (MartinezPLUS)
+# David Sandevistan Plus
 
-Tuner companion mod for [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547) (Martinez Sandevistan) in Cyberpunk 2077.
+Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547) with every gameplay parameter made configurable via an in-game Settings menu.
 
-Adds a **Native Settings UI** tab to configure the Martinez Sandevistan parameters in real time from the game's Settings menu.
+## Features
+
+- Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
+- 14 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
+- Native Settings UI tab with 9 subcategories
+- All defaults match the original David's Apogee values
+- Config persists across sessions via `config.json`
 
 ## Requirements
 
 - [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107)
 - [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
-- [David's Apogee - Martinez Sandevistan](https://www.nexusmods.com/cyberpunk2077/mods/9547)
+- [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198)
 
 ## Installation
 
-Extract the zip into your Cyberpunk 2077 installation directory:
+Extract into your Cyberpunk 2077 installation directory:
 
 ```
 Cyberpunk 2077/
-└── bin/x64/plugins/cyber_engine_tweaks/mods/MartinezPLUS/
-    └── init.lua
+├── archive/pc/mod/
+│   ├── david-sandevistan-plus.archive
+│   └── david-sandevistan-plus.archive.xl
+└── bin/x64/plugins/cyber_engine_tweaks/mods/
+    ├── DavidSandevistanPlus/
+    │   ├── init.lua
+    │   └── martinez.lua
+    └── MartinezPLUS/
+        └── init.lua
 ```
-
-Or install via Vortex / Mod Organizer 2.
 
 ## Settings
 
 Open the game menu: **Settings > Mods > Martinez Sandy+**
 
 ### Time Dilation
-- **Time Dilation Speed** — Base time scale from `0.15` (85% slowdown, default) down to `0.001` (99.9%).
+- **Time Dilation Speed** — Base time scale from `0.10` (90% slowdown, default — lore-accurate ~10x speed factor) down to `0.001` (99.9%).
   Recommended limit: **0.0065** (99.35%). Values below may cause visual glitches.
-  Safety Off and Overclock from David's Apogee still stack on top of this value.
+  Safety Off and Overclock still stack on top of this value.
 
 ### Duration & Cooldown
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Sandevistan Duration | 1–600 sec | 300 | How long the Sandy stays active |
 | Recharge Duration | 0.5–30 | 2.0 | Recharge time |
-| Cooldown Base | 0.1–10 | 1.0 | Cooldown multiplier |
-| Activation Cost | 0–1 | 0.1 | Stamina cost to activate (0 = free) |
-| Kill Recharge Value | 0–50 | 0.0 | Recharge gained per kill |
+| Cooldown Base | 0.1–10 | 0.5 | Cooldown multiplier |
+| Activation Cost | 0–1 | 0.0 | Stamina cost to activate (0 = free) |
+| Kill Recharge Value | 0–50 | 2.0 | Recharge gained per kill |
 
 ### Combat Stats (while Sandy active)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Critical Chance | 0–100 | 20 | Bonus crit chance |
-| Critical Damage | 0–500 | 20 | Bonus crit damage |
-| Headshot Damage Multiplier | 1.0–5.0 | 1.2 | Headshot damage multiplier |
+| Critical Chance | 0–100 | 30 | Bonus crit chance |
+| Critical Damage | 0–500 | 35 | Bonus crit damage |
+| Headshot Damage Multiplier | 1.0–5.0 | 1.5 | Headshot damage multiplier |
 
 ### On-Kill Effects (while Sandy active)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Heal on Kill | 0–50% | 5 | Health restored per kill |
+| Heal on Kill | 0–50% | 3 | Health restored per kill |
 | Stamina on Kill | 0–100 | 22 | Stamina restored per kill |
+
+### Health Drain
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Health Drain | on/off | on | Toggle health cost while Sandy is active |
+| Damage Min | 0.1–5.0% | 1.0 | Minimum health drain per tick |
+| Damage Max | 1.0–25.0% | 15.0 | Maximum health drain per tick |
+| Tick Length | 0.25–5.0 sec | 1.25 | Game loop tick interval |
+
+### Health Brake
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Health Brake | on/off | off | Auto-stop Sandy on low health |
+| Brake Threshold | 10–90% | 50 | Health % to trigger brake |
+| Minimum Health | 1–50% | 15 | Absolute minimum health threshold |
+
+### Safety Off
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Extra Damage | 1–20 | 5 | Extra damage per tick with safety off |
+| Drain Multiplier | 1–10 | 4 | Extra runtime drain with safety off |
+| Enable Safety Off Kill | on/off | on | Can V die from safety off |
+| Kill Threshold | 1–10% | 2 | Health % that triggers death |
+
+### Recharge
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Full Recharge Hours | 1–48 | 16 | In-game hours for full recharge |
+| Max Recharge Per Sleep | 1–24 | 10 | Max recharge hours per sleep |
+
+### Cyberpsychosis
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
+| Safe Activations per Day | 1–20 | 3 | Activations before psycho acceleration (Doc's warning) |
+| Psycho Acceleration per Extra Use | 5–120 | 30 | Seconds subtracted from psycho timer per extra use |
+
+### Perk Gates
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Require EdgeRunner Perk | on/off | off | Require EdgeRunner perk for full runtime (off = full access from day 1) |
 
 ## How It Works
 
-This mod modifies TweakDB flat values for the Martinez Sandevistan (`Items.MartinezSandevistanPlusPlus`) at runtime. All David's Apogee dynamic systems (Safety Limiters, Overclock, Cyberpsychosis) continue to work normally on top of your configured values.
-
-Settings are saved to `config.json` and persist across sessions.
+**DavidSandevistanPlus** is a fork of David's Apogee v2.25.3 with all hardcoded gameplay values extracted into a configurable `cfg` table. **MartinezPLUS** provides the Native Settings UI and writes to `DavidSandevistanPlus/config.json`. Changes to TweakDB values apply instantly; gameplay parameters update both at runtime and persist to disk.
 
 ## Credits
 
-- **beckylou** — Creator of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547)
-- **XxJepxX** — Creator of [Tier 5 Plus](https://www.nexusmods.com/cyberpunk2077/mods/9547) (inspiration for the Native Settings approach)
-- **Native Settings UI** by [keanuWheeze](https://www.nexusmods.com/cyberpunk2077/mods/3518)
+- **beckylou** — Creator of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547), the base this mod is forked from
+- **XxJepxX** — Creator of Tier 5 Plus (inspiration for the Native Settings approach)
+- **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
 
 ## License
 
