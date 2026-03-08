@@ -35,6 +35,11 @@ local defaults = {
 	enableCyberpsychosis = true,
 	dailySafeActivations = 3,
 	psychoAccelPerExtraUse = 30,
+	safetyOffTimeDilation = 975,
+	enableComedown = true,
+	comedownBaseDuration = 3.0,
+	comedownMaxDuration = 8.0,
+	comedownRuntimeThreshold = 60,
 	requireEdgeRunnerPerk = false,
 	tickLength = 1.25,
 }
@@ -51,6 +56,8 @@ local gameplayKeys = {
 	"safetyOffDrainMultiplier", "enableSafetyOffKill", "safetyOffKillThreshold",
 	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis",
 	"dailySafeActivations", "psychoAccelPerExtraUse",
+	"safetyOffTimeDilation",
+	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
 	"requireEdgeRunnerPerk", "tickLength",
 }
 
@@ -139,13 +146,14 @@ local function initUI()
 	local catSO = tab .. "/SafetyOff"
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
+	local catCD = tab .. "/Comedown"
 	local catPG = tab .. "/PerkGates"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catPG}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD, catPG}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -485,6 +493,40 @@ local function initUI()
 			applyAll()
 		end)
 
+	local timeDilationOptions = {
+		{ label = "92.5%", value = 925 },
+		{ label = "95%",   value = 950 },
+		{ label = "97.5% (Default)", value = 975 },
+		{ label = "99%",   value = 990 },
+		{ label = "99.5%", value = 1000 },
+	}
+	local tdLabels = {}
+	local tdValues = {}
+	local tdDefault = 3
+	for i, opt in ipairs(timeDilationOptions) do
+		tdLabels[i] = opt.label
+		tdValues[i] = opt.value
+		if opt.value == cfg.safetyOffTimeDilation then tdDefault = i end
+	end
+	local tdDefaultIdx = 3
+	for i, opt in ipairs(timeDilationOptions) do
+		if opt.value == defaults.safetyOffTimeDilation then tdDefaultIdx = i break end
+	end
+
+	nativeSettings.addSelectorString(
+		catSO,
+		"Safety Off Time Dilation",
+		"Time dilation when Safety Limiters are OFF. (Default: 97.5%)\n"
+			.. "Higher = slower time = more power. David ran without limiters for the speed boost.\n"
+			.. "This stacks with the base time dilation setting.",
+		tdLabels,
+		tdDefault,
+		tdDefaultIdx,
+		function(value)
+			cfg.safetyOffTimeDilation = tdValues[value]
+			applyAll()
+		end)
+
 	------------------------------------------------------------
 	-- RECHARGE
 	------------------------------------------------------------
@@ -560,6 +602,62 @@ local function initUI()
 		defaults.psychoAccelPerExtraUse,
 		function(value)
 			cfg.psychoAccelPerExtraUse = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- COMEDOWN
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catCD, "Comedown (Deactivation Debuff)")
+
+	nativeSettings.addSwitch(
+		catCD,
+		"Enable Comedown",
+		"Apply a debuff after deactivating the Sandevistan. (Default: ON)\n"
+			.. "Lore: David showed visible strain after deactivating — disorientation, heavy breathing.\n"
+			.. "Duration scales with how long the Sandy was active.",
+		cfg.enableComedown,
+		defaults.enableComedown,
+		function(value)
+			cfg.enableComedown = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catCD,
+		"Base Duration (sec)",
+		"Minimum comedown duration after a short Sandy use. (Default: 3.0)",
+		1.0, 10.0, 0.5, "%.1f",
+		cfg.comedownBaseDuration,
+		defaults.comedownBaseDuration,
+		function(value)
+			cfg.comedownBaseDuration = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catCD,
+		"Max Duration (sec)",
+		"Maximum comedown duration after prolonged Sandy use. (Default: 8.0)",
+		3.0, 20.0, 0.5, "%.1f",
+		cfg.comedownMaxDuration,
+		defaults.comedownMaxDuration,
+		function(value)
+			cfg.comedownMaxDuration = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catCD,
+		"Scaling Threshold (sec)",
+		"Seconds of Sandy runtime used before comedown reaches max duration. (Default: 60)\n"
+			.. "Below this: comedown scales linearly from base to max.\n"
+			.. "Above this: always max duration.",
+		10, 300, 5,
+		cfg.comedownRuntimeThreshold,
+		defaults.comedownRuntimeThreshold,
+		function(value)
+			cfg.comedownRuntimeThreshold = value
 			applyAll()
 		end)
 

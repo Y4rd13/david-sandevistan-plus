@@ -6,8 +6,8 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 
 - **Lore-accurate defaults** — tuned to match David Martinez's Sandevistan from Cyberpunk: Edgerunners
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- 16 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
-- Native Settings UI tab with 10 subcategories
+- 21 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
+- Native Settings UI tab with 12 subcategories
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
 - No EdgeRunner perk gate — full runtime from day 1, like David in the anime
 - No health brake by default — David never had an auto-stop
@@ -89,6 +89,7 @@ Open the game menu: **Settings > Mods > Martinez Sandy+**
 | Drain Multiplier | 1–10 | 4 | Extra runtime drain with safety off |
 | Enable Safety Off Kill | on/off | on | Can V die from safety off |
 | Kill Threshold | 1–10% | 2 | Health % that triggers death |
+| Safety Off Time Dilation | 92.5%–99.5% | 97.5% | Time dilation boost when limiters are off |
 
 ### Recharge
 | Setting | Range | Default | Description |
@@ -102,6 +103,14 @@ Open the game menu: **Settings > Mods > Martinez Sandy+**
 | Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
 | Safe Activations per Day | 1–20 | 3 | Activations before psycho acceleration (Doc's warning) |
 | Psycho Acceleration per Extra Use | 5–120 | 30 | Seconds subtracted from psycho timer per extra use |
+
+### Comedown (Deactivation Debuff)
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Comedown | on/off | on | Apply debuff after deactivating Sandy |
+| Base Duration | 1–10 sec | 3.0 | Minimum comedown after short use |
+| Max Duration | 3–20 sec | 8.0 | Maximum comedown after prolonged use |
+| Scaling Threshold | 10–300 sec | 60 | Runtime used before comedown reaches max |
 
 ### Perk Gates
 | Setting | Range | Default | Description |
@@ -127,6 +136,17 @@ Both mods have their own cyberpsychosis systems that coexist:
 - **David Sandevistan Plus** — Cyberpsychosis from overusing the Sandevistan specifically
 
 With both active, V faces double pressure — which is lore-accurate: David's psychosis came from both excessive chrome AND pushing the Sandevistan past its limits.
+
+#### Dark Future Consumable Integration
+
+David Sandevistan Plus automatically detects Dark Future's consumable status effects and reacts to them:
+
+| Dark Future Consumable | Effect on our Cyberpsychosis System |
+|---|---|
+| **Immunosuppressant** | Pauses PsychoOutburst timer progression (recovers like a safe area). Blocks daily activation penalty from overuse. |
+| **Endotrisine** | Doubles psycho recovery rate in safe areas. Halves psycho acceleration from Sandevistan use and Safety Off. |
+
+No configuration needed — if Dark Future is installed and V takes these consumables, the effects apply automatically. If Dark Future is not installed, these checks are safely skipped.
 
 ## Credits
 

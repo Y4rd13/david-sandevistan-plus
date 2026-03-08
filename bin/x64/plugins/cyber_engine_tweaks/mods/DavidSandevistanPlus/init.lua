@@ -161,6 +161,15 @@ davidsapogee = {
 		dailySafeActivations = 3,        -- activations per day before psycho acceleration (Doc's warning)
 		psychoAccelPerExtraUse = 30,     -- seconds subtracted from PsychoOutburst per extra activation
 
+		-- Safety Off
+		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
+
+		-- Comedown
+		enableComedown = true,           -- apply debuff after deactivating sandevistan
+		comedownBaseDuration = 3.0,      -- base duration in seconds
+		comedownMaxDuration = 8.0,       -- max duration after long sandy use
+		comedownRuntimeThreshold = 60,   -- seconds of sandy use before comedown starts scaling
+
 		-- Perk Gates
 		requireEdgeRunnerPerk = false,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
 
@@ -188,6 +197,8 @@ davidsapogee = {
 	,RAMPerTick = -1
 	,CyberPsychoWarnings = -1
 	,dailyActivations = 0
+	,sandyStartRuntime = 0
+	,comedownTimer = nil
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
 	,Overclocking = false
@@ -387,6 +398,7 @@ davidsapogee = {
 		if not self:IsWearingApogee() then return end
 
 		self.isRunning = true
+		self.sandyStartRuntime = self.runTime
 		-- set initial charge level on startup!
 		self.OverclockExpired = false
 		self:SandevistanCharge()
@@ -394,7 +406,9 @@ davidsapogee = {
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
 			self.dailyActivations = self.dailyActivations + 1
-			if self.dailyActivations > self.cfg.dailySafeActivations then
+			-- Dark Future compat: immunosuppressant blocks psycho acceleration from overuse
+			local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+			if not dfImmuno and self.dailyActivations > self.cfg.dailySafeActivations then
 				local extraUses = self.dailyActivations - self.cfg.dailySafeActivations
 				if self.PsychoOutburst ~= nil then
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
@@ -437,7 +451,21 @@ davidsapogee = {
 		self.isRunning = false
 		if self.martinez == nil then return end
 		if not self:IsWearingApogee() then return end
-		
+
+		-- Comedown: apply debuff based on how long the sandy was active
+		if self.cfg.enableComedown then
+			local runtimeUsed = self.sandyStartRuntime - self.runTime
+			if runtimeUsed > 0 then
+				local scale = math.min(runtimeUsed / self.cfg.comedownRuntimeThreshold, 1.0)
+				local duration = self.cfg.comedownBaseDuration + (self.cfg.comedownMaxDuration - self.cfg.comedownBaseDuration) * scale
+				self.comedownTimer = duration
+				self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
+				if self.dev_mode then
+					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s')
+				end
+			end
+		end
+
 		self.runTime = math.floor(self.runTime)
 		self.OverclockExpired = false
 		self:OverClockEffect(false)
@@ -533,7 +561,7 @@ davidsapogee = {
 			Dilation = 825
 			StatusText = "Runtime Expired" -- this is for debugging only
 		elseif not self.SafetyOn then
-			Dilation = 975
+			Dilation = self.cfg.safetyOffTimeDilation
 			StatusText = "Safety Off" -- this is for debugging only
 		elseif IsOverclocking then
 			local OCDilation = 875 -- this is the mid point; OC Level and Fatigue will move it up and down
@@ -916,6 +944,15 @@ davidsapogee = {
 			end
 		end
 
+		-- Comedown timer: count down and remove effect when expired
+		if self.comedownTimer ~= nil then
+			self.comedownTimer = self.comedownTimer - dt
+			if self.comedownTimer <= 0 then
+				self.comedownTimer = nil
+				self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
+			end
+		end
+
 		self.displayTick = self.displayTick + dt
 		if self.displayTick >= 0.25 then -- tick every 1/4 second
 			self.displayTick = 0
@@ -933,18 +970,25 @@ davidsapogee = {
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				if self.PsychoOutburst ~= nil and self.cfg.enableCyberpsychosis then
+					-- Dark Future compat: detect DF consumables
+					local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+					local dfEndotrisine = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Endotrisine')
+
 					if (self.CyberPsychoWarnings == 0) then
 						self.PsychoOutburst = nil
+					elseif dfImmuno then
+						-- Immunosuppressant: pause psycho progression (recover like safe area)
+						self.PsychoOutburst = self.PsychoOutburst + 5
 					elseif self.PlayerInSafeArea or self.InDaClub then -- Safe Area
-						self.PsychoOutburst = self.PsychoOutburst + 5
+						self.PsychoOutburst = self.PsychoOutburst + (dfEndotrisine and 10 or 5)
 					elseif not self.VIsInControl then -- Scene Area
-						self.PsychoOutburst = self.PsychoOutburst + 5
+						self.PsychoOutburst = self.PsychoOutburst + (dfEndotrisine and 10 or 5)
 					elseif not self.SafetyOn then -- Safety Limiters Lifted = MORE PSYCHO
-						self.PsychoOutburst = self.PsychoOutburst - 10
+						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 5 or 10)
 					elseif self.isRunning then
-						self.PsychoOutburst = self.PsychoOutburst - 2
+						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 1 or 2)
 					else
-						self.PsychoOutburst = self.PsychoOutburst - 1
+						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 0 or 1)
 					end
 					
 					if self.PsychoOutburst ~= nil and self.PsychoOutburst > 3600 then
