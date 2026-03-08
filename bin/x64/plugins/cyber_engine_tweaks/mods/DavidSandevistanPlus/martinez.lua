@@ -86,6 +86,16 @@ martinez.PsychoWarningEffect_Medium      = 'BaseStatusEffect.MartinezSandevistan
 martinez.PsychoWarningEffect_Medium_FX1  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX1'
 martinez.PsychoWarningEffect_Medium_FX2  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX2'
 
+martinez.PsychoLaughEffect              = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh'
+martinez.PsychoLaughEffect_FX1          = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh_FX1'
+martinez.PsychoLaughEffect_SMG          = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh_SMG'
+martinez.PsychoLaughEffect_SM1          = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh_SM1'
+
+martinez.NosebleedEffect                = 'BaseStatusEffect.MartinezSandevistan_Nosebleed'
+martinez.NosebleedEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_FX1'
+martinez.NosebleedEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SMG'
+martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SM1'
+
 martinez.OverclockStatusEffect       = 'BaseStatusEffect.MartinezSandevistan_Overclock'
 martinez.Overclock_LP                = 'BaseStatusEffect.MartinezSandevistan_Overclock_LP'
 
@@ -667,6 +677,68 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.PsychoWarningEffect_Medium_FX2,VFX_SuperHacked)
 	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX1..'.name', 'hacking_glitch_low')
 	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX2..'.name', 'status_drugged_medium')
+
+	-- PsychoLaughEffect: perk_edgerunner_player VFX only (the laugh), 3s, no Sandy block
+	self:CreateStatusEffect(self.PsychoLaughEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoLaughEffect_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.PsychoLaughEffect_SMG --duration
+		,false --dynamicDuration
+		,{'Buff','InFury'} --gameplayTags
+		,{} --immunityStats
+		,true --isAffectedByTimeDilationNPC
+		,true --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages (no Sandy block, no Kiroshi off)
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData (no icon — ambient effect)
+	})
+	self:CreateStatModifierGroup(self.PsychoLaughEffect_SMG, { false, false, {}, false, {self.PsychoLaughEffect_SM1}, -1, nil })
+	self:CreateConstantStatModifier(self.PsychoLaughEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 3.0 })
+	self:CloneRecord(self.PsychoLaughEffect_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoLaughEffect_FX1..'.name', 'perk_edgerunner_player')
+
+	-- NosebleedEffect: brief red VFX pulse on overuse (3s)
+	self:CreateStatusEffect(self.NosebleedEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.NosebleedEffect_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.NosebleedEffect_SMG --duration
+		,false --dynamicDuration
+		,{'Debuff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData
+	})
+	self:CreateStatModifierGroup(self.NosebleedEffect_SMG, { false, false, {}, false, {self.NosebleedEffect_SM1}, -1, nil })
+	self:CreateConstantStatModifier(self.NosebleedEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 3.0 })
+	self:CloneRecord(self.NosebleedEffect_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.NosebleedEffect_FX1..'.name', 'burnout_glitch')
 
 	self:CreateStatusEffect(self.OverclockStatusEffect,{
 		 '' --AIData

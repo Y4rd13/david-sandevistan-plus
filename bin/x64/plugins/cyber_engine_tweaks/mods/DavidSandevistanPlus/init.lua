@@ -214,6 +214,11 @@ davidsapogee = {
 	,isPhotoMode = false
 	,VIsDead = false
 	,VIsInControl = false
+	-- Lore effects state
+	,tremor = { intensity = 0, time = 0 }
+	,fovPulse = nil  -- { elapsed = 0, duration = 0.4, baseFOV = nil }
+	,nextLaughTime = nil  -- os.clock() timestamp for next psycho laugh
+	,terminalClarity = nil  -- { elapsed = 0, duration = 2.5 }
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -317,6 +322,8 @@ davidsapogee = {
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
 		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoSafetyOffEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoLaughEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.NosebleedEffect)
 	 end)
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
@@ -461,6 +468,12 @@ davidsapogee = {
 				end
 			end
 			self.qs:SaveDailyActivations(self.dailyActivations)
+
+			-- Nosebleed VFX on overuse (David bleeds from the nose in Ep 2,3,5,9)
+			self:Nosebleed()
+
+			-- Exhaustion check: collapse at extreme overuse (David passes out in Ep 2)
+			self:ExhaustionCheck()
 		end
 
 		-- If you can start the sandy, you can use the Menus
@@ -469,6 +482,9 @@ davidsapogee = {
 		self.lastTick = self.TickLength + 0.001 -- TICK NOW!
 		self.bbs:StartSandevistan()
 		self.displayTick = 1 -- do the display straight away!
+
+		-- FOV pulse on activation (perception shift like in the anime)
+		self.fovPulse = { elapsed = 0, duration = 0.4, baseFOV = nil }
 	 end)
 	,End = (function(self)
 		self.isRunning = false
@@ -497,6 +513,20 @@ davidsapogee = {
 		self:SaveGame('Apogee:End()')
 	 end)
 	,KillV = (function(self)
+		-- Terminal clarity: David snaps out of psychosis right before death (Ep 10)
+		-- Remove all VFX for a brief moment of lucidity before flatline
+		self:RemoveAllPsychoVFX()
+		self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
+		self.tremor.intensity = 0
+		self:StopHeartbeat()
+		self.nextLaughTime = nil
+		self.bbs:SendMessage("...", 2.0)
+		self.terminalClarity = { elapsed = 0, duration = 2.5 }
+	 end)
+	,KillV_Execute = (function(self)
+		self.terminalClarity = nil
+		self.bbs:SendWarning("SYSTEM FAILURE — NEURAL COLLAPSE", 4.0)
 		self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
 		self.VIsDead = true
 		self.OutstandingBuff = 6
@@ -728,8 +758,8 @@ davidsapogee = {
 			print('Cyberpsycho: PreventionSystem/OnHeatChanged(PreviousStage:'..tostring(previousHeatLevel.value)..'=>'..tostring(currentHeatLevel.value)..' Reason:'..tostring(ChangeReason)..')')
 		end
 	 end)
-	,BleedingEffect = (function(self)
-		if self.runTime > 0 then
+	,BleedingEffect = (function(self, forcePsycho)
+		if self.runTime > 0 and not forcePsycho then
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
 			if self.cfg.enableCyberpsychosis then
@@ -853,6 +883,149 @@ davidsapogee = {
 		self:SandevistanEdgeRunnerCheck()
 		self.sps:SandevistanCharge(self:Calculate_SandevistanCharge())
 	 end)
+	----------------------------------------------------------------
+	-- Lore effects: camera tremor, FOV pulse, psycho laugh, terminal clarity
+	----------------------------------------------------------------
+	,UpdateTremor = (function(self, dt)
+		if self.isPhotoMode or self.CachedInMenu or self.CachedBrainDance then
+			self.tremor.intensity = 0
+			return
+		end
+
+		-- Target intensity scales with psycho level
+		local target = 0
+		if self.CyberPsychoWarnings == 3 then target = 0.002
+		elseif self.CyberPsychoWarnings == 4 then target = 0.006
+		elseif self.CyberPsychoWarnings >= 5 then target = 0.012
+		end
+		-- Overuse adds tremor even before psychosis
+		if self.dailyActivations > (self.cfg.dailySafeActivations or 3) * 2 then
+			target = math.max(target, 0.004)
+		end
+
+		-- Smooth intensity transitions
+		local speed = (target > self.tremor.intensity) and 3.0 or 1.5
+		self.tremor.intensity = self.tremor.intensity + (target - self.tremor.intensity) * math.min(speed * dt, 1.0)
+
+		if self.tremor.intensity < 0.0005 then
+			self.tremor.intensity = 0
+			return
+		end
+
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		local camera = V:GetFPPCameraComponent()
+		if not camera then return end
+
+		self.tremor.time = self.tremor.time + dt
+		local i = self.tremor.intensity
+		-- Layered sine waves for organic tremor
+		local x = math.sin(self.tremor.time * 23.7) * i + math.sin(self.tremor.time * 41.3) * i * 0.5
+		local y = math.sin(self.tremor.time * 31.1) * i + math.cos(self.tremor.time * 37.9) * i * 0.5
+		pcall(function() camera:SetLocalPosition(Vector4.new(x, y, 0, 0)) end)
+	 end)
+	,UpdateFOVPulse = (function(self, dt)
+		if not self.fovPulse then return end
+
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then self.fovPulse = nil return end
+		local camera = V:GetFPPCameraComponent()
+		if not camera then self.fovPulse = nil return end
+
+		-- Capture base FOV on first frame
+		if not self.fovPulse.baseFOV then
+			local ok, fov = pcall(function() return camera:GetFOV() end)
+			if not ok or not fov or fov < 10 then
+				self.fovPulse = nil
+				return
+			end
+			self.fovPulse.baseFOV = fov
+		end
+
+		self.fovPulse.elapsed = self.fovPulse.elapsed + dt
+		local t = self.fovPulse.elapsed / self.fovPulse.duration
+
+		if t >= 1.0 then
+			pcall(function() camera:SetFOV(self.fovPulse.baseFOV) end)
+			self.fovPulse = nil
+		else
+			local fovBoost = math.sin(t * math.pi) * 12
+			pcall(function() camera:SetFOV(self.fovPulse.baseFOV + fovBoost) end)
+		end
+	 end)
+	,UpdateTerminalClarity = (function(self, dt)
+		if not self.terminalClarity then return end
+		self.terminalClarity.elapsed = self.terminalClarity.elapsed + dt
+		if self.terminalClarity.elapsed >= self.terminalClarity.duration then
+			self:KillV_Execute()
+		end
+	 end)
+	,PsychoLaugh = (function(self)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 4 then
+			self.nextLaughTime = nil
+			return
+		end
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
+
+		local now = os.clock()
+		if self.nextLaughTime == nil then
+			self.nextLaughTime = now + math.random(10, 30)
+			return
+		end
+
+		if now < self.nextLaughTime then return end
+
+		-- Apply perk_edgerunner_player VFX (the laugh) — same effect as the EdgeRunner perk fury
+		self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+
+		if self.CyberPsychoWarnings >= 5 then
+			self.nextLaughTime = now + math.random(15, 45)
+		else
+			self.nextLaughTime = now + math.random(30, 90)
+		end
+	 end)
+	,Heartbeat = (function(self)
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		-- Heartbeat at psycho 3+ when idle, or during Sandy + low health
+		local shouldBeat = false
+		if self.CyberPsychoWarnings >= 3 and not self.isRunning then
+			shouldBeat = true
+		elseif self.isRunning and self.sps:getHealth(true) < 30 then
+			shouldBeat = true
+		end
+		if not shouldBeat then return end
+
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		pcall(function() V:PlaySoundEvent("gmpl_turret_heartbeat_loop_start") end)
+	 end)
+	,StopHeartbeat = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		pcall(function() V:PlaySoundEvent("gmpl_turret_heartbeat_loop_stop") end)
+	 end)
+	,Nosebleed = (function(self)
+		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.dailyActivations <= (self.cfg.dailySafeActivations or 3) then return end
+		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+	 end)
+	,ExhaustionCheck = (function(self)
+		-- Exhaustion collapse: David passes out after 8 uses in Ep 2
+		-- Trigger at 3x safe activations — forced deactivation + stagger
+		if not self.cfg.enableCyberpsychosis then return end
+		local threshold = (self.cfg.dailySafeActivations or 3) * 3
+		if self.dailyActivations < threshold then return end
+		if not self.isRunning then return end
+
+		self.sps:EndSandevistan()
+		self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun')
+		self.bbs:SendWarning("NEURAL OVERLOAD — SYSTEM SHUTDOWN", 4.0)
+		-- Force a brief cooldown by draining some runtime
+		self.runTime = math.max(self.runTime - 30, 0)
+		self:SaveGame("ExhaustionCollapse")
+	 end)
 	,CachedInMenu = true
 	,CachedBrainDance = false
 	,Running = (function(self,dt)
@@ -918,10 +1091,10 @@ davidsapogee = {
 						self:OutOfRuntime(true)
 					end
 				elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
-					-- Safety OFF + health critical: BleedingEffect triggers psycho escalation
+					-- Safety OFF + health critical: force psycho escalation even if runtime > 0
 					-- Death only comes from PsychoOutburst timer expiring at level 5
 					self.sps:EndSandevistan()
-					self:BleedingEffect()
+					self:BleedingEffect(true)
 				elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 					-- Safety OFF + low runtime + injured: bleeding warning
 					self:OutOfRuntime(true)
@@ -990,12 +1163,14 @@ davidsapogee = {
 						self.CyberPsychoWarnings = self.CyberPsychoWarnings - 1
 						if self.CyberPsychoWarnings == 0 then
 							self.PsychoOutburst = nil
+							self:StopHeartbeat()
 							self.bbs:SendMessage("PSYCHOSIS CLEARED — SYSTEMS NOMINAL", 3.0)
 						else
 							self.PsychoOutburst = 61
 							local recLevelNames = { "I", "II", "III", "IV" }
 							self.bbs:SendMessage("RECOVERING — PSYCHOSIS LEVEL "..tostring(recLevelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings), 3.0)
 						end
+						if self.CyberPsychoWarnings < 3 then self:StopHeartbeat() end
 						self:DisableSandevistan("PsychoOutburst")
 						self:SaveGame("Psycho Safe Area")
 					elseif self.PsychoOutburst ~= nil and self.PsychoOutburst <= 0 then
@@ -1004,7 +1179,6 @@ davidsapogee = {
 							self.runTime = 0
 							self.sps:EndSandevistan()
 							if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
-								self.bbs:SendWarning("SYSTEM FAILURE — FLATLINE", 4.0)
 								self:KillV()
 							else
 								self:Safety(true,true)
@@ -1041,8 +1215,10 @@ davidsapogee = {
 						self.ViktorCooldown = nil
 					end
 				end
+				self:Heartbeat()
 			elseif self.displayTick2 == 3 then -- 1/sec +0.75 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
+				self:PsychoLaugh()
 				if self.LoadThreeTimer ~= nil then
 					self.LoadThreeTimer = self.LoadThreeTimer - 1
 					if self.LoadThreeTimer <= 0 then
@@ -1759,6 +1935,9 @@ end)
 
 registerForEvent('onUpdate', function(dt)
     davidsapogee:Running(dt)
+    davidsapogee:UpdateTremor(dt)
+    davidsapogee:UpdateFOVPulse(dt)
+    davidsapogee:UpdateTerminalClarity(dt)
 end)
 
 registerForEvent("onDraw", function()

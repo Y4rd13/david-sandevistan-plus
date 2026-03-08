@@ -4,7 +4,7 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 
 ## Features
 
-- **Lore-accurate defaults** — tuned to match David Martinez's Sandevistan from Cyberpunk: Edgerunners
+- **Lore-accurate defaults** — Safety OFF from the start, like David in Edgerunners
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
 - 21 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
 - Native Settings UI tab with 12 subcategories
@@ -12,6 +12,46 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 - No EdgeRunner perk gate — full runtime from day 1, like David in the anime
 - No health brake by default — David never had an auto-stop
 - Config persists across sessions via `config.json`
+
+### Custom HUD
+
+A visual HUD overlay replaces the original text-only display:
+- **Runtime bar** — color-coded green/yellow/red with time dilation percentage
+- **Status line** — activation count, contextual status (Safety Off, Comedown, Recovering)
+- **Psycho bar** — only visible when cyberpsychosis is active, with level and timer
+
+### Progressive Cyberpsychosis
+
+A 5-level system inspired by David Martinez's descent in Edgerunners:
+
+| Level | Name | Persistent VFX | Gameplay |
+|-------|------|---------------|----------|
+| 0 | Normal | None | Full functionality |
+| 1 | Unstable | None | 12s MartinezFury episodes on overload |
+| 2 | Glitching | None | 12s MartinezFury episodes, faster timer |
+| 3 | Losing It | Subtle glitch | Persistent `hacking_glitch_low` VFX |
+| 4 | On The Edge | Medium distortion | Persistent glitch + drugged VFX |
+| 5 | Cyberpsycho | Full psychosis | 4 simultaneous VFX, immunities, last stand |
+
+**Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Death only comes when the PsychoOutburst timer runs out.
+
+**Safety ON at Level 5:** Sandy is blocked, Kiroshi optics disabled, V must sleep or recover in a safe area.
+
+### On-Screen Notifications
+
+18 contextual notifications keep the player informed using in-world language:
+
+| Event | Example | Type |
+|-------|---------|------|
+| Game load | `SANDEVISTAN ONLINE — 180/300s — SAFETY OFF` | Info |
+| Activation | `SANDEVISTAN — TIME DILATION 97.5% \| PSYCHOSIS III` | Info |
+| Overuse | `OVERUSE — 4 ACTIVATIONS TODAY (SAFE: 3) — REST RECOMMENDED` | Warning |
+| Low runtime | `LOW RUNTIME: 12s — DEACTIVATE OR RISK EPISODE` | Warning |
+| Cooldown | `SYSTEM COOLDOWN — 5s` | Info |
+| Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | Warning |
+| Psycho recovery | `RECOVERING — PSYCHOSIS LEVEL II` | Info |
+| Death | `SYSTEM FAILURE — FLATLINE` | Warning |
+| Sleep | `RECHARGED +120s — RUNTIME: 180/300s` | Info |
 
 ## Requirements
 
@@ -31,7 +71,9 @@ Cyberpunk 2077/
 └── bin/x64/plugins/cyber_engine_tweaks/mods/
     ├── DavidSandevistanPlus/
     │   ├── init.lua
-    │   └── martinez.lua
+    │   ├── martinez.lua
+    │   ├── hud.lua
+    │   └── gui.lua
     └── MartinezPLUS/
         └── init.lua
 ```
@@ -124,6 +166,29 @@ Open the game menu: **Settings > Mods > Martinez Sandy+**
 ### Daily Activation Counter
 
 Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each activation beyond the safe limit accelerates the cyberpsychosis timer. The effect stacks — the more you overuse it, the faster psychosis progresses. Counter resets when V sleeps.
+
+### Cyberpsychosis Flow
+
+```
+Activate Sandy → health drains → runtime depletes
+  └─ Health critical + RT=0 → BleedingEffect()
+      └─ CyberPsychoWarnings++ (1→5)
+      └─ FrightenNPCs() → MartinezFury (12s Sandy disabled, NPCs flee)
+      └─ PsychoOutburst timer starts (5-60 min random)
+
+PsychoOutburst timer ticks down:
+  ├─ Safety OFF: -10s/tick (accelerated)
+  ├─ Sandy active: -2s/tick
+  ├─ Idle: -1s/tick
+  ├─ Safe area / Club: +5s/tick (recovery)
+  └─ Timer reaches 0 → forced episode OR death at level 5
+
+Recovery:
+  ├─ Safe areas / clubs: gradual recovery (+5s/tick on timer)
+  ├─ Sleep ≥ 8hrs: full psychosis cure
+  ├─ Sleep < 8hrs at level 5: reduced to level 1
+  └─ Visit Viktor: equivalent to 8hr rest (5min cooldown)
+```
 
 ## Compatibility
 
