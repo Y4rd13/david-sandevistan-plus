@@ -370,7 +370,7 @@ davidsapogee = {
 		if RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
 			self.CyberPsychoWarnings = 1 -- no free lunch for the cyberpsycho; full night's sleep or the psychosis cycle continues tomorrow.
 			self:Calculate_PsychoOutburst() -- reset the timer
-			self.bbs:SendWarning("SHORT SLEEP — PSYCHOSIS REDUCED BUT NOT CURED", 4.0)
+			self.bbs:SendWarning("PARTIAL REST — PSYCHOSIS REDUCED TO LEVEL I — FULL NIGHT REQUIRED", 5.0)
 		else
 			self.CyberPsychoWarnings = 0
 			if prevPsycho > 0 then
@@ -394,7 +394,7 @@ davidsapogee = {
 		self.rechargeNotification = math.floor(self.runTime - oldRuntime)
 		self.rechargeNotificationTimer = 8
 		if self.rechargeNotification > 0 then
-			self.bbs:SendMessage("RUNTIME RECHARGED: +"..tostring(self.rechargeNotification).."s ("..tostring(math.floor(self.runTime)).."/"..tostring(self.MaxRuntime).."s)", 3.0)
+			self.bbs:SendMessage("RECHARGED +"..tostring(self.rechargeNotification).."s — RUNTIME: "..tostring(math.floor(self.runTime)).."/"..tostring(self.MaxRuntime).."s", 3.0)
 		end
 
 		self:SaveGame('Apogee:Rested()')
@@ -435,12 +435,12 @@ davidsapogee = {
 
 		-- Activation notification
 		local dilation = self.TimeDilationActualSpeed or 85
-		local activationMsg = "SANDEVISTAN ACTIVE — "..tostring(dilation).."%"
+		local activationMsg = "SANDEVISTAN — TIME DILATION "..tostring(dilation).."%"
 		if self.CyberPsychoWarnings > 0 then
 			local levelNames = { "I", "II", "III", "IV", "V" }
-			activationMsg = activationMsg.." | PSYCHOSIS: "..tostring(levelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings)
+			activationMsg = activationMsg.." | PSYCHOSIS "..tostring(levelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings)
 		end
-		self.bbs:SendMessage(activationMsg, 2.5)
+		self.bbs:SendMessage(activationMsg, 3.0)
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
@@ -455,7 +455,7 @@ davidsapogee = {
 					self:Calculate_PsychoOutburst()
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
 				end
-				self.bbs:SendWarning("OVERUSE WARNING — PSYCHOSIS ACCELERATING ("..tostring(self.dailyActivations).."/"..tostring(self.cfg.dailySafeActivations)..")", 3.0)
+				self.bbs:SendWarning("OVERUSE — "..tostring(self.dailyActivations).." ACTIVATIONS TODAY (SAFE: "..tostring(self.cfg.dailySafeActivations)..") — REST RECOMMENDED", 4.0)
 				if self.dev_mode then
 					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(self.cfg.dailySafeActivations)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
 				end
@@ -483,7 +483,7 @@ davidsapogee = {
 				local duration = self.cfg.comedownBaseDuration + (self.cfg.comedownMaxDuration - self.cfg.comedownBaseDuration) * scale
 				self.comedownTimer = duration
 				self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
-				self.bbs:SendMessage("COMEDOWN — "..string.format("%.1f", duration).."s", 2.0)
+				self.bbs:SendMessage("SYSTEM COOLDOWN — "..tostring(math.floor(duration)).."s", 2.5)
 				if self.dev_mode then
 					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s')
 				end
@@ -732,18 +732,17 @@ davidsapogee = {
 		if self.runTime > 0 then
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
-			self.bbs:SendWarning("SANDEVISTAN: RUNTIME DEPLETED", 3.0)
 			if self.cfg.enableCyberpsychosis then
 				if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
 				local psychoMessages = {
-					[1] = "CYBERPSYCHOSIS — LEVEL I: UNSTABLE",
-					[2] = "CYBERPSYCHOSIS — LEVEL II: GLITCHING",
-					[3] = "CYBERPSYCHOSIS — LEVEL III: LOSING IT",
-					[4] = "CYBERPSYCHOSIS — LEVEL IV: ON THE EDGE",
-					[5] = "CYBERPSYCHO — YOU ARE LOSING YOUR MIND",
+					[1] = { msg = "CYBERPSYCHOSIS I — NEURAL INSTABILITY DETECTED", dur = 4.0 },
+					[2] = { msg = "CYBERPSYCHOSIS II — SENSORY GLITCHES INCREASING", dur = 4.0 },
+					[3] = { msg = "CYBERPSYCHOSIS III — LOSING GRIP ON REALITY", dur = 5.0 },
+					[4] = { msg = "CYBERPSYCHOSIS IV — CRITICAL — REST NOW", dur = 5.0 },
+					[5] = { msg = "CYBERPSYCHO V — POINT OF NO RETURN", dur = 6.0 },
 				}
-				local msg = psychoMessages[self.CyberPsychoWarnings]
-				if msg then self.bbs:SendWarning(msg, 5.0) end
+				local entry = psychoMessages[self.CyberPsychoWarnings]
+				if entry then self.bbs:SendWarning(entry.msg, entry.dur) end
 				self:FrightenNPCs()
 			end
 			self:DisableSandevistan("BleedingEffect()")
@@ -880,7 +879,7 @@ davidsapogee = {
 				-- Low runtime warning (once per activation)
 				if not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
 					self.lowRuntimeWarned = true
-					self.bbs:SendWarning("LOW RUNTIME: "..tostring(math.floor(self.runTime)).."s", 2.5)
+					self.bbs:SendWarning("LOW RUNTIME: "..tostring(math.floor(self.runTime)).."s — DEACTIVATE OR RISK EPISODE", 3.0)
 				end
 
 				self:CalcDamage()
@@ -994,7 +993,8 @@ davidsapogee = {
 							self.bbs:SendMessage("PSYCHOSIS CLEARED — SYSTEMS NOMINAL", 3.0)
 						else
 							self.PsychoOutburst = 61
-							self.bbs:SendMessage("PSYCHOSIS LEVEL DOWN — "..tostring(self.CyberPsychoWarnings), 3.0)
+							local recLevelNames = { "I", "II", "III", "IV" }
+							self.bbs:SendMessage("RECOVERING — PSYCHOSIS LEVEL "..tostring(recLevelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings), 3.0)
 						end
 						self:DisableSandevistan("PsychoOutburst")
 						self:SaveGame("Psycho Safe Area")
@@ -1101,7 +1101,8 @@ davidsapogee = {
 		end
 		if self:IsWearingApogee() then
 			local rt = math.floor(self.runTime)
-			self.bbs:SendMessage("SANDEVISTAN LOADED — RUNTIME: "..tostring(rt).."/"..tostring(self.MaxRuntime).."s", 3.0)
+			local safetyState = self.SafetyOn and "SAFETY ON" or "SAFETY OFF"
+			self.bbs:SendMessage("SANDEVISTAN ONLINE — "..tostring(rt).."/"..tostring(self.MaxRuntime).."s — "..safetyState, 3.5)
 		end
 	 end)
 	,LoadGame = (function(self,GameLoadIndex)
