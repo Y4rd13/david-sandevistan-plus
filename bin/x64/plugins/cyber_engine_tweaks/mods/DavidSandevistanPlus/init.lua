@@ -1021,7 +1021,7 @@ davidsapogee = {
 		end
 	 end)
 	,LoadGamePart2 = (function(self)
-		self:Safety(true,true)
+		self:Safety(false)
 		self:TimeDilationEffects()
 		self:SandevistanEdgeRunnerCheck()
 		self.LoadGameRun = true
