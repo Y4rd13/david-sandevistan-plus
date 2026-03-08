@@ -1,0 +1,15 @@
+*.log
+*.sqlite3
+config.json
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
