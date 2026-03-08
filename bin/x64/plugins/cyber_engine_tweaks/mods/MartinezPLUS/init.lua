@@ -112,33 +112,40 @@ local function initUI()
 	------------------------------------------------------------
 	nativeSettings.addSubcategory(catTD, "Time Dilation")
 
-	local timescaleList = {
-		[1]  = "0.15",    -- 85%   (Default)
-		[2]  = "0.10",    -- 90%
-		[3]  = "0.075",   -- 92.5%
-		[4]  = "0.05",    -- 95%
-		[5]  = "0.025",   -- 97.5%
-		[6]  = "0.01",    -- 99%
-		[7]  = "0.0075",  -- 99.25%
-		[8]  = "0.0065",  -- 99.35% (Recommended limit)
-		[9]  = "0.005",   -- 99.5%
-		[10] = "0.0035",  -- 99.65%
-		[11] = "0.001",   -- 99.9%
+	local timescaleData = {
+		{ label = "85% (Default)",          value = 0.15   },
+		{ label = "90%",                    value = 0.10   },
+		{ label = "92.5%",                  value = 0.075  },
+		{ label = "95%",                    value = 0.05   },
+		{ label = "97.5%",                  value = 0.025  },
+		{ label = "99%",                    value = 0.01   },
+		{ label = "99.25%",                 value = 0.0075 },
+		{ label = "99.35% (Recommended)",   value = 0.0065 },
+		{ label = "99.5%",                  value = 0.005  },
+		{ label = "99.65%",                 value = 0.0035 },
+		{ label = "99.9%",                  value = 0.001  },
 	}
+
+	local timescaleLabels = {}
+	local timescaleValues = {}
+	for i, opt in ipairs(timescaleData) do
+		timescaleLabels[i] = opt.label
+		timescaleValues[i] = opt.value
+	end
 
 	nativeSettings.addSelectorString(
 		catTD,
 		"Time Dilation Speed",
-		"Base time scale while Sandevistan is active. Lower = slower time.\n"
-			.. "Default: 0.15 (85% slowdown).\n"
-			.. "Recommended limit: 0.0065 (99.35%). Values below may cause visual glitches.\n"
+		"How much time slows down while Sandevistan is active. Higher % = slower.\n"
+			.. "Default: 85%. Recommended limit: 99.35%.\n"
+			.. "Values above 99.35% may cause visual glitches.\n"
 			.. "Safety Off and Overclock still stack on top of this.",
-		timescaleList,
+		timescaleLabels,
 		cfg.timedilationOption,
 		defaults.timedilationOption,
 		function(value)
 			cfg.timedilationOption = value
-			cfg.timedilationSpeed = tonumber(timescaleList[value])
+			cfg.timedilationSpeed = timescaleValues[value]
 			setTweaks()
 			saveConfig()
 		end)
@@ -150,8 +157,11 @@ local function initUI()
 
 	nativeSettings.addRangeInt(
 		catDC,
-		"Sandevistan Duration (sec)",
-		"How long the Sandevistan stays active in seconds.",
+		"Runtime Tank (sec)",
+		"Total runtime reservoir for the Sandevistan in seconds. (Default: 300)\n"
+			.. "This is NOT real-time duration. It drains at different rates:\n"
+			.. "Normal: 1s/tick | Safety Off: 5s/tick | Overclock: 33% reduced.\n"
+			.. "Recharges by sleeping, visiting ripperdocs, or staying in safe zones.",
 		1, 600, 1,
 		cfg.sandyDuration,
 		defaults.sandyDuration,
@@ -164,7 +174,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Recharge Duration",
-		"Time in seconds for the Sandevistan to recharge.",
+		"Base recharge time in seconds after Sandevistan deactivates. (Default: 2.0)",
 		0.5, 30.0, 0.5, "%.1f",
 		cfg.rechargeDuration,
 		defaults.rechargeDuration,
@@ -177,7 +187,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Cooldown Base",
-		"Base cooldown multiplier for the Sandevistan.",
+		"Base cooldown multiplier after Sandevistan deactivates. (Default: 1.0)\n"
+			.. "Lower values = shorter cooldown between activations.",
 		0.1, 10.0, 0.1, "%.1f",
 		cfg.cooldownBase,
 		defaults.cooldownBase,
@@ -190,7 +201,9 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Activation Cost",
-		"Stamina cost to activate the Sandevistan. Set to 0 to remove.",
+		"Stamina cost when activating the Sandevistan. (Default: 0.1)\n"
+			.. "Set to 0 to remove the activation cost entirely.\n"
+			.. "With Adrenaline Rush enabled, this cost is shunted through V's chip instead.",
 		0.0, 1.0, 0.05, "%.2f",
 		cfg.enterCost,
 		defaults.enterCost,
@@ -203,7 +216,7 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catDC,
 		"Kill Recharge Value",
-		"Sandevistan recharge gained per kill.",
+		"Runtime recharged per enemy killed while Sandevistan is active. (Default: 0.0)",
 		0.0, 50.0, 0.5, "%.1f",
 		cfg.killRechargeValue,
 		defaults.killRechargeValue,
@@ -221,7 +234,8 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catCS,
 		"Critical Chance",
-		"Bonus crit chance while Sandevistan is active.",
+		"Bonus critical hit chance while Sandevistan is active. (Default: 20)\n"
+			.. "Only applies during time dilation, requires TimeDilation PSM prereq.",
 		0, 100, 1,
 		cfg.critChance,
 		defaults.critChance,
@@ -234,7 +248,8 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catCS,
 		"Critical Damage",
-		"Bonus crit damage while Sandevistan is active.",
+		"Bonus critical hit damage while Sandevistan is active. (Default: 20)\n"
+			.. "Only applies during time dilation, requires TimeDilation PSM prereq.",
 		0, 500, 1,
 		cfg.critDamage,
 		defaults.critDamage,
@@ -247,7 +262,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catCS,
 		"Headshot Damage Multiplier",
-		"Multiplier applied to headshot damage during Sandevistan.",
+		"Multiplier for headshot damage during Sandevistan. (Default: 1.2)\n"
+			.. "1.2 = 20% bonus headshot damage. Uses Cool stat scaling.",
 		1.0, 5.0, 0.1, "%.1f",
 		cfg.headshotDamageMultiplier,
 		defaults.headshotDamageMultiplier,
@@ -265,7 +281,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catOK,
 		"Heal on Kill (%)",
-		"Percentage of health restored when killing an enemy.",
+		"Percentage of V's health restored per kill during Sandevistan. (Default: 5)\n"
+			.. "Replaces the standard duration-on-kill since Martinez has infinite duration.",
 		0.0, 50.0, 0.5, "%.1f",
 		cfg.healOnKill,
 		defaults.healOnKill,
@@ -278,7 +295,8 @@ local function initUI()
 	nativeSettings.addRangeFloat(
 		catOK,
 		"Stamina on Kill",
-		"Stamina restored when killing an enemy.",
+		"Stamina restored per kill during Sandevistan. (Default: 22)\n"
+			.. "Triggered by any takedown or kill while time dilation is active.",
 		0.0, 100.0, 1.0, "%.0f",
 		cfg.staminaOnKill,
 		defaults.staminaOnKill,
