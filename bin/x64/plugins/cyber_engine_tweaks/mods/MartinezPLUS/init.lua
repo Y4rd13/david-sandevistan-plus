@@ -1,8 +1,8 @@
--- MartinezPLUS - Tuner for David's Apogee (Martinez Sandevistan)
--- Requires: nativeSettings, DavidsApogee (forked)
+-- MartinezPLUS - Tuner for David Sandevistan Plus
+-- Requires: nativeSettings, DavidSandevistanPlus
 
 local RecordName = "Items.MartinezSandevistanPlusPlus"
-local apogeeConfigFile = "../DavidsApogee/config.json"
+local apogeeConfigFile = "../DavidSandevistanPlus/config.json"
 
 local defaults = {
 	-- TweakDB values

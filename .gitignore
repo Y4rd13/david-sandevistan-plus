@@ -3,6 +3,9 @@
 config.json
 *.zip
 
+# WolvenKit
+wolven/
+
 # OS
 .DS_Store
 Thumbs.db

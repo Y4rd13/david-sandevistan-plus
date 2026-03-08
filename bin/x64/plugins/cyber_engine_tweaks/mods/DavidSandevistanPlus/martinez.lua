@@ -213,11 +213,11 @@ function martinez.CreateSandevistan(self)
 	TweakDB:SetFlat(self.RecordName..'.canDrop', false)
 	TweakDB:SetFlat(self.RecordName..'.crosshair', 'Crosshairs.None')
 	TweakDB:SetFlat(self.RecordName..'.cyberwareType', CName('Sandevistan'))
-	TweakDB:SetFlat(self.RecordName..'.displayName', LocKey('DavidsApogee-Name'))
+	TweakDB:SetFlat(self.RecordName..'.displayName', LocKey('DavidSandevistanPlus-Name'))
 	TweakDB:SetFlat(self.RecordName..'.dropObject', 'None')
 	TweakDB:SetFlat(self.RecordName..'.entityName', 'cyberware_dummy')
 	TweakDB:SetFlat(self.RecordName..'.equipArea', 'EquipmentArea.SystemReplacementCW')
-	TweakDB:SetFlat(self.RecordName..'.friendlyName', 'David\'s Sandevistan')
+	TweakDB:SetFlat(self.RecordName..'.friendlyName', 'David Sandevistan Plus')
 	TweakDB:SetFlat(self.RecordName..'.gameplayRestrictions', {'GameplayRestriction.VehicleCombatNoInterruptions'})
 	if self.UseDavidsIcon then
 		TweakDB:SetFlat(self.RecordName..'.icon', 'UIIcon.MartinezSandevistanPlusPlus')
@@ -229,7 +229,7 @@ function martinez.CreateSandevistan(self)
 	TweakDB:SetFlat(self.RecordName..'.isCoreCW', true)
 	TweakDB:SetFlat(self.RecordName..'.itemCategory', 'ItemCategory.Cyberware')
 	TweakDB:SetFlat(self.RecordName..'.itemType', 'ItemType.Cyberware')
-	TweakDB:SetFlat(self.RecordName..'.localizedDescription', LocKey('DavidsApogee-Desc'))
+	TweakDB:SetFlat(self.RecordName..'.localizedDescription', LocKey('DavidSandevistanPlus-Desc'))
 	TweakDB:SetFlat(self.RecordName..'.mass', 1.0)
 	TweakDB:SetFlat(self.RecordName..'.minigameInstance', 'minigame_v2.DefaultItemMinigame')
 	--TweakDB:SetFlat(self.RecordName..'.nextUpgradeItem', '')
@@ -245,7 +245,7 @@ function martinez.CreateSandevistan(self)
 	TweakDB:SetFlat(self.RecordName..'.variants', {'Variants.Humanity44Cost'})
 
 	--[[ UI Icon ]]
-	self:CreateUIIcon(self.UIIcon, { 'davidsapogee\\icons.inkatlas', 'David_Martinez_Sandevistan' })
+	self:CreateUIIcon(self.UIIcon, { 'davidsandevistanplus\\icons.inkatlas', 'David_Sandevistan_Plus' })
 	
 	--[[ UI STATS ]]
 	self:CreateLogicPackage(self.Equip1, { self.Equip1_UI, {}, {}, {}, 'None', false, {}, {} })
@@ -685,7 +685,7 @@ function martinez.CreateNew_FX_Status_Effects(self)
 	wCEI_npc_optical_blur:AddEffectEventInfo(CreateCRUID(2849061056490119168),31,1) -- PlacementSlot MASK: 1+2+4+8+16+32...
 	wCEI_npc_optical_blur:Finished()
 
-	self.entEffects:CreateCustomEffect('npc',self.martinez_npc_optical_blur,"davidsapogee\\martinez_npc_blur.effect",wCEI_npc_optical_blur)
+	self.entEffects:CreateCustomEffect('npc',self.martinez_npc_optical_blur,"davidsandevistanplus\\martinez_npc_blur.effect",wCEI_npc_optical_blur)
 	
 	self.entEffects:Finalize('npc')
 end
