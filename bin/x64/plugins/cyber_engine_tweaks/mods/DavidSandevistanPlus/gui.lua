@@ -40,14 +40,10 @@ gui.drawUIWindow = (function(self)
 	local NetRunnerLevelText = l['Debug_SectionRunner_'..NetRunnerLevels.str]
 	local IsWearingApogee = NetRunnerLevels.IsWearingApogee
 	local mfloor = math.floor
-	local sliderRAMOrig = mfloor(self.Apogee.HealthRAMBalance/10)
-	local sliderRAM = sliderRAMOrig
 	local sliderBrakeOrig = self.Apogee.HealthBrake
-	local checkSpilloverOrig = self.Apogee.Spillover
-	local checkSpillover = checkSpilloverOrig
 	local sliderBrake = sliderBrakeOrig
 	local CanBribeNCPD = self.Apogee:CanBribeNCPD()
-	self.Apogee:CalcDamage(NetRunnerLevels)
+	self.Apogee:CalcDamage()
 	
 	if ImGui.Begin(l.Debug_Title, ImGuiWindowFlags.None) then
 		if not NetRunnerLevels.GameLoaded then
@@ -98,11 +94,7 @@ gui.drawUIWindow = (function(self)
 				ImGui.Text(l.Debug_Section1_RunTime..clipped.." => "..tostring(runTime).."/"..tostring(MaxRuntime).." "..l.Debug_Section1_SecondsRemaining)
 				
 				if NetRunnerLevels.ApogeeReducedRuntime then
-					if self.Apogee.HealthRAMBalance ~= 100 and NetRunnerLevels.Rules.CanUnlockOverClock then
-						ImGui.Text(l.Debug_Section1_Overclock)
-					else
-						ImGui.Text(l.Debug_Section1_NotEdgeRunner)
-					end
+					ImGui.Text(l.Debug_Section1_NotEdgeRunner)
 				else
 					ImGui.Text(l.Debug_Section1_IsEdgeRunner)
 				end
@@ -164,10 +156,8 @@ gui.drawUIWindow = (function(self)
 				end
 			else
 				local RAMText = l.Debug_SectionRunner_Perk_RequiresCyberdeck
-				local TimeDilation = 850
-				local ActualDilation = 85
-				local DilationText = ''
-				Dilation, ActualDilation, StatusText = self.Apogee:TimeDilationCalculator(true)
+					local timeScale, StatusText = self.Apogee:TimeDilationCalculator(true)
+				local ActualDilation = math.floor((1 - timeScale) * 1000 + 0.5) / 10
 				if NetRunnerLevels.IsWearingCyberDeck then
 					RAMText = tostring(mfloor(self.Apogee.sps:getRAM()*10)/10)
 				end
@@ -185,156 +175,9 @@ gui.drawUIWindow = (function(self)
 					ImGui.Text(HealthMarginText)
 				end
 				
-				local HackBrakeLocked = ''
-				if not NetRunnerLevels.Rules.CanHackBrake then
-					HackBrakeLocked = ' '..l.Debug_SectionRunner_Locked
-				end
-				
-				ImGui.Separator()
-				ImGui.Text(l.Debug_SectionRunner_BrakeDesc..HackBrakeLocked)
-				ImGui.PushItemWidth(-1)
-				sliderBrake = ImGui.SliderInt('## '..l.Debug_SectionRunner_BRAKE, sliderBrake, 15, 50, "%d")
-				if type(sliderBrake) == 'number' and NetRunnerLevels.Rules.CanEditParameters then
-					if sliderBrakeOrig ~= sliderBrake then
-						self.Apogee.HealthBrake = mfloor(sliderBrake)
-						self.Apogee:SaveGame('gui:Brake '..tostring(sliderBrakeOrig)..'=>'..tostring(sliderBrake))
-					end
-				end
-				
-				ImGui.Separator()
-				ImGui.Text(l.Debug_SectionRunner_AdrenalineRushDesc)
-				if NetRunnerLevels.Rules.CanBoostAdrenaline then
-					local Text_orange = {   1,  0.6, 0.1, 1, l.Debug_SectionRunner_AdrenalinesFullDesc}
-					local Text_cyan   = {0.25, 0.75,   1, 1, l.Debug_SectionRunner_AdrenalinesFullDesc}
-					local ColouredText = {}
-					
-					local checkAdrenalineRushOrig = self.Apogee.AdrenalineRush
-					local checkAdrenalineRush = checkAdrenalineRushOrig
-					checkAdrenalineRush = ImGui.Checkbox(l.Debug_SectionRunner_AdrenalinesEnable, checkAdrenalineRushOrig)
-					if checkAdrenalineRushOrig ~= checkAdrenalineRush and NetRunnerLevels.Rules.CanEditParameters then
-						self.Apogee.AdrenalineRush = checkAdrenalineRush
-						self.Apogee:SaveGame('gui=>AdrenalineRush '..tostring(checkAdrenalineRushOrig)..'=>'..tostring(checkAdrenalineRush))
-					end
-					if not self.Apogee.AdrenalineRush then
-						ColouredText = Text_orange
-						ImGui.SameLine()
-						ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-					else
-						ColouredText = Text_cyan
-						ImGui.SameLine()
-						if NetRunnerLevels.Rules.CanBoostAdrenalineBonus then
-							ImGui.Text(l.Debug_SectionRunner_AdrenalinesDesc)
-						else
-							ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Perk_CalmMind)
-						end
-					end
-					ImGui.TextColored(table.unpack(ColouredText))
-				else
-					ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-					if NetRunnerLevels.AdrenalineRush < 3 then
-						ImGui.SameLine()
-						ImGui.Text(l.Debug_SectionRunner_Perk_AdrenalineRush)
-					end
-					if NetRunnerLevels.AdrenalineRush < 4 then
-						ImGui.SameLine()
-						ImGui.Text(l.Debug_SectionRunner_Perk_CalmMind)
-					end
-					if self.Apogee.runTime == 0 then
-						ImGui.SameLine()
-						ImGui.Text(l.Debug_SectionRunner_Perk_RequiresRuntime)
-					end
-				end
-			end
-		end
-		if IsWearingApogee and isEdgeRunner and NetRunnerLevels.Rules.CanUnlockNetRunnerPort and ImGui.CollapsingHeader(l.Debug_SectionRunner_Title, ImGuiTreeNodeFlags.DefaultOpen) then
-			ImGui.Text(l.Debug_SectionRunner_SkillLevel..":"..NetRunnerLevelText)
-
-			if not NetRunnerLevels.Rules.CanEditCyberdeck then
-				ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_RuntimeLock)
-			end
-
-			ImGui.Separator()
-			ImGui.Text(l.Debug_SectionRunner_OverclockDesc)
-			if NetRunnerLevels.Rules.CanUnlockOverClock then
-				ImGui.Text(l.Debug_SectionRunner_RAM)
-				ImGui.SameLine()
-				local HealthSize, _ = ImGui.CalcTextSize(l.Debug_SectionRunner_HEALTH)
-				local padding = ImGui.GetStyle().ItemSpacing.x * 1.5
-				ImGui.PushItemWidth((HealthSize+padding)*-1)
-				sliderRAM = ImGui.SliderInt('## '..l.Debug_SectionRunner_HEALTH, sliderRAM, 0, 10, "%d")
-				if type(sliderRAM) == 'number' and NetRunnerLevels.Rules.CanEditCyberdeck then
-					if sliderRAMOrig ~= sliderRAM then
-						self.Apogee.HealthRAMBalance = sliderRAM*10
-						self.Apogee:SaveGame('gui=>RAM '..tostring(sliderRAMOrig)..'=>'..tostring(sliderRAM))
-					end
-				end
-				ImGui.SameLine()
-				ImGui.Text(l.Debug_SectionRunner_HEALTH)
-				ImGui.TextColored(0.25, 0.75, 1, 1, l.Debug_SectionRunner_OverclockExtra)
-			else
-				ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-				if not NetRunnerLevels.IsWearingCyberDeck then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_RequiresCyberdeck)
-				end
-				if NetRunnerLevels.OverClocker < 3 then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_OverClock3)
-				end
-				if self.Apogee.runTime == 0 then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_RequiresRuntime)
-				end
 			end
 			
-			ImGui.Separator()
-			ImGui.Text(l.Debug_SectionRunner_SpilloverDesc)
-			if NetRunnerLevels.Rules.CanRunTimeSpillOver then
-				local Text_orange = {   1,  0.6, 0.1, 1, l.Debug_SectionRunner_SpilloverFullDesc}
-				local Text_cyan   = {0.25, 0.75,   1, 1, l.Debug_SectionRunner_SpilloverFullDesc}
-				local ColouredText = {}
-				local checkSpilloverOrig = self.Apogee.Spillover
-				local checkSpillover = checkSpilloverOrig
-				checkSpillover = ImGui.Checkbox(l.Debug_SectionRunner_SpilloverEnable, checkSpilloverOrig)
-				if checkSpilloverOrig ~= checkSpillover and NetRunnerLevels.Rules.CanEditCyberdeck then
-					self.Apogee.Spillover = checkSpillover
-					self.Apogee:SaveGame('gui=>Spillover '..tostring(checkSpilloverOrig)..'=>'..tostring(checkSpillover))
-				end
-				if not self.Apogee.Spillover then
-					ColouredText = Text_orange
-					ImGui.SameLine()
-					ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-				else
-					ColouredText = Text_cyan
-				end
-				ImGui.TextColored(table.unpack(ColouredText))
-			else
-				ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-				if not NetRunnerLevels.IsWearingCyberDeck then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_RequiresCyberdeck)
-				end
-				if NetRunnerLevels.Queuer < 4 then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_QueueMastery)
-				end
-				if NetRunnerLevels.OverClocker < 4 then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_Spillover)
-				end
-				if self.Apogee.runTime == 0 then
-					ImGui.SameLine()
-					ImGui.Text(l.Debug_SectionRunner_Perk_RequiresRuntime)
-				end
-			end
 		end
-		if IsWearingApogee and isEdgeRunner and (not NetRunnerLevels.Rules.CanUnlockNetRunnerPort) and ImGui.CollapsingHeader(l.Debug_SectionRunner_Title_Locked) then
-			ImGui.Text(l.Debug_SectionRunner_SkillLevel..":"..NetRunnerLevelText)
-			ImGui.TextColored(1, 0, 0, 1, l.Debug_SectionRunner_Disabled)
-			if NetRunnerLevels.Queuer < 3 then
-				ImGui.SameLine()
-				ImGui.Text(l.Debug_SectionRunner_Perk_QueueAcceleration3)
-			end
 			if not NetRunnerLevels.IsWearingCyberDeck then
 				ImGui.SameLine()
 				ImGui.Text(l.Debug_SectionRunner_Perk_RequiresCyberdeck)

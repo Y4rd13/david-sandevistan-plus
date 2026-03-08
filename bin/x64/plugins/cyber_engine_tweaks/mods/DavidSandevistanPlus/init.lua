@@ -140,7 +140,6 @@ davidsapogee = {
 		enableHealthDrain = true,        -- toggle all health drain from sandevistan
 		damageMin = 1.0,                 -- minimum damage % per tick (at full runtime)
 		damageMax = 15.0,                -- maximum damage % per tick (at zero runtime)
-		safetyOffExtraDamage = 5,        -- extra damage per tick when safety limiters off
 
 		-- Health Brake
 		enableHealthBrake = false,       -- auto-stop sandy when V's health gets too low
@@ -171,7 +170,11 @@ davidsapogee = {
 		comedownRuntimeThreshold = 60,   -- seconds of sandy use before comedown starts scaling
 
 		-- Perk Gates
-		requireEdgeRunnerPerk = false,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
+		requireEdgeRunnerPerk = true,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
+
+		-- Time Dilation
+		timeDilationNoPerk = 0.05,       -- time scale without EdgeRunner perk (95%)
+		timeDilationWithPerk = 0.0065,   -- time scale with EdgeRunner perk (99.35%)
 
 		-- Tick
 		tickLength = 1.25,               -- main game loop tick interval in seconds
@@ -187,25 +190,18 @@ davidsapogee = {
 	,MaxRuntime = -1
 	,runTime = -1
 	,PsychoMessageWaiting = false
-	,HealthRAMBalance = -1
 	,HealthBrake = -1
-	,Spillover = false
-	,AdrenalineRush = false
 	,FullRechargeHours = -1
 	,MaxRechargePerSleep = -1
 	,DamagePerTick = -1
-	,RAMPerTick = -1
 	,CyberPsychoWarnings = -1
 	,dailyActivations = 0
 	,sandyStartRuntime = 0
 	,comedownTimer = nil
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
-	,Overclocking = false
-	,OverclockExpired = false
 	,MinorBleedingOn = false
 	,SafetyOn = false
-	,SafetyOffDamage = -1
 	,LoadGameRun = false
 	,TriedLoadGameRun = false
 	,PlayerAttached = false
@@ -278,7 +274,14 @@ davidsapogee = {
 				cyberpsycho = self.Localization.GameUI_Cyberpsycho1
 			end
 		end
-		self.UI:UpdateUIText(self.isRunning,self.SafetyOn,margin,cyberpsycho,dilation,self.runTime,self.MaxRuntime)
+		local extra = {
+			dailyActivations = self.dailyActivations,
+			dailySafe = self.cfg.dailySafeActivations,
+			psychoOutburst = self.PsychoOutburst,
+			psychoWarnings = self.CyberPsychoWarnings,
+			rechargeNotification = self.rechargeNotification,
+		}
+		self.UI:UpdateUIText(self.isRunning,self.SafetyOn,margin,cyberpsycho,dilation,self.runTime,self.MaxRuntime,extra)
 	 end)
 	,GetApogeeIndex = (function(self)
 		local V = Game.GetPlayer()
@@ -355,8 +358,11 @@ davidsapogee = {
 		if self.dev_mode then
 			print('Apogee:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
 		end
+		local oldRuntime = self.runTime
 		self.runTime = self.runTime + RestedRuntime + 1
 		if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
+		self.rechargeNotification = math.floor(self.runTime - oldRuntime)
+		self.rechargeNotificationTimer = 8
 		
 		self:SaveGame('Apogee:Rested()')
 	 end)
@@ -379,19 +385,10 @@ davidsapogee = {
 		if calcRequiredHealth < self.cfg.requiredHealthMin then calcRequiredHealth = self.cfg.requiredHealthMin end
 		return calcDamagePerTick, calcRequiredHealth
 	 end)
-	,CalcDamage = (function(self,NetRunnerLevel)
-		local DamagePerTick = 10
-		local RequiredHealth = 50
-		
-		self.RAMPerTick = DamagePerTick/2
-		DamagePerTick, RequiredHealth = self:DamageCalculator(self.MaxRuntime,self.runTime)
+	,CalcDamage = (function(self)
+		local DamagePerTick, RequiredHealth = self:DamageCalculator(self.MaxRuntime,self.runTime)
 		self.DamagePerTick = DamagePerTick
-		
-		if NetRunnerLevel.Rules.CanHackBrake then
-			self.RequiredHealth = self.HealthBrake
-		else
-			self.RequiredHealth = RequiredHealth
-		end
+		self.RequiredHealth = RequiredHealth
 	 end)
 	,Start = (function(self)
 		if self.martinez == nil then return end
@@ -400,7 +397,6 @@ davidsapogee = {
 		self.isRunning = true
 		self.sandyStartRuntime = self.runTime
 		-- set initial charge level on startup!
-		self.OverclockExpired = false
 		self:SandevistanCharge()
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
@@ -426,24 +422,7 @@ davidsapogee = {
 		-- If you can start the sandy, you can use the Menus
 		self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 
-		local NetRunnerLevel = self.sps:NetRunnerLevel()
-		if (NetRunnerLevel.Rules.CanBoostAdrenaline and self.AdrenalineRush) then
-			self.lastTick = 0 -- Give a whole tick's grace
-			local SafetyOn = self.SafetyOn
-			local RAMLeft = self.sps:getRAM()
-			local RAMRequired = self.RAMPerTick * ((100-self.HealthRAMBalance)/100)
-			local isOverClocking = NetRunnerLevel.Rules.CanUnlockOverClock and (self.HealthRAMBalance<100) and (not self.OverclockExpired) and (RAMLeft > RAMRequired) and (not NoRuntime) and SafetyOn
-			local NoRuntime = (self.runTime < 1) or (isOverClocking and self.runTime < 10)
-			self:OverClockEffect(isOverClocking)
-			self:OutOfRuntime(NoRuntime)
-			self:TimeDilationEffects()
-			if NetRunnerLevel.Rules.CanBoostAdrenaline and self.AdrenalineRush then
-				local boosted = (NetRunnerLevel.Rules.CanBoostAdrenalineBonus == true)
-				self.sps:AddAdrenaline(boosted)
-			end
-		else
-			self.lastTick = self.TickLength + 0.001 -- TICK NOW!
-		end
+		self.lastTick = self.TickLength + 0.001 -- TICK NOW!
 		self.bbs:StartSandevistan()
 		self.displayTick = 1 -- do the display straight away!
 	 end)
@@ -467,8 +446,6 @@ davidsapogee = {
 		end
 
 		self.runTime = math.floor(self.runTime)
-		self.OverclockExpired = false
-		self:OverClockEffect(false)
 		self:TimeDilationEffects()
 		self:OutOfRuntime(false)
 		self:UpdateUIText()
@@ -529,15 +506,6 @@ davidsapogee = {
 			self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
 		end
 	 end)
-	,OverClockEffect = (function(self,TurnOn)
-		if TurnOn and not self.Overclocking then
-			self:StatusEffect_CheckAndApply(self.martinez.OverclockStatusEffect)
-			self.Overclocking = true
-		elseif not TurnOn then
-			self:StatusEffect_CheckAndRemove(self.martinez.OverclockStatusEffect)
-			self.Overclocking = false
-		end
-	 end)
 	,IsFury = (function(self)
 		local Test1 = self:StatusEffect_CheckOnly(self.martinez.MartinezFury)
 		local Test2 = self:StatusEffect_CheckOnly(self.martinez.MartinezFury_Level5)
@@ -545,98 +513,45 @@ davidsapogee = {
 	 end)
 	,TimeDilationCalculator = (function(self,DebugInfo)
 		if DebugInfo == nil then DebugInfo = false end
-		local Dilation = 850
+		local IsEdgeRunner = (self.sps:IsEdgeRunner() == true)
+		local timeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
 		local StatusText = 'Default'
-	
 		local outtaTime = (self.runTime < 1)
-		local IsOverclocking = self.Overclocking and (not self.OverclockExpired) -- disable overclock once ram runs out until the next activation of sandevistan
-		local OCLast10Seconds = math.floor(self.runTime)
-		
-		if DebugInfo then -- Used by CET window to display the info regardless of Expiry or not
-			local NetRunnerLevel = self.sps:NetRunnerLevel()
-			IsOverclocking = NetRunnerLevel.Rules.CanUnlockOverClock and (self.HealthRAMBalance < 100)
-		end
-		
+
 		if outtaTime and self.SafetyOn then
-			Dilation = 825
-			StatusText = "Runtime Expired" -- this is for debugging only
+			timeScale = 0.175
+			StatusText = "Runtime Expired"
 		elseif not self.SafetyOn then
-			Dilation = self.cfg.safetyOffTimeDilation
-			StatusText = "Safety Off" -- this is for debugging only
-		elseif IsOverclocking then
-			local OCDilation = 875 -- this is the mid point; OC Level and Fatigue will move it up and down
-			if self.HealthRAMBalance < 30 then
-				OCDilation = OCDilation + 75
-			elseif self.HealthRAMBalance < 60 then
-				OCDilation = OCDilation + 50
-			elseif self.HealthRAMBalance < 90 then
-				OCDilation = OCDilation + 25
-			end
-			if OCLast10Seconds < 3 then
-				OCDilation = OCDilation - 75
-			elseif OCLast10Seconds < 6 then
-				OCDilation = OCDilation - 50
-			elseif OCLast10Seconds < 9 then
-				OCDilation = OCDilation - 25
-			end
-			if OCDilation < 825 then OCDilation = 825 end
-			if OCDilation > 1000 then OCDilation = 1000 end
-			Dilation = OCDilation
-			StatusText = "IsOverclocking" -- this is for debugging only
+			timeScale = (1000 - self.cfg.safetyOffTimeDilation) / 1000
+			StatusText = "Safety Off"
 		end
 		
-		local ActualDilation = self.martinez.TimeDilations:GetTimeDilationFromIndex(Dilation)
-		
-		--self:dp({aOCDilation=OCDilation,bDilation=Dilation,cActualDilation=ActualDilation})
-		
-		return Dilation, ActualDilation, StatusText
+		return timeScale, StatusText
 	 end)
 	,TimeDilationEffects = (function(self)
 		if self.isRunning then
-			local Dilation = 850
-			local ActualDilation = 85
-			local StatusText = 'Default' -- this is for debugging only
-			Dilation, ActualDilation, StatusText = self:TimeDilationCalculator()
-			self:TimeDilationEffects_Activate(Dilation,StatusText)
+			local timeScale, StatusText = self:TimeDilationCalculator()
+			self:TimeDilationEffects_Activate(timeScale,StatusText)
 		elseif not self:IsWearingApogee() then
 			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
 		end
 	 end)
-	,TimeDilationEffects_Activate = (function(self,TimeDilation,Source)
-		if self.TimeDilationActiveEffect == TimeDilation then return end -- if the same dilation then exit
-		--if self.dev_mode then
-		--	print('DavidsApogee:TimeDilationEffects_Change('..Source..')  from:'..tostring(self.TimeDilationActiveEffect)..' to '..tostring(TimeDilation))
-		--end
-		if self.TimeDilationActiveEffect ~= nil and self.TimeDilationActiveEffect ~= TimeDilation then -- changing from A to B
+	,TimeDilationEffects_Activate = (function(self,timeScale,Source)
+		if self.TimeDilationActiveEffect == timeScale then return end
+		if self.TimeDilationActiveEffect ~= nil then
 			self:TimeDilationEffects_RemoveActive()
 		end
-		
-		local found = false
-		local speed = 85
-		
-		local ActualDilation, StatusEffect = self.martinez.TimeDilations:GetDataFromIndex(TimeDilation)
-		if ActualDilation ~= nil then
-			self:StatusEffect_CheckAndApply(StatusEffect)
-			speed = ActualDilation
-			found = true
-		end
-		if not found then
-			TimeDilation = nil
-		end
-		self.TimeDilationActiveEffect = TimeDilation
-		self.TimeDilationActualSpeed = speed
+		TweakDB:SetFlat(self.martinez.Stat_Modifier_04 .. '.value', timeScale)
+		TweakDB:Update(self.martinez.Stat_Modifier_04 .. '.value')
+		self.TimeDilationActiveEffect = timeScale
+		self.TimeDilationActualSpeed = (1 - timeScale) * 100
 	 end)
 	,TimeDilationEffects_RemoveActive = (function(self)
 		if self.TimeDilationActiveEffect == nil then return end
-		local TimeDilation = self.TimeDilationActiveEffect
-		
 		for i,v in ipairs(self.martinez.TimeDilations) do
-			if TimeDilation == v.i then
-				self:StatusEffect_CheckAndRemove(v.SE)
-				break
-			end
+			self:StatusEffect_CheckAndRemove(v.SE)
 		end
 		self.TimeDilationActiveEffect = nil
 		self.TimeDilationActualSpeed = nil
@@ -873,41 +788,19 @@ davidsapogee = {
 				
 				-- if Safeties Lifted Use extra runtime (1.25 already ticked + multiplier)
 				if not self.SafetyOn then self.runTime = self.runTime - (self.TickLength*self.cfg.safetyOffDrainMultiplier) end
-				if self.runTime < 1 then self.runTime = 0; self.OverclockExpired = true end
+				if self.runTime < 1 then self.runTime = 0 end
 
-				local NetRunnerLevel = self.sps:NetRunnerLevel()
-				local UseHealth = 1
-				self:CalcDamage(NetRunnerLevel)
-
-				if NetRunnerLevel.Rules.CanUnlockOverClock and (not self.OverclockExpired) and (self.runTime >= 1) then
-					local OuttaTime = 1
-					-- last 10 seconds of runtime degrade RAM usage 10% at a time
-					if self.runTime < 10 then OuttaTime = self.runTime / 10 end
-					local HealthRAMBalance = (100 - self.HealthRAMBalance) / 100 * OuttaTime
-					local RAMLeft = self.sps:getRAM()
-					local RAMRequired = self.RAMPerTick * HealthRAMBalance
-					if RAMLeft >= RAMRequired then
-						self.sps:UseRAM(RAMRequired)
-						UseHealth = 1-HealthRAMBalance
-					else
-						self.OverclockExpired = true
-					end
-				end
-				local isOverClocking = (not self.OverclockExpired) and (UseHealth < 1)
-				self:OverClockEffect(isOverClocking)
+				self:CalcDamage()
 				self:TimeDilationEffects()
 				
 				local DamagePerTick = self.DamagePerTick
 				local RequiredHealth = self.RequiredHealth
-				if not self.SafetyOn then
-					DamagePerTick = DamagePerTick + self.SafetyOffDamage
-				end
 				
 				local ToDo_DamageHealthPercent = 0
 				local VsHealthNow = self.sps:getHealth(true)
 				local VsOvershieldNow = self.sps:getAdrenaline(true)/2
-				if UseHealth > 0 and self.cfg.enableHealthDrain then
-					local theDamage = DamagePerTick*UseHealth
+				if self.cfg.enableHealthDrain then
+					local theDamage = DamagePerTick
 					local VsOvershieldDeduction = VsHealthNow - theDamage
 					if theDamage >= VsHealthNow then theDamage = VsHealthNow-2 end
 					self.sps:damage(theDamage)
@@ -950,6 +843,15 @@ davidsapogee = {
 			if self.comedownTimer <= 0 then
 				self.comedownTimer = nil
 				self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
+			end
+		end
+
+		-- Recharge notification timer
+		if self.rechargeNotificationTimer ~= nil then
+			self.rechargeNotificationTimer = self.rechargeNotificationTimer - dt
+			if self.rechargeNotificationTimer <= 0 then
+				self.rechargeNotificationTimer = nil
+				self.rechargeNotification = nil
 			end
 		end
 
@@ -1064,17 +966,12 @@ davidsapogee = {
 		self.runTime = GetRuntime
 		self.FullRechargeHours = self.cfg.fullRechargeHours
 		self.MaxRechargePerSleep = self.cfg.maxRechargePerSleep
-		self.SafetyOffDamage = self.cfg.safetyOffExtraDamage
 		self.PsychoTrigger = 1
 		self.ViktorCooldown = nil
 		self.HealthBrake = self.qs:LoadOverClockBrake()
-		self.HealthRAMBalance = self.qs:LoadOverClockBuffer()
-		self.Spillover = self.qs:LoadSpillover()
-		self.AdrenalineRush = self.qs:LoadAdrenalineRush()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
 		self.dailyActivations = self.qs:LoadDailyActivations()
 		if self.HealthBrake == -1 then self.HealthBrake = self.cfg.healthBrakeDefault end
-		if self.HealthRAMBalance == -1 then self.HealthRAMBalance = 100 end
 		if self.CyberPsychoWarnings == -1 then self.CyberPsychoWarnings = 0 end
 		if self.dev_mode then
 			print('DavidsApogee:LoadGame() RunTime='..tostring(self.runTime)..'seconds remaining')
@@ -1136,9 +1033,6 @@ davidsapogee = {
 		if GetRuntime > self.MaxRuntime then GetRuntime = self.MaxRuntime end
 		self.qs:SaveRuntime(GetRuntime)
 		self.qs:SaveOverClockBrake(self.HealthBrake)
-		self.qs:SaveOverClockBuffer(self.HealthRAMBalance)
-		self.qs:SaveSpillover(self.Spillover)
-		self.qs:SaveAdrenalineRush(self.AdrenalineRush)
 		self.qs:SaveCyberPsycho(self.CyberPsychoWarnings)
 		self.qs:SaveDailyActivations(self.dailyActivations)
 		self:UpdateUIText()
@@ -1333,58 +1227,17 @@ davidsapogee = {
 			if PDS == nil or (not IsDefined(PDS)) then return nil end
 			return (PDS:GetPerkLevel(V,NewPerkType) >= RequiredLevel)
 		 end)
-		,HasOverclockSpillover = (function(self)
-			return (self:GetPerkLevel(gamedataNewPerkType.Intelligence_Master_Perk_3) > 0) and (self:GetPerkLevel(gamedataNewPerkType.Intelligence_Master_Perk_1) > 0)
-		 end)
-		,QueuerLevel = (function(self)
-			local units = 0
-			    if self:GetPerkLevel(gamedataNewPerkType.Intelligence_Master_Perk_1   ,1) then units = 4
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Left_Milestone_3,3) then units = 3
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Left_Milestone_2,2) then units = 2
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Left_Milestone_1,1) then units = 1
-			end
-			return units
-		 end)
-		,OverClockerLevel = (function(self)
-			local units = 0
-			    if self:GetPerkLevel(gamedataNewPerkType.Intelligence_Master_Perk_3      ,1) then units = 4
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Central_Milestone_3,3) then units = 3
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Central_Milestone_2,2) then units = 2
-			elseif self:GetPerkLevel(gamedataNewPerkType.Intelligence_Central_Milestone_1,1) then units = 1
-			end
-			return units
-		 end)
-		,AdrenalineRush = (function(self)
-			local units = 0
-				if false then
-			elseif self:GetPerkLevel(gamedataNewPerkType.Body_Central_Perk_3_1   ,1) then units = 4 -- Calm Mind
-			elseif self:GetPerkLevel(gamedataNewPerkType.Body_Central_Milestone_3,3) then units = 3 -- Adrenaline Rush
-			end
-			return units
-		 end)
 		--[[ Note to self: This function should be used everywhere to check for functionality ]]--
 		,NetRunnerLevel = (function(self)
 			local IsEdgeRunner = self:IsEdgeRunner()
-			local Queuer = self:QueuerLevel()
-			local OverClocker = self:OverClockerLevel()
-			local AdrenalineRush = self:AdrenalineRush()
-			local str = tostring((Queuer * 10) + OverClocker)
 			local SafetyOn = self.Apogee.SafetyOn
 			local IsWearingCyberDeck = self:IsWearingCyberDeck()
 			local IsWearingApogee = self.Apogee:IsWearingApogee()
 			local GameLoaded = (IsWearingApogee ~= nil) and (IsEdgeRunner~=nil)
 			local CanEdgeRunnerPerks = IsWearingApogee and IsEdgeRunner
-			local CanUnlockNetRunnerPort = IsWearingApogee and IsEdgeRunner and IsWearingCyberDeck and (Queuer>2) and SafetyOn
-			local CanEditParameters = CanEdgeRunnerPerks and (not self.Apogee.isRunning)
-			local CanEditCyberdeck = CanUnlockNetRunnerPort and (not self.Apogee.isRunning)
-			local CanHackBrake = CanEdgeRunnerPerks
-			local CanUnlockOverClock = CanUnlockNetRunnerPort and (OverClocker>2) and (self.Apogee.runTime >= 1)
-			local CanRunTimeSpillOver = CanUnlockNetRunnerPort and (Queuer>3) and (OverClocker>3) and (self.Apogee.runTime >= 1)
-			local CanBoostAdrenaline = CanEdgeRunnerPerks and (AdrenalineRush>2) and (self.Apogee.runTime >= 1)
-			local CanBoostAdrenalineBonus = CanEdgeRunnerPerks and (AdrenalineRush>3) and (self.Apogee.runTime >= 1)
-			local CanUnbrickSandevistan = IsWearingApogee -- and (self.Apogee.CyberPsychoWarnings>0)
-			local CanBribeNCPD = CanUnlockNetRunnerPort
-			local ApogeeReducedRuntime = (not IsEdgeRunner) or (self.Apogee.HealthRAMBalance ~= 100 and CanUnlockOverClock and not (CanRunTimeSpillOver and self.Apogee.Spillover))
+			local CanUnbrickSandevistan = IsWearingApogee
+			local CanBribeNCPD = IsWearingApogee and IsWearingCyberDeck
+			local ApogeeReducedRuntime = (not IsEdgeRunner)
 
 			return {
 				 GameLoaded=GameLoaded
@@ -1393,20 +1246,8 @@ davidsapogee = {
 				,IsWearingCyberDeck=IsWearingCyberDeck
 				,SafetyOn = SafetyOn
 				,ApogeeReducedRuntime=ApogeeReducedRuntime
-				,Queuer=Queuer
-				,OverClocker=OverClocker
-				,AdrenalineRush=AdrenalineRush
-				,str=str
 				,Rules={
 					 CanEdgeRunnerPerks=CanEdgeRunnerPerks
-					,CanUnlockNetRunnerPort=CanUnlockNetRunnerPort
-					,CanEditParameters=CanEditParameters
-					,CanEditCyberdeck=CanEditCyberdeck
-					,CanHackBrake=CanHackBrake
-					,CanUnlockOverClock=CanUnlockOverClock
-					,CanRunTimeSpillOver=CanRunTimeSpillOver
-					,CanBoostAdrenaline=CanBoostAdrenaline
-					,CanBoostAdrenalineBonus=CanBoostAdrenalineBonus
 					,CanUnbrickSandevistan=CanUnbrickSandevistan
 					,CanBribeNCPD=CanBribeNCPD
 				 }
@@ -1425,8 +1266,6 @@ davidsapogee = {
 		 RuntimeFactName = 'martinezsandevistan_runtime'
 		,OCBrakeFactName = 'martinezsandevistan_overclock_brake'
 		,OCBufferFactName = 'martinezsandevistan_overclock_buffer'
-		,SpilloverFactName = 'martinezsandevistan_overclock_spillover'
-		,AdrenalineRushFactName = 'martinezsandevistan_overclock_adrenalinerush'
 		,CyberPsychoFactName = 'martinezsandevistan_cyberpsycho'
 		,DailyActivationsFactName = 'martinezsandevistan_dailyactivations'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
@@ -1453,22 +1292,6 @@ davidsapogee = {
 		 end)
 		,LoadOverClockBuffer = (function(self)
 			return self:GetFactValue(self.OCBufferFactName)-1
-		 end)
-		,SaveSpillover = (function(self,value)
-			local checker = 0.0
-			if value then checker = 1.0 end
-			self:SetFactValue(self.SpilloverFactName,checker)
-		 end)
-		,LoadSpillover = (function(self)
-			return self:GetFactValue(self.SpilloverFactName) == 1.0
-		 end)
-		,SaveAdrenalineRush = (function(self,value)
-			local checker = 0.0
-			if value then checker = 1.0 end
-			self:SetFactValue(self.AdrenalineRushFactName,checker)
-		 end)
-		,LoadAdrenalineRush = (function(self)
-			return self:GetFactValue(self.AdrenalineRushFactName) == 1.0
 		 end)
 		,SaveCyberPsycho = (function(self,value)
 			self:SetFactValue(self.CyberPsychoFactName,value+10)
@@ -1769,12 +1592,15 @@ davidsapogee = {
 
 			self.DavidMartinezText = davidText
 		 end)
-		,UpdateUIText = (function(self,isRunning,SafetyOn,margin,cyberpsycho,dilation,runTime,MaxRunTime)
+		,UpdateUIText = (function(self,isRunning,SafetyOn,margin,cyberpsycho,dilation,runTime,MaxRunTime,extra)
 			if self.localization == nil then return end -- Load3 not happened yet!
+			extra = extra or {}
 			runTime = math.floor(runTime)
 			local text = ""
 			if not margin then
 				text = ""
+			elseif extra.rechargeNotification and extra.rechargeNotification > 0 then
+				text = "+"..tostring(extra.rechargeNotification).."s | Runtime: "..tostring(runTime).."/"..tostring(MaxRunTime).."s"
 			elseif cyberpsycho then
 				text = cyberpsycho
 			elseif not SafetyOn then
@@ -1783,7 +1609,16 @@ davidsapogee = {
 				text = ""
 				margin = false
 			elseif not isRunning then
-				text = self.localization.GameUI_Runtime..': '..tostring(runTime).."/"..tostring(MaxRunTime).."s"
+				local info = self.localization.GameUI_Runtime..': '..tostring(runTime).."/"..tostring(MaxRunTime).."s"
+				if extra.dailySafe and extra.dailyActivations then
+					info = info.." | "..tostring(extra.dailyActivations).."/"..tostring(extra.dailySafe)
+				end
+				if extra.psychoWarnings and extra.psychoWarnings > 0 and extra.psychoOutburst then
+					local mins = math.floor(extra.psychoOutburst / 60)
+					local secs = math.floor(extra.psychoOutburst % 60)
+					info = info.." | P:"..tostring(mins).."m"..string.format("%02d", secs)
+				end
+				text = info
 			elseif runTime == 0 then
 				text = tostring(dilation).."% - "..self.localization.GameUI_NoRuntime
 			else

@@ -6,8 +6,6 @@ local apogeeConfigFile = "../DavidSandevistanPlus/config.json"
 
 local defaults = {
 	-- TweakDB values
-	timedilationSpeed = 0.10,
-	timedilationOption = 2,
 	sandyDuration = 300,
 	rechargeDuration = 2.0,
 	cooldownBase = 0.5,
@@ -23,7 +21,6 @@ local defaults = {
 	enableHealthDrain = true,
 	damageMin = 1.0,
 	damageMax = 15.0,
-	safetyOffExtraDamage = 5,
 	enableHealthBrake = false,
 	healthBrakeDefault = 50,
 	requiredHealthMin = 15,
@@ -40,7 +37,9 @@ local defaults = {
 	comedownBaseDuration = 3.0,
 	comedownMaxDuration = 8.0,
 	comedownRuntimeThreshold = 60,
-	requireEdgeRunnerPerk = false,
+	requireEdgeRunnerPerk = true,
+	timeDilationNoPerk = 0.05,
+	timeDilationWithPerk = 0.0065,
 	tickLength = 1.25,
 }
 
@@ -51,14 +50,15 @@ local nativeSettings = nil
 
 -- Gameplay keys that DavidsApogee reads from config.json
 local gameplayKeys = {
-	"enableHealthDrain", "damageMin", "damageMax", "safetyOffExtraDamage",
+	"enableHealthDrain", "damageMin", "damageMax",
 	"enableHealthBrake", "healthBrakeDefault", "requiredHealthMin",
 	"safetyOffDrainMultiplier", "enableSafetyOffKill", "safetyOffKillThreshold",
 	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis",
 	"dailySafeActivations", "psychoAccelPerExtraUse",
 	"safetyOffTimeDilation",
 	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
-	"requireEdgeRunnerPerk", "tickLength",
+	"timeDilationNoPerk", "timeDilationWithPerk",
+	"tickLength",
 }
 
 -- Persistence
@@ -72,13 +72,15 @@ local function loadConfig()
 			for k, v in pairs(loaded) do cfg[k] = v end
 		end
 	end
-	cfg.timedilationSpeed = tonumber(cfg.timedilationSpeed) or defaults.timedilationSpeed
+	cfg.timeDilationNoPerk = tonumber(cfg.timeDilationNoPerk) or defaults.timeDilationNoPerk
+	cfg.timeDilationWithPerk = tonumber(cfg.timeDilationWithPerk) or defaults.timeDilationWithPerk
 end
 
 local function saveConfig()
 	local toSave = {}
 	for k, v in pairs(cfg) do toSave[k] = v end
-	toSave.timedilationSpeed = string.format("%.8f", cfg.timedilationSpeed)
+	toSave.timeDilationNoPerk = string.format("%.8f", cfg.timeDilationNoPerk)
+	toSave.timeDilationWithPerk = string.format("%.8f", cfg.timeDilationWithPerk)
 	local file = io.open(apogeeConfigFile, "w")
 	if file ~= nil then
 		file:write(json.encode(toSave))
@@ -103,11 +105,7 @@ local function setFlatAndUpdate(name, value)
 end
 
 local function setTweaks()
-	if type(cfg.timedilationSpeed) == "string" then
-		cfg.timedilationSpeed = tonumber(cfg.timedilationSpeed)
-	end
-
-	setFlatAndUpdate(RecordName .. "_Stat_Modifier_04.value", cfg.timedilationSpeed)
+	setFlatAndUpdate(RecordName .. "_Stat_Modifier_04.value", 0.15)
 	setFlatAndUpdate(RecordName .. "_Stat_Modifier_03.value", cfg.sandyDuration * 1.0)
 	setFlatAndUpdate(RecordName .. "_Stat_Modifier_05.value", cfg.rechargeDuration * 1.0)
 	setFlatAndUpdate(RecordName .. "_Stat_Modifier_06.value", cfg.cooldownBase * 1.0)
@@ -147,13 +145,12 @@ local function initUI()
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
 	local catCD = tab .. "/Comedown"
-	local catPG = tab .. "/PerkGates"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD, catPG}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -164,40 +161,63 @@ local function initUI()
 	------------------------------------------------------------
 	nativeSettings.addSubcategory(catTD, "Time Dilation")
 
-	local timescaleData = {
-		{ label = "85% (Default)",          value = 0.15   },
-		{ label = "90%",                    value = 0.10   },
-		{ label = "92.5%",                  value = 0.075  },
-		{ label = "95%",                    value = 0.05   },
-		{ label = "97.5%",                  value = 0.025  },
-		{ label = "99%",                    value = 0.01   },
-		{ label = "99.25%",                 value = 0.0075 },
-		{ label = "99.35% (Recommended)",   value = 0.0065 },
-		{ label = "99.5%",                  value = 0.005  },
-		{ label = "99.65%",                 value = 0.0035 },
-		{ label = "99.9%",                  value = 0.001  },
+	local dilationData = {
+		{ label = "85%",      value = 0.15   },
+		{ label = "90%",      value = 0.10   },
+		{ label = "92.5%",    value = 0.075  },
+		{ label = "95%",      value = 0.05   },
+		{ label = "97.5%",    value = 0.025  },
+		{ label = "99%",      value = 0.01   },
+		{ label = "99.25%",   value = 0.0075 },
+		{ label = "99.35%",   value = 0.0065 },
+		{ label = "99.5%",    value = 0.005  },
 	}
 
-	local timescaleLabels = {}
-	local timescaleValues = {}
-	for i, opt in ipairs(timescaleData) do
-		timescaleLabels[i] = opt.label
-		timescaleValues[i] = opt.value
+	local dilationLabels = {}
+	local dilationValues = {}
+	for i, opt in ipairs(dilationData) do
+		dilationLabels[i] = opt.label
+		dilationValues[i] = opt.value
+	end
+
+	local function findDilationIndex(val)
+		local best = 1
+		local bestDiff = math.abs(dilationValues[1] - val)
+		for i, v in ipairs(dilationValues) do
+			local diff = math.abs(v - val)
+			if diff < bestDiff then
+				best = i
+				bestDiff = diff
+			end
+		end
+		return best
 	end
 
 	nativeSettings.addSelectorString(
 		catTD,
-		"Time Dilation Speed",
-		"How much time slows down while Sandevistan is active. Higher % = slower.\n"
-			.. "Default: 90% (lore-accurate ~10x speed factor). Recommended limit: 99.35%.\n"
-			.. "Values above 99.35% may cause visual glitches.\n"
-			.. "Safety Off and Overclock still stack on top of this.",
-		timescaleLabels,
-		cfg.timedilationOption,
-		defaults.timedilationOption,
+		"Time Dilation (No Perk)",
+		"Time dilation without EdgeRunner perk. (Default: 95%)\n"
+			.. "Higher % = slower time = more power.\n"
+			.. "Values above 99.35% may cause visual glitches.",
+		dilationLabels,
+		findDilationIndex(cfg.timeDilationNoPerk),
+		findDilationIndex(defaults.timeDilationNoPerk),
 		function(value)
-			cfg.timedilationOption = value
-			cfg.timedilationSpeed = timescaleValues[value]
+			cfg.timeDilationNoPerk = dilationValues[value]
+			applyAll()
+		end)
+
+	nativeSettings.addSelectorString(
+		catTD,
+		"Time Dilation (With Perk)",
+		"Time dilation with EdgeRunner perk. (Default: 99.35%)\n"
+			.. "Higher % = slower time = more power.\n"
+			.. "Values above 99.35% may cause visual glitches.",
+		dilationLabels,
+		findDilationIndex(cfg.timeDilationWithPerk),
+		findDilationIndex(defaults.timeDilationWithPerk),
+		function(value)
+			cfg.timeDilationWithPerk = dilationValues[value]
 			applyAll()
 		end)
 
@@ -211,7 +231,7 @@ local function initUI()
 		"Runtime Tank (sec)",
 		"Total runtime reservoir for the Sandevistan in seconds. (Default: 300)\n"
 			.. "This is NOT real-time duration. It drains at different rates:\n"
-			.. "Normal: 1s/tick | Safety Off: 5s/tick | Overclock: 33% reduced.\n"
+			.. "Normal: 1s/tick | Safety Off: 5s/tick (configurable via Drain Multiplier).\n"
 			.. "Recharges by sleeping, visiting ripperdocs, or staying in safe zones.",
 		1, 600, 1,
 		cfg.sandyDuration,
@@ -250,8 +270,7 @@ local function initUI()
 		catDC,
 		"Activation Cost",
 		"Stamina cost when activating the Sandevistan. (Default: 0.0)\n"
-			.. "Lore: David activated with no visible cost — the toll was cumulative (cyberpsychosis).\n"
-			.. "With Adrenaline Rush enabled, this cost is shunted through V's chip instead.",
+			.. "Lore: David activated with no visible cost — the toll was cumulative (cyberpsychosis).",
 		0.0, 1.0, 0.05, "%.2f",
 		cfg.enterCost,
 		defaults.enterCost,
@@ -391,19 +410,6 @@ local function initUI()
 			applyAll()
 		end)
 
-	nativeSettings.addRangeFloat(
-		catHD,
-		"Safety Off Extra Damage",
-		"Extra damage per tick when Safety Limiters are OFF. (Default: 5)\n"
-			.. "Added on top of the normal scaled damage. Higher = more punishing.",
-		0.0, 20.0, 0.5, "%.1f",
-		cfg.safetyOffExtraDamage,
-		defaults.safetyOffExtraDamage,
-		function(value)
-			cfg.safetyOffExtraDamage = value
-			applyAll()
-		end)
-
 	------------------------------------------------------------
 	-- HEALTH BRAKE
 	------------------------------------------------------------
@@ -518,7 +524,7 @@ local function initUI()
 		"Safety Off Time Dilation",
 		"Time dilation when Safety Limiters are OFF. (Default: 97.5%)\n"
 			.. "Higher = slower time = more power. David ran without limiters for the speed boost.\n"
-			.. "This stacks with the base time dilation setting.",
+			.. "This replaces the default perk-based time dilation while Safety is OFF.",
 		tdLabels,
 		tdDefault,
 		tdDefaultIdx,
@@ -661,23 +667,6 @@ local function initUI()
 			applyAll()
 		end)
 
-	------------------------------------------------------------
-	-- PERK GATES
-	------------------------------------------------------------
-	nativeSettings.addSubcategory(catPG, "Perk Gates")
-
-	nativeSettings.addSwitch(
-		catPG,
-		"Require EdgeRunner Perk",
-		"Require the EdgeRunner perk for full runtime access. (Default: OFF)\n"
-			.. "When OFF: full runtime from the start, like David in the anime.\n"
-			.. "When ON: without the perk, only 33% of runtime is available.",
-		cfg.requireEdgeRunnerPerk,
-		defaults.requireEdgeRunnerPerk,
-		function(value)
-			cfg.requireEdgeRunnerPerk = value
-			applyAll()
-		end)
 end
 
 registerForEvent("onInit", function()
