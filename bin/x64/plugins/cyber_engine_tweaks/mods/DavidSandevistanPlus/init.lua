@@ -181,6 +181,7 @@ davidsapogee = {
 	}
 	,martinez = require('./martinez.lua')
 	,gui = require('./gui.lua')
+	,hud = require('./hud.lua')
 	--[[Every variable after this point is a runtime value not configuration, changing them here will have zero effect they are overwritten at runtime]]--
 	,isRunning = false
 	,lastTick = 0
@@ -221,6 +222,10 @@ davidsapogee = {
 			local obj, errors = require('./gui.lua')
 			spdlog.info(tostring(errors))
 			print('[DSP] Init: gui.lua failed to load: '..tostring(errors))
+		elseif self.hud == nil then
+			local obj, errors = require('./hud.lua')
+			spdlog.info(tostring(errors))
+			print('[DSP] Init: hud.lua failed to load: '..tostring(errors))
 		else
 			self.Localization:Init()
 			self.bbs:Init()
@@ -267,23 +272,25 @@ davidsapogee = {
 	,UpdateUIText = (function(self)
 		local dilation = self.TimeDilationActualSpeed
 		if dilation == nil then dilation = 85 end
-		local margin = self:IsWearingApogee() and self.ShowUIText
-		local cyberpsycho = (self.CyberPsychoWarnings == 5 and self.SafetyOn) or (self:IsFury())
-		if cyberpsycho then
-			if self.CyberPsychoWarnings == 5 then
-				cyberpsycho = self.Localization.GameUI_Cyberpsycho2
-			else
-				cyberpsycho = self.Localization.GameUI_Cyberpsycho1
-			end
-		end
-		local extra = {
-			dailyActivations = self.dailyActivations,
-			dailySafe = self.cfg.dailySafeActivations,
+		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+		self.hud:Update({
+			isWearing = self:IsWearingApogee() or false,
+			showUI = self.ShowUIText,
+			isRunning = self.isRunning,
+			SafetyOn = self.SafetyOn,
+			dilation = dilation,
+			runTime = self.runTime,
+			MaxRunTime = self.MaxRuntime,
+			dailyActivations = self.dailyActivations or 0,
+			dailySafe = self.cfg.dailySafeActivations or 3,
+			psychoWarnings = self.CyberPsychoWarnings or 0,
 			psychoOutburst = self.PsychoOutburst,
-			psychoWarnings = self.CyberPsychoWarnings,
+			comedownTimer = self.comedownTimer,
 			rechargeNotification = self.rechargeNotification,
-		}
-		self.UI:UpdateUIText(self.isRunning,self.SafetyOn,margin,cyberpsycho,dilation,self.runTime,self.MaxRuntime,extra)
+			inSafeArea = self.PlayerInSafeArea,
+			inClub = self.InDaClub,
+			dfImmuno = dfImmuno,
+		})
 	 end)
 	,GetApogeeIndex = (function(self)
 		local V = Game.GetPlayer()
@@ -1022,7 +1029,7 @@ davidsapogee = {
 	 end)
 	,LoadGamePart3 = (function(self)
 		local doDebug = (self.dev_mode ~= nil)
-		self.UI:Init(self,doDebug)
+		self.hud:Init(self,doDebug)
 		self:DisableSandevistan("LoadGamePart3")
 		self:UpdateUIText()
 		self.OutstandingBuff = 5 -- check for sandy
@@ -1552,154 +1559,6 @@ davidsapogee = {
 		end
 		self.martinez:UpdateLootLevelCheck(hasFalcosReward,smsSent)
 	 end)
-	,UI = {
-		 Apogee = nil
-		,healthbarWidgetGameController = nil
-		,staminabarWidgetGameController = nil
-		,staminabarRoot = nil
-		,DavidMartinezText = nil
-		,localization = nil
-		,Init = (function(self,Apogee,doDebug)
-			if Apogee ~= nil then
-				self.Apogee = Apogee
-				self.localization = self.Apogee.Localization
-			end
-			local inkSystem = GameInstance.GetInkSystem()
-			local layers = inkSystem:GetLayers()
-			for k,layer in pairs(layers) do
-				local layerName = tostring(layer:GetLayerName().value)
-				if layerName == "inkHUDLayer" then
-					if doDebug then print('DavidsApogee.UI:Inin() Layer:'..tostring(k).."=>"..layerName) end
-					for k1, controller in pairs(layer:GetGameControllers()) do
-						local CN = controller:GetClassName().value
-						if CN == "gameuiHudHealthbarGameController" then
-							self.healthbarWidgetGameController = controller
-							if doDebug then print("DavidsApogee.UI:Inin() Game Controller: "..tostring(CN)) end
-						elseif CN == "StaminabarWidgetGameController" then
-							self.staminabarWidgetGameController = controller
-							self.staminabarRoot = self.staminabarWidgetGameController:GetRootCompoundWidget()
-							if doDebug then print("DavidsApogee.UI:Inin() Game Controller: "..tostring(CN)) end
-						end
-					end
-				end
-			end
-			
-			self:BuildDavidMartinezText()
-		 end)
-		,BuildDavidMartinezText = (function(self)
-			--if true then return end
-			if self.healthbarWidgetGameController == nil or not IsDefined(self.healthbarWidgetGameController) then return end
-			if self.DavidMartinezText ~= nil and IsDefined(self.DavidMartinezText) then return end
-			
-			local davidPanelCName = self:CNameNew("DavidMartinezPanel")
-			local davidTextCName  = self:CNameNew("DavidMartinezText")
-			
-			local HTP = self.healthbarWidgetGameController.healthTextPath
-			local EXP = self.healthbarWidgetGameController.expBar
-			local RCW = self.healthbarWidgetGameController:GetRootCompoundWidget()
-			local buffsHolder = RCW:GetWidgetByPathName("buffsHolder")
-			local barsLayout = buffsHolder:GetWidgetByPathName("barsLayout")
-			local davidPanel = barsLayout:GetWidgetByPathName("DavidMartinezPanel")
-
-			local TextMargin = (self.Apogee.OverrideTextMargin ~= nil) and self.Apogee.OverrideTextMargin or 11
-			local TextSize = (self.Apogee.OverrideTextSize ~= nil) and self.Apogee.OverrideTextSize or 30
-
-			if davidPanel == nil then
-				davidPanel = barsLayout:AddChild("inkCanvasWidget")
-				davidPanel:SetName(davidPanelCName)
-				davidPanel:SetMargin(0,TextMargin,0,0)
-				davidPanel:SetPadding(0,0,0,0)
-				davidPanel:SetAnchor(inkEAnchor.TopLeft)
-				davidPanel:SetAnchorPoint(0.0, 0.0)
-			end
-			local davidText = davidPanel:GetWidgetByPathName("DavidMartinezText")
-			
-			if davidText == nil then
-				davidText = davidPanel:AddChild("inkTextWidget")
-				davidText:SetName(davidTextCName)
-				davidText:SetTintColor(EXP:GetTintColor())
-				davidText:SetFontFamily("base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily");
-				davidText:SetFontSize(TextSize)
-				davidText:SetFontStyle("Medium")
-				davidText:SetHorizontalAlignment(textHorizontalAlignment.Left)
-				davidText:SetVerticalAlignment(textVerticalAlignment.Top)
-				davidText:SetAnchor(inkEAnchor.TopLeft)
-				davidText:SetAnchorPoint(0.0, 0.0)
-				davidText:SetVisible(true)
-				davidText:SetText("")
-			end
-
-			self.DavidMartinezText = davidText
-		 end)
-		,UpdateUIText = (function(self,isRunning,SafetyOn,margin,cyberpsycho,dilation,runTime,MaxRunTime,extra)
-			if self.localization == nil then return end -- Load3 not happened yet!
-			extra = extra or {}
-			runTime = math.floor(runTime)
-			local text = ""
-			if not margin then
-				text = ""
-			elseif extra.rechargeNotification and extra.rechargeNotification > 0 then
-				text = "+"..tostring(extra.rechargeNotification).."s | Runtime: "..tostring(runTime).."/"..tostring(MaxRunTime).."s"
-			elseif cyberpsycho then
-				text = cyberpsycho
-			elseif not SafetyOn then
-				text = self.localization.GameUI_NoSafety
-			elseif not isRunning and runTime == 0 then
-				text = ""
-				margin = false
-			elseif not isRunning then
-				local info = self.localization.GameUI_Runtime..': '..tostring(runTime).."/"..tostring(MaxRunTime).."s"
-				if extra.dailySafe and extra.dailyActivations then
-					info = info.." | "..tostring(extra.dailyActivations).."/"..tostring(extra.dailySafe)
-				end
-				if extra.psychoWarnings and extra.psychoWarnings > 0 and extra.psychoOutburst then
-					local mins = math.floor(extra.psychoOutburst / 60)
-					local secs = math.floor(extra.psychoOutburst % 60)
-					info = info.." | P:"..tostring(mins).."m"..string.format("%02d", secs)
-				end
-				text = info
-			elseif runTime == 0 then
-				text = tostring(dilation).."% - "..self.localization.GameUI_NoRuntime
-			else
-				text = tostring(dilation).."% @ "..tostring(runTime).."/"..tostring(MaxRunTime).."s"
-			end
-			self:SetDavidMartinezText(text,margin)
-		 end)
-		,SetDavidMartinezText = (function(self,text,margin)
-			if self.staminabarRoot == nil or not IsDefined(self.staminabarRoot) then
-				self:Init() -- this should only happen on CET restart
-			end
-			if self.DavidMartinezText == nil or not IsDefined(self.DavidMartinezText) then
-				self:BuildDavidMartinezText()
-			end
-			if self.DavidMartinezText ~= nil and IsDefined(self.DavidMartinezText) then
-				self.DavidMartinezText:SetText(text)
-				local StaminaMargin = 0 -- default position, leave stamina bar alone
-
-				if self.Apogee.ForceStaminaMargin ~= nil then
-					margin = true -- force Margin
-					StaminaMargin = self.Apogee.ForceStaminaMargin
-				elseif self.Apogee.OverrideStaminaMargin ~= nil then
-					-- Set margin; but only move if text is shown
-					StaminaMargin = self.Apogee.OverrideStaminaMargin
-				elseif margin then
-					StaminaMargin = 22 -- margin on: move it
-				end
-				
-				if self.staminabarRoot ~= nil and IsDefined(self.staminabarRoot) then
-					self.staminabarRoot:SetMargin(0,StaminaMargin,0,0)
-				end
-			end
-		 end)
-		,CNameNew = (function(self,theString)
-			local output = CName.new(theString)
-			if output.value ~= theString then
-				CName.add(theString)
-				output = CName.new(theString)
-			end
-			return output
-		 end)
-	 }
 }
 
 registerForEvent('onInit', function()
