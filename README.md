@@ -1,13 +1,16 @@
 # David Sandevistan Plus
 
-Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547) with every gameplay parameter made configurable via an in-game Settings menu.
+Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547) with lore-accurate defaults and every gameplay parameter configurable via an in-game Settings menu.
 
 ## Features
 
+- **Lore-accurate defaults** — tuned to match David Martinez's Sandevistan from Cyberpunk: Edgerunners
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- 14 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
-- Native Settings UI tab with 9 subcategories
-- All defaults match the original David's Apogee values
+- 16 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
+- Native Settings UI tab with 10 subcategories
+- Daily activation counter — Doc warned David not to use it more than 3 times a day
+- No EdgeRunner perk gate — full runtime from day 1, like David in the anime
+- No health brake by default — David never had an auto-stop
 - Config persists across sessions via `config.json`
 
 ## Requirements
@@ -108,6 +111,22 @@ Open the game menu: **Settings > Mods > Martinez Sandy+**
 ## How It Works
 
 **DavidSandevistanPlus** is a fork of David's Apogee v2.25.3 with all hardcoded gameplay values extracted into a configurable `cfg` table. **MartinezPLUS** provides the Native Settings UI and writes to `DavidSandevistanPlus/config.json`. Changes to TweakDB values apply instantly; gameplay parameters update both at runtime and persist to disk.
+
+### Daily Activation Counter
+
+Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each activation beyond the safe limit accelerates the cyberpsychosis timer. The effect stacks — the more you overuse it, the faster psychosis progresses. Counter resets when V sleeps.
+
+## Compatibility
+
+### Dark Future
+
+Fully compatible with [Dark Future](https://www.nexusmods.com/cyberpunk2077/mods/12950). The two mods use different scripting systems (CET/Lua vs Redscript), separate TweakDB records, and independent Quest Fact namespaces — no conflicts.
+
+Both mods have their own cyberpsychosis systems that coexist:
+- **Dark Future** — Humanity Loss from cumulative cyberware installation
+- **David Sandevistan Plus** — Cyberpsychosis from overusing the Sandevistan specifically
+
+With both active, V faces double pressure — which is lore-accurate: David's psychosis came from both excessive chrome AND pushing the Sandevistan past its limits.
 
 ## Credits
 
