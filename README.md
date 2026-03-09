@@ -38,6 +38,15 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 
 **Safety ON at Level 5:** Sandy is blocked, Kiroshi optics disabled, V must sleep or recover in a safe area.
 
+#### Psychosis Combat Effects (Level 5+)
+
+At high psychosis levels and during Last Breath, V's cyberware malfunctions offensively:
+
+| Effect | Range | What Happens | Visual |
+|--------|-------|-------------|--------|
+| **Ticking Time Bomb** | 20m AoE | EMP discharge stuns nearby enemies | Stun animation + EMP pulse + electrical arcs on NPCs |
+| **Blackwall Kill** | 25m AoE | Blackwall corruption kills nearby enemies | Digital glitch/hack VFX → system collapse death animation |
+
 ### Last Breath (Stage VI — Requires Second Heart)
 
 When V dies at psycho level 5 and Second Heart revives them, Stage VI begins — David's final stand, inspired by Episode 10 of Edgerunners. All effects are synchronized to "I Really Want to Stay at Your House" (Rosa Walton, ~4:05).

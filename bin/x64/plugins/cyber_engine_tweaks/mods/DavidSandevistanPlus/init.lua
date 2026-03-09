@@ -1547,10 +1547,12 @@ davidsapogee = {
 					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 					if dist <= 20.0 then
 						local npcEID = npc:GetEntityID()
-						-- Stunned: game's built-in stun with visible animation
-						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.Stunned')
-						-- EMPJammed: disables weapons + EMP VFX on the NPC
-						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.EMPJammed')
+						-- Stun: built-in stun with visible animation
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.Stun')
+						-- EMP: electromagnetic pulse VFX + disables weapons
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.EMP')
+						-- Electrocuted: electrical arcing VFX on the NPC
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.Electrocuted')
 						self:BuffNPCPsychoGlitch(npc, true)
 						stunCount = stunCount + 1
 					end
@@ -1593,7 +1595,9 @@ davidsapogee = {
 					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 					if dist <= 25.0 then
 						local npcEID = npc:GetEntityID()
-						-- SystemCollapse: quickhack kill with dramatic overload animation
+						-- NetwatcherGeneral: glitch/hacked VFX (digital corruption)
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.NetwatcherGeneral')
+						-- SystemCollapse: quickhack kill with dramatic animation
 						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.SystemCollapse')
 						-- ForceKill as backup (ensures death even if SystemCollapse doesn't kill)
 						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.ForceKill')
