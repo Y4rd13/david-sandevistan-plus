@@ -1134,46 +1134,22 @@ davidsapogee = {
 	----------------------------------------------------------------
 	-- Last Breath: David's final stand after Second Heart
 	----------------------------------------------------------------
-	,lastBreathSong = "mus_radio_05_pop_i_want_to_stay_at_your_house"
+	,lastBreathSong = "dsp_last_breath_song"
 	,lastBreathPeaceTime = 15  -- seconds of peace before decay
 	,lastBreathRuntime = 120   -- seconds of runtime for the last stand
 	,PlayLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return false end
-		-- Method 1: Try pocket radio + RequestSongOnRadioStation (proven in Improved Radio mod)
-		local ok1, err1 = pcall(function()
-			V:GetQuickSlotsManager():SendRadioEvent(true, true, 5)
-		end)
-		if ok1 then
-			pcall(function()
-				Game.GetAudioSystem():RequestSongOnRadioStation(
-					"radio_station_05_pop",
-					self.lastBreathSong
-				)
-			end)
-		end
-		-- Method 2: Try direct AudioSystem:Play as fallback
-		pcall(function()
-			Game.GetAudioSystem():Play(self.lastBreathSong)
-		end)
-		-- Method 3: Try SoundPlayEvent as last resort
-		pcall(function()
+		local ok, err = pcall(function()
 			local evt = SoundPlayEvent.new()
 			evt.soundName = self.lastBreathSong
 			V:QueueEvent(evt)
 		end)
-		return true
+		return ok
 	 end)
 	,StopLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
-		-- Stop all methods
-		pcall(function()
-			V:GetQuickSlotsManager():SendRadioEvent(false, false, 5)
-		end)
-		pcall(function()
-			Game.GetAudioSystem():Stop(self.lastBreathSong)
-		end)
 		pcall(function()
 			local evt = SoundStopEvent.new()
 			evt.soundName = self.lastBreathSong

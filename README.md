@@ -72,6 +72,7 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 - [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107)
 - [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
 - [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198)
+- [REDmod](https://www.cyberpunk.net/en/modding-support) (included with the game — must be enabled for Last Breath audio)
 
 ## Installation
 
@@ -82,15 +83,22 @@ Cyberpunk 2077/
 ├── archive/pc/mod/
 │   ├── david-sandevistan-plus.archive
 │   └── david-sandevistan-plus.archive.xl
-└── bin/x64/plugins/cyber_engine_tweaks/mods/
-    ├── DavidSandevistanPlus/
-    │   ├── init.lua
-    │   ├── martinez.lua
-    │   ├── hud.lua
-    │   └── gui.lua
-    └── MartinezPLUS/
-        └── init.lua
+├── bin/x64/plugins/cyber_engine_tweaks/mods/
+│   ├── DavidSandevistanPlus/
+│   │   ├── init.lua
+│   │   ├── martinez.lua
+│   │   ├── hud.lua
+│   │   └── gui.lua
+│   └── MartinezPLUS/
+│       └── init.lua
+└── mods/
+    └── DavidSandevistanSound/
+        ├── info.json
+        └── customSounds/
+            └── last_breath_song.wav
 ```
+
+> **Note:** After installing, enable REDmod in your game launcher (GOG/Steam) and deploy mods. The `DavidSandevistanSound` REDmod provides the "I Really Want to Stay at Your House" audio for the Last Breath sequence.
 
 ## Settings
 
