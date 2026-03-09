@@ -194,4 +194,4 @@ The curve design follows David Martinez's arc in Edgerunners:
 - **Stages 1–3**: The Sandy works well. Degradation is subtle — David barely feels it
 - **Stage 4**: The body fights back. Peak performance fades quickly, like David's nosebleeds
 - **Stage 5**: V's body is failing. The 97.5% flash is David pushing through despite everything
-- **Stage 6**: The final stand. A moment of perfect clarity (99.35%) that can't last — the exponential decay mirrors David's consciousness fading in Episode 10
+- **Stage 6**: The final stand — see **[last-breath.md](last-breath.md)** for the full song-synced timeline, effect graphs, and implementation details

@@ -40,28 +40,32 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 
 ### Last Breath (Stage VI — Requires Second Heart)
 
-When V dies at psycho level 5 (from the PsychoOutburst timer or combat damage) and Second Heart revives them, Stage VI begins — David's final stand, inspired by Episode 10 of Edgerunners.
+When V dies at psycho level 5 and Second Heart revives them, Stage VI begins — David's final stand, inspired by Episode 10 of Edgerunners. All effects are synchronized to "I Really Want to Stay at Your House" (Rosa Walton, ~4:05).
 
-**Phase 1 — Moment of Peace (15s):**
-- All psychosis VFX are stripped — the world is clear for the first time
-- Sandevistan locks ON at maximum dilation (99.35%)
-- "I Really Want to Stay at Your House" plays
+**Phase 1 — Peace (20s):**
+- All psychosis VFX stripped — the world is clear
+- Song starts at 3s, Sandy activates at 5s with dilation ramp 90% → 99.35%
+- Peak dilation (99.35%) held for 10s — David's moment of perfect clarity
 - `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH`
 
-**Phase 2 — Decay (~105s):**
-- CyberpsychoSafetyOff VFX return and intensify
-- Time dilation degrades from 99.35% → 93% as runtime depletes
-- Camera tremor ramps from subtle to severe
-- V laughs uncontrollably (`ono_v_laugh_long`)
-- Delusional messages appear every 4–8s (Lucy, the Moon, confused identity)
+**Phase 2 — Decay (~225s, song-synced):**
+- Effects synchronized to the song's emotional arc:
+  - **Chorus drops** (1:15, 2:46) → Ticking Time Bomb + Blackwall Kill fire
+  - **Verse 2** (1:53) → calm, all combat effects pause
+  - **Bridge** (3:08) → moment of clarity, ALL effects stripped
+  - **Final Chorus** (3:40) → peak burst, maximum intensity
+  - **Outro** (3:58) → effects fade
+- Time dilation degrades 99.35% → 90% (exp 2.5 curve)
+- Camera tremor, V's laugh, delusional messages — all song-phase aware
 - Sandy cannot be deactivated — V is locked in
 
 **Death:**
-- When runtime hits 0: `THE MOON... I CAN SEE IT`
-- 3s of terminal clarity (all VFX removed)
-- `DAVID MARTINEZ — FLATLINED` — permanent death, no revival
+- Runtime hits 0: `THE MOON... I CAN SEE IT`
+- 3s of terminal clarity → `DAVID MARTINEZ — FLATLINED` — permanent death
 
 > Last Breath is a one-way trip. There is no recovery from Stage VI.
+>
+> For the full song-synced timeline, effect graphs, and implementation details, see **[docs/last-breath.md](docs/last-breath.md)**.
 
 ### On-Screen Notifications
 
@@ -152,9 +156,9 @@ Time dilation degrades as runtime depletes — higher psychosis stages degrade f
 | 3 Losing It | 95% → 90% | exp 2.0 | Quadratic drop |
 | 4 On The Edge | 96.5% → 87% | exp 2.3 | Peak fades fast |
 | 5 Cyberpsycho | 97.5% → 85% | exp 2.8 | Brief flash of peak |
-| 6 Last Breath | 99.35% → 90% | Multi-phase | See [dilation curves doc](docs/dilation-curves.md) |
+| 6 Last Breath | 99.35% → 90% | Multi-phase | See [last-breath.md](docs/last-breath.md) |
 
-For full curve visualizations, formulas, and Stage 6 phase timeline, see **[docs/dilation-curves.md](docs/dilation-curves.md)**.
+For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dilation-curves.md)**. For Stage 6 song-synced timeline, see **[docs/last-breath.md](docs/last-breath.md)**.
 
 ### Duration & Cooldown
 | Setting | Range | Default | Description |
