@@ -1077,7 +1077,6 @@ davidsapogee = {
 			self.nextPsychoMsgTime = now + math.random(60, 120)
 		end
 	 end)
-	,heartbeatSoundName = "q005_sc_01_heart_beating"
 	,Heartbeat = (function(self)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		-- Heartbeat at psycho 3+ when idle, or during Sandy + low health
@@ -1088,20 +1087,25 @@ davidsapogee = {
 			shouldBeat = true
 		end
 
-		if shouldBeat then
-			self.heartbeatPlaying = true
-			local V = GetPlayer()
+		if shouldBeat and not self.heartbeatPlaying then
+			local V = Game.GetPlayer()
 			if not V or not IsDefined(V) then return end
-			-- Play one-shot heartbeat sound each tick (1s interval = heartbeat rhythm)
-			-- Uses PlaySoundEvent which is confirmed working (same as Jackie laugh)
-			pcall(function() V:PlaySoundEvent(self.heartbeatSoundName) end)
-		elseif self.heartbeatPlaying then
+			local evt = SoundPlayEvent.new()
+			evt.soundName = "q101_sc_03_heart_loop"
+			V:QueueEvent(evt)
+			self.heartbeatPlaying = true
+		elseif not shouldBeat and self.heartbeatPlaying then
 			self:StopHeartbeat()
 		end
 	 end)
 	,StopHeartbeat = (function(self)
 		if not self.heartbeatPlaying then return end
 		self.heartbeatPlaying = false
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		local evt = SoundStopEvent.new()
+		evt.soundName = "q101_sc_03_heart_loop"
+		V:QueueEvent(evt)
 	 end)
 	,Nosebleed = (function(self)
 		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
