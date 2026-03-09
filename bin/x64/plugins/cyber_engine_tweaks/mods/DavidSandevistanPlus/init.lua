@@ -222,6 +222,9 @@ davidsapogee = {
 	,heartbeatPlaying = false
 	,cheatedDeath = false
 	,nextPsychoMsgTime = nil
+	,lastBreath = nil  -- { phase = "peace"|"decay", elapsed = 0, peaceTime = 15, totalRuntime = N, songPlaying = false }
+	,lastBreathDeath = nil  -- true when Last Breath death is pending (permanent death)
+	,lastBreathMessage = nil  -- { elapsed = 0, duration = 3, sent = false }
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -299,6 +302,7 @@ davidsapogee = {
 			inSafeArea = self.PlayerInSafeArea,
 			inClub = self.InDaClub,
 			dfImmuno = dfImmuno,
+			lastBreath = self.lastBreath,
 		})
 	 end)
 	,GetApogeeIndex = (function(self)
@@ -392,6 +396,10 @@ davidsapogee = {
 		
 		self.dailyActivations = 0
 		self.cheatedDeath = false
+		if self.lastBreath then self:StopLastBreathSong() end
+		self.lastBreath = nil
+		self.lastBreathDeath = nil
+		self.lastBreathMessage = nil
 		self.qs:SaveDailyActivations(0)
 
 		self:Safety(true)
@@ -456,7 +464,8 @@ davidsapogee = {
 		self.bbs:SendMessage(activationMsg, 3.0)
 
 		-- Second Heart penalty: V cheated death at psycho 5 — borrowed time, not instant death
-		if self.cheatedDeath and self.cfg.enableCyberpsychosis then
+		-- (Skip during Last Breath — Sandy is auto-managed)
+		if self.cheatedDeath and self.cfg.enableCyberpsychosis and not self.lastBreath then
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
 			if self.PsychoOutburst == nil or self.PsychoOutburst < 600 then
@@ -517,6 +526,9 @@ davidsapogee = {
 		self.fovPulse = { elapsed = 0, duration = 0.4, baseFOV = nil }
 	 end)
 	,End = (function(self)
+		-- Block deactivation during Last Breath — Sandy stays on until death
+		if self.lastBreath then return end
+
 		self.isRunning = false
 		if self.martinez == nil then return end
 		if not self:IsWearingApogee() then return end
@@ -560,11 +572,24 @@ davidsapogee = {
 	 end)
 	,KillV_Execute = (function(self)
 		self.terminalClarity = nil
-		self.bbs:SendWarning("SYSTEM FAILURE — NEURAL COLLAPSE", 4.0)
-		self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
-		self.VIsDead = true
-		self.cheatedDeath = true
-		self.OutstandingBuff = 6
+		if self.lastBreathDeath then
+			-- Permanent death after Last Breath — no second chances
+			self.lastBreathDeath = nil
+			self.lastBreath = nil
+			self.isRunning = false
+			self:TimeDilationEffects_AllOff()
+			self.bbs:SendWarning("DAVID MARTINEZ — FLATLINED", 6.0)
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
+			self.VIsDead = true
+			self.cheatedDeath = false  -- Second Heart already fired, no loop
+			self.OutstandingBuff = 6
+		else
+			self.bbs:SendWarning("SYSTEM FAILURE — NEURAL COLLAPSE", 4.0)
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
+			self.VIsDead = true
+			self.cheatedDeath = true
+			self.OutstandingBuff = 6
+		end
 	 end)
 	,RemoveDeadV = (function(self)
 		local V = Game.GetPlayer()
@@ -575,10 +600,51 @@ davidsapogee = {
 			self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 		end
 		if self.cheatedDeath then
-			-- Second Heart saved V — give runtime + psycho timer back, psychosis remains at 5
-			self.runTime = math.max(self.runTime, 120)
-			self.PsychoOutburst = 600
-			self.bbs:SendWarning("SECOND HEART ENGAGED — BORROWED TIME", 4.0)
+			self.cheatedDeath = false
+			self.CyberPsychoWarnings = 5
+			self.PsychoOutburst = nil  -- No more psycho timer — death comes from runtime
+
+			-- Initialize Last Breath state
+			self.runTime = math.max(self.runTime, self.lastBreathRuntime)
+			local rt = self.runTime
+			self.lastBreath = {
+				phase = "peace",
+				elapsed = 0,
+				peaceTime = self.lastBreathPeaceTime,
+				totalRuntime = rt,
+				songPlaying = false,
+			}
+
+			-- Remove ALL effects — moment of peace
+			self:RemoveAllPsychoVFX()
+			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
+			self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
+			self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
+			self.MinorBleedingOn = false
+			self.tremor.intensity = 0
+			self:StopHeartbeat()
+			self.nextLaughTime = nil
+			self.nextPsychoMsgTime = nil
+			self.comedownTimer = nil
+
+			-- Auto-activate Sandy at max dilation
+			self.isRunning = true
+			self.sandyStartRuntime = rt
+			self.lowRuntimeWarned = false
+			self.lastTick = self.TickLength + 0.001
+			self.SafetyOn = false
+
+			-- Apply max time dilation (99.35%)
+			local maxDilation = self:findDilationIndex(0.0065)
+			self:TimeDilationEffects_Activate(maxDilation, "Last Breath")
+
+			-- Play the song
+			self.lastBreath.songPlaying = self:PlayLastBreathSong()
+
+			self.bbs:SendWarning("LAST BREATH", 5.0)
+
+			-- Delayed lore message
+			self.lastBreathMessage = { elapsed = 0, duration = 3.0, sent = false }
 		end
 	 end)
 	,Safety = (function(self,SafetyOn,ForceSafe)
@@ -667,6 +733,25 @@ davidsapogee = {
 	}
 	,TimeDilationCalculator = (function(self,DebugInfo)
 		if DebugInfo == nil then DebugInfo = false end
+
+		-- Last Breath override: peace = max dilation, decay = 99.35% → 93%
+		if self.lastBreath then
+			local timeScale
+			if self.lastBreath.phase == "peace" then
+				timeScale = 0.0065  -- 99.35%
+			else
+				-- Decay: interpolate from 0.0065 (99.35%) to 0.07 (93%) as runtime depletes
+				local totalRT = self.lastBreath.totalRuntime
+				if totalRT <= 0 then totalRT = 1 end
+				local rtRatio = self.runTime / totalRT
+				if rtRatio < 0 then rtRatio = 0 end
+				if rtRatio > 1 then rtRatio = 1 end
+				timeScale = 0.07 + (0.0065 - 0.07) * rtRatio  -- 0.07 at empty, 0.0065 at full
+			end
+			local Dilation = self:findDilationIndex(timeScale)
+			return Dilation, "Last Breath"
+		end
+
 		local IsEdgeRunner = (self.sps:IsEdgeRunner() == true)
 		local baseTimeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
 		local timeScale = baseTimeScale
@@ -1043,6 +1128,109 @@ davidsapogee = {
 			self:KillV_Execute()
 		end
 	 end)
+	----------------------------------------------------------------
+	-- Last Breath: David's final stand after Second Heart
+	----------------------------------------------------------------
+	,lastBreathSong = "mus_radio_05_pop_i_want_to_stay_at_your_house"
+	,lastBreathPeaceTime = 15  -- seconds of peace before decay
+	,lastBreathRuntime = 120   -- seconds of runtime for the last stand
+	,PlayLastBreathSong = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return false end
+		-- Method 1: Try pocket radio + RequestSongOnRadioStation (proven in Improved Radio mod)
+		local ok1, err1 = pcall(function()
+			V:GetQuickSlotsManager():SendRadioEvent(true, true, 5)
+		end)
+		if ok1 then
+			pcall(function()
+				Game.GetAudioSystem():RequestSongOnRadioStation(
+					"radio_station_05_pop",
+					self.lastBreathSong
+				)
+			end)
+		end
+		-- Method 2: Try direct AudioSystem:Play as fallback
+		pcall(function()
+			Game.GetAudioSystem():Play(self.lastBreathSong)
+		end)
+		-- Method 3: Try SoundPlayEvent as last resort
+		pcall(function()
+			local evt = SoundPlayEvent.new()
+			evt.soundName = self.lastBreathSong
+			V:QueueEvent(evt)
+		end)
+		return true
+	 end)
+	,StopLastBreathSong = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		-- Stop all methods
+		pcall(function()
+			V:GetQuickSlotsManager():SendRadioEvent(false, false, 5)
+		end)
+		pcall(function()
+			Game.GetAudioSystem():Stop(self.lastBreathSong)
+		end)
+		pcall(function()
+			local evt = SoundStopEvent.new()
+			evt.soundName = self.lastBreathSong
+			V:QueueEvent(evt)
+		end)
+	 end)
+	,UpdateLastBreath = (function(self, dt)
+		if not self.lastBreath then return end
+
+		self.lastBreath.elapsed = self.lastBreath.elapsed + dt
+
+		if self.lastBreath.phase == "peace" then
+			-- Peace phase: no VFX, max dilation, song playing
+			-- Transition to decay after peaceTime
+			if self.lastBreath.elapsed >= self.lastBreath.peaceTime then
+				self.lastBreath.phase = "decay"
+				self.lastBreath.elapsed = 0
+				-- Apply all psycho VFX (the ramp-up begins)
+				self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
+				self.bbs:SendWarning("NEURAL COLLAPSE IMMINENT", 4.0)
+				-- Start tremor
+				self.tremor.intensity = 0.004
+				-- Enable psycho messages (rapid)
+				self.nextPsychoMsgTime = os.clock() + math.random(5, 15)
+				self.nextLaughTime = os.clock() + math.random(8, 20)
+			end
+
+		elseif self.lastBreath.phase == "decay" then
+			-- Decay phase: VFX active, dilation decaying, tremor increasing
+			local totalRT = self.lastBreath.totalRuntime
+			if totalRT <= 0 then totalRT = 1 end
+			local rtRatio = self.runTime / totalRT
+			if rtRatio < 0 then rtRatio = 0 end
+			if rtRatio > 1 then rtRatio = 1 end
+
+			-- Ramp tremor from 0.004 to 0.015 as runtime depletes
+			self.tremor.intensity = 0.004 + (1 - rtRatio) * 0.011
+
+			-- Check for death: runtime depleted
+			if self.runTime <= 0 then
+				self:StopLastBreathSong()
+				self:StopHeartbeat()
+				self.lastBreath = nil
+				-- Permanent death — no more chances
+				self:RemoveAllPsychoVFX()
+				self.tremor.intensity = 0
+				self.nextLaughTime = nil
+				self.nextPsychoMsgTime = nil
+				local V = Game.GetPlayer()
+				if V and IsDefined(V) then
+					pcall(function() V:SetWarningMessage("THE MOON... I CAN SEE IT") end)
+				end
+				self.bbs:SendWarning("THE MOON... I CAN SEE IT", 3.0)
+				-- Brief clarity before permanent death
+				self.terminalClarity = { elapsed = 0, duration = 3.0 }
+				-- Prevent Second Heart loop: mark as already used
+				self.lastBreathDeath = true
+			end
+		end
+	 end)
 	,PsychoLaugh = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 4 then
@@ -1204,11 +1392,12 @@ davidsapogee = {
 				end
 				
 				-- if Safeties Lifted Use extra runtime (1.25 already ticked + multiplier)
-				if not self.SafetyOn then self.runTime = self.runTime - (self.TickLength*self.cfg.safetyOffDrainMultiplier) end
+				-- During Last Breath: no extra drain, steady countdown
+				if not self.SafetyOn and not self.lastBreath then self.runTime = self.runTime - (self.TickLength*self.cfg.safetyOffDrainMultiplier) end
 				if self.runTime < 1 then self.runTime = 0 end
 
-				-- Low runtime warning (once per activation)
-				if not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
+				-- Low runtime warning (once per activation, not during Last Breath)
+				if not self.lastBreath and not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
 					self.lowRuntimeWarned = true
 					self.bbs:SendWarning("LOW RUNTIME: "..tostring(math.floor(self.runTime)).."s — DEACTIVATE OR RISK EPISODE", 3.0)
 				end
@@ -1238,24 +1427,27 @@ davidsapogee = {
 				end
 				
 				self:SandevistanCharge()
-				-- health check every tick; because V is getting shot too!
-				-- This health check is being done before the damage gets applied
-				local VsHealthPercent = VsHealthNow - ToDo_DamageHealthPercent
-				if self.SafetyOn then
-					if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
+				-- During Last Breath: skip all health checks — death comes from runtime only
+				if not self.lastBreath then
+					-- health check every tick; because V is getting shot too!
+					-- This health check is being done before the damage gets applied
+					local VsHealthPercent = VsHealthNow - ToDo_DamageHealthPercent
+					if self.SafetyOn then
+						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
+							self.sps:EndSandevistan()
+							self:BleedingEffect()
+						elseif self.runTime < 10 and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
+							self:OutOfRuntime(true)
+						end
+					elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
+						-- Safety OFF + health critical: force psycho escalation even if runtime > 0
+						-- Death only comes from PsychoOutburst timer expiring at level 5
 						self.sps:EndSandevistan()
-						self:BleedingEffect()
-					elseif self.runTime < 10 and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
+						self:BleedingEffect(true)
+					elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
+						-- Safety OFF + low runtime + injured: bleeding warning
 						self:OutOfRuntime(true)
 					end
-				elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
-					-- Safety OFF + health critical: force psycho escalation even if runtime > 0
-					-- Death only comes from PsychoOutburst timer expiring at level 5
-					self.sps:EndSandevistan()
-					self:BleedingEffect(true)
-				elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
-					-- Safety OFF + low runtime + injured: bleeding warning
-					self:OutOfRuntime(true)
 				end
 				--print('Running: '..tostring(self.runTime)..' Damage='..tostring(self.DamagePerTick)..'/'..tostring(self.RequiredHealth)..' - '..tostring(VsHealthPercent))
 			end
@@ -1359,12 +1551,16 @@ davidsapogee = {
 					self.OutstandingBuff = self.OutstandingBuff - 1
 					if self.OutstandingBuff <= 0 then
 						self.OutstandingBuff = 5.0 -- keep checking for sandevistan removal
-						if self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl) and self.runTime < self.MaxRuntime then -- slowly recharge sandevistan in safe area
-							self.runTime = self.runTime + 1
-							if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
+						if not self.lastBreath then
+							if self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl) and self.runTime < self.MaxRuntime then -- slowly recharge sandevistan in safe area
+								self.runTime = self.runTime + 1
+								if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
+							end
 						end
 						if self.VIsDead then self:RemoveDeadV() end
-						self:DisableSandevistan("OutstandingBuff")
+						if not self.lastBreath then
+							self:DisableSandevistan("OutstandingBuff")
+						end
 					end
 				end
 				if self.ViktorCooldown ~= nil then
@@ -1406,6 +1602,9 @@ davidsapogee = {
 		self.MaxRechargePerSleep = self.cfg.maxRechargePerSleep
 		self.PsychoTrigger = 1
 		self.ViktorCooldown = nil
+		self.lastBreath = nil
+		self.lastBreathDeath = nil
+		self.lastBreathMessage = nil
 		self.HealthBrake = self.qs:LoadOverClockBrake()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
 		self.dailyActivations = self.qs:LoadDailyActivations()
@@ -2024,19 +2223,27 @@ registerForEvent('onInit', function()
 		local VIsInControl_Previous = davidsapogee.VIsInControl
 		davidsapogee.VIsInControl = (newState==1)
 		if VIsInControl_Previous and (not davidsapogee.VIsInControl) then -- only if it goes from on to off do we care
-			davidsapogee.sps:EndSandevistan()
-			davidsapogee:Safety(true,true) -- turn lift limiters off
-			if davidsapogee.CyberPsychoWarnings == 5 then 
+			if not davidsapogee.lastBreath then
+				davidsapogee.sps:EndSandevistan()
+				davidsapogee:Safety(true,true) -- turn lift limiters off
+			end
+			if davidsapogee.CyberPsychoWarnings == 5 then
 				davidsapogee.bbs:PlayShortEffect(davidsapogee.martinez.martinez_fx_onscreen_sick_start)
 			end
 		end
-		davidsapogee:DisableSandevistan("PlayerPuppet/OnSceneTierChange")
+		if not davidsapogee.lastBreath then
+			davidsapogee:DisableSandevistan("PlayerPuppet/OnSceneTierChange")
+		end
 	end)
 	ObserveAfter("PhoneSystem", "OnPickupPhone",function(this, request)
-		davidsapogee.sps:EndSandevistan()
+		if not davidsapogee.lastBreath then
+			davidsapogee.sps:EndSandevistan()
+		end
 	end)
 	ObserveAfter("PhoneSystem", "OnUsePhone",function(this, request)
-		davidsapogee.sps:EndSandevistan()
+		if not davidsapogee.lastBreath then
+			davidsapogee.sps:EndSandevistan()
+		end
 	end)
 
 	ObserveAfter('PreventionSystem', 'OnHeatChanged', function(this, previousHeat)
@@ -2097,6 +2304,19 @@ registerForEvent('onUpdate', function(dt)
     davidsapogee:UpdateTremor(dt)
     davidsapogee:UpdateFOVPulse(dt)
     davidsapogee:UpdateTerminalClarity(dt)
+    davidsapogee:UpdateLastBreath(dt)
+    -- Last Breath delayed lore message
+    if davidsapogee.lastBreathMessage then
+        davidsapogee.lastBreathMessage.elapsed = davidsapogee.lastBreathMessage.elapsed + dt
+        if not davidsapogee.lastBreathMessage.sent and davidsapogee.lastBreathMessage.elapsed >= davidsapogee.lastBreathMessage.duration then
+            davidsapogee.lastBreathMessage.sent = true
+            local V = Game.GetPlayer()
+            if V and IsDefined(V) then
+                pcall(function() V:SetWarningMessage("LUCY... I CAN SEE THE MOON FROM HERE") end)
+            end
+            davidsapogee.lastBreathMessage = nil
+        end
+    end
 end)
 
 registerForEvent("onDraw", function()
@@ -2161,6 +2381,12 @@ registerInput("DebugPsychoReset", 'DEBUG: Reset All Psycho State', function(isKe
 	davidsapogee.nextPsychoMsgTime = nil
 	davidsapogee.tremor.intensity = 0
 	davidsapogee.cheatedDeath = false
+	if davidsapogee.lastBreath then
+		davidsapogee:StopLastBreathSong()
+	end
+	davidsapogee.lastBreath = nil
+	davidsapogee.lastBreathDeath = nil
+	davidsapogee.lastBreathMessage = nil
 	davidsapogee:RemoveAllPsychoVFX()
 	davidsapogee:StopHeartbeat()
 	davidsapogee:DisableSandevistan("debug")

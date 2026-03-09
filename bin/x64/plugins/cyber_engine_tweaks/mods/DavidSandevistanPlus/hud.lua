@@ -268,7 +268,15 @@ hud.Update = (function(self, data)
 
 	local status = ""
 	local statusColor = COLOR_WHITE
-	if not data.SafetyOn then
+	if data.lastBreath then
+		if data.lastBreath.phase == "peace" then
+			status = "LAST BREATH"
+			statusColor = COLOR_WHITE
+		else
+			status = "LAST BREATH — FADING"
+			statusColor = COLOR_RED
+		end
+	elseif not data.SafetyOn then
 		status = "SAFETY OFF"
 		statusColor = COLOR_SAFETY_OFF
 	elseif data.comedownTimer and data.comedownTimer > 0 then
@@ -290,17 +298,35 @@ hud.Update = (function(self, data)
 	self.w.statusText:SetTintColor(toHDR(statusColor))
 
 	-- Psycho line (to the right of dilation text, inside Row 1)
-	local showPsycho = data.psychoWarnings > 0 and data.psychoOutburst ~= nil
+	local showPsycho = false
+	if data.lastBreath then
+		showPsycho = true
+	elseif data.psychoWarnings > 0 and data.psychoOutburst ~= nil then
+		showPsycho = true
+	end
 	self.w.psychoLine:SetVisible(showPsycho)
 
 	if showPsycho then
-		local lvl = PSYCHO_LEVELS[data.psychoWarnings]
-		local lvlText = lvl and lvl.text or ("["..tostring(data.psychoWarnings).."]")
-		local lvlColor = lvl and lvl.color or COLOR_CYAN
-		local timerText = formatTime(data.psychoOutburst)
+		if data.lastBreath then
+			local rt = data.runTime or 0
+			self.w.psychoLine:SetText("[VI] LAST BREATH  " .. formatTime(rt))
+			-- Pulse between white and red during decay
+			if data.lastBreath.phase == "decay" then
+				local pulse = math.abs(math.sin(os.clock() * 2))
+				local c = lerpColor(COLOR_RED, COLOR_WHITE, pulse)
+				self.w.psychoLine:SetTintColor(toHDR(c))
+			else
+				self.w.psychoLine:SetTintColor(toHDR(COLOR_WHITE))
+			end
+		else
+			local lvl = PSYCHO_LEVELS[data.psychoWarnings]
+			local lvlText = lvl and lvl.text or ("["..tostring(data.psychoWarnings).."]")
+			local lvlColor = lvl and lvl.color or COLOR_CYAN
+			local timerText = formatTime(data.psychoOutburst)
 
-		self.w.psychoLine:SetText(lvlText .. "  " .. timerText)
-		self.w.psychoLine:SetTintColor(toHDR(lvlColor))
+			self.w.psychoLine:SetText(lvlText .. "  " .. timerText)
+			self.w.psychoLine:SetTintColor(toHDR(lvlColor))
+		end
 	end
 
 	-- Stamina bar margin (only 2 rows now, psycho is inline with Row 1)
