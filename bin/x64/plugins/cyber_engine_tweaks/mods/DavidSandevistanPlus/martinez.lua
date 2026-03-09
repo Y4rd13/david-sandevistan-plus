@@ -73,12 +73,14 @@ martinez.CyberpsychoStatusEffect_FX1 = 'BaseStatusEffect.MartinezSandevistan_Cyb
 martinez.CyberpsychoStatusEffect_FX2 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX2'
 martinez.CyberpsychoStatusEffect_FX3 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX3'
 martinez.CyberpsychoStatusEffect_FX4 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX4'
+martinez.CyberpsychoStatusEffect_FX5 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX5'
 
 martinez.CyberpsychoSafetyOffEffect      = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff'
 martinez.CyberpsychoSafetyOffEffect_FX1  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX1'
 martinez.CyberpsychoSafetyOffEffect_FX2  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX2'
 martinez.CyberpsychoSafetyOffEffect_FX3  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX3'
 martinez.CyberpsychoSafetyOffEffect_FX4  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX4'
+martinez.CyberpsychoSafetyOffEffect_FX5  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX5'
 
 martinez.PsychoWarningEffect_Light       = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light'
 martinez.PsychoWarningEffect_Light_FX1   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light_FX1'
@@ -95,6 +97,9 @@ martinez.NosebleedEffect                = 'BaseStatusEffect.MartinezSandevistan_
 martinez.NosebleedEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_FX1'
 martinez.NosebleedEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SMG'
 martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SM1'
+
+martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
+martinez.HeartbeatEffect_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Heartbeat_SFX1'
 
 martinez.OverclockStatusEffect       = 'BaseStatusEffect.MartinezSandevistan_Overclock'
 martinez.Overclock_LP                = 'BaseStatusEffect.MartinezSandevistan_Overclock_LP'
@@ -539,7 +544,7 @@ function martinez.CreateSandevistan(self)
 	self:CreateStatusEffect(self.CyberpsychoStatusEffect,{
 		 '' --AIData
 		,{} --SFX
-		,{self.CyberpsychoStatusEffect_FX1,self.CyberpsychoStatusEffect_FX2,self.CyberpsychoStatusEffect_FX3,self.CyberpsychoStatusEffect_FX4}
+		,{self.CyberpsychoStatusEffect_FX1,self.CyberpsychoStatusEffect_FX2,self.CyberpsychoStatusEffect_FX3,self.CyberpsychoStatusEffect_FX4,self.CyberpsychoStatusEffect_FX5}
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -568,6 +573,7 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.CyberpsychoStatusEffect_FX2,VFX_SuperHacked) -- but cloning an existing one does work
 	self:CloneRecord(self.CyberpsychoStatusEffect_FX3,VFX_SuperHacked) -- so that's what we'll do!
 	self:CloneRecord(self.CyberpsychoStatusEffect_FX4,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoStatusEffect_FX5,VFX_SuperHacked)
 
 	-- blackout;  afterimage_glitch
 	-- dark; blue; fisheye; braindance_sound_vision_mode
@@ -581,13 +587,14 @@ function martinez.CreateSandevistan(self)
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX1..'.name', 'hacking_glitch_low')
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX2..'.name', 'braindance_sound_vision_mode')
 	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX3..'.name', 'status_drugged_medium') -- Can't use Heavy here it will conflict with Safeties Off
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_low')
+	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_medium')
+	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX5..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
 
 	-- CyberpsychoSafetyOffEffect: same VFX as CyberpsychoStatusEffect but Sandy still works, no Kiroshi OFF
 	self:CreateStatusEffect(self.CyberpsychoSafetyOffEffect,{
 		 '' --AIData
 		,{} --SFX
-		,{self.CyberpsychoSafetyOffEffect_FX1,self.CyberpsychoSafetyOffEffect_FX2,self.CyberpsychoSafetyOffEffect_FX3,self.CyberpsychoSafetyOffEffect_FX4}
+		,{self.CyberpsychoSafetyOffEffect_FX1,self.CyberpsychoSafetyOffEffect_FX2,self.CyberpsychoSafetyOffEffect_FX3,self.CyberpsychoSafetyOffEffect_FX4,self.CyberpsychoSafetyOffEffect_FX5}
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -613,10 +620,12 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX2,VFX_SuperHacked)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX3,VFX_SuperHacked)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX4,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX5,VFX_SuperHacked)
 	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX1..'.name', 'hacking_glitch_low')
 	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX2..'.name', 'braindance_sound_vision_mode')
 	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX3..'.name', 'status_drugged_medium')
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_low')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_medium')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX5..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
 
 	-- PsychoWarningEffect_Light: subtle persistent VFX at psycho level 3
 	self:CreateStatusEffect(self.PsychoWarningEffect_Light,{
@@ -739,6 +748,35 @@ function martinez.CreateSandevistan(self)
 	self:CreateConstantStatModifier(self.NosebleedEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 3.0 })
 	self:CloneRecord(self.NosebleedEffect_FX1,VFX_SuperHacked)
 	TweakDB:SetFlat(self.NosebleedEffect_FX1..'.name', 'burnout_glitch')
+
+	-- HeartbeatEffect: persistent SFX for psycho level 3+ tension (apply once, remove when done)
+	self:CreateStatusEffect(self.HeartbeatEffect,{
+		 '' --AIData
+		,{self.HeartbeatEffect_SFX1} --SFX
+		,{} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration (infinite — removed manually)
+		,false --dynamicDuration
+		,{'Buff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData
+	})
+	self:CloneRecord(self.HeartbeatEffect_SFX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.HeartbeatEffect_SFX1..'.name', 'q005_sc_01_heart_beating')
 
 	self:CreateStatusEffect(self.OverclockStatusEffect,{
 		 '' --AIData

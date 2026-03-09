@@ -199,18 +199,13 @@ hud.Build = (function(self)
 	self.w.row2 = row2
 	self.w.activationsText = createText(row2, "DSP_Activations", FONT_SIZE_SMALL, COLOR_DIM, textHorizontalAlignment.Left)
 	self.w.statusText = createText(row2, "DSP_Status", FONT_SIZE_SMALL, COLOR_WHITE, textHorizontalAlignment.Left)
-	self.w.statusText:SetMargin(100, 0, 0, 0)
+	self.w.statusText:SetMargin(170, 0, 0, 0)
 
-	-- Row 3: Psycho bar + level + timer (hidden by default)
-	local row3Y = row2Y + FONT_SIZE_SMALL + 14
+	-- Row 3: Psycho status (compact single-line text, hidden by default)
+	local row3Y = row2Y + FONT_SIZE_SMALL + 6
 	local row3 = createCanvas(panel, "DSP_Row3", row3Y)
 	self.w.row3 = row3
-	self.w.psychoBg    = createRect(row3, "DSP_PsychoBg", BAR_WIDTH, BAR_HEIGHT, COLOR_BG)
-	self.w.psychoFill  = createRect(row3, "DSP_PsychoFill", BAR_WIDTH, BAR_HEIGHT, COLOR_CYAN)
-	self.w.psychoLevel = createText(row3, "DSP_PsychoLevel", FONT_SIZE_SMALL, COLOR_CYAN, textHorizontalAlignment.Left)
-	self.w.psychoLevel:SetMargin(4, BAR_HEIGHT + 4, 0, 0)
-	self.w.psychoTimer = createText(row3, "DSP_PsychoTimer", FONT_SIZE_SMALL, COLOR_DIM, textHorizontalAlignment.Left)
-	self.w.psychoTimer:SetMargin(BAR_WIDTH + 14, BAR_HEIGHT + 4, 0, 0)
+	self.w.psychoLine = createText(row3, "DSP_PsychoLine", FONT_SIZE_SMALL, COLOR_CYAN, textHorizontalAlignment.Left)
 	row3:SetVisible(false)
 
 	self.built = true
@@ -223,6 +218,14 @@ end)
 hud.Update = (function(self, data)
 	if not self.built then
 		self:Build()
+		if not self.built then return end
+	end
+
+	-- Rebuild if the panel widget was invalidated by the game
+	if not self.w.panel or not IsDefined(self.w.panel) then
+		self.built = false
+		self.w = {}
+		self:Init()
 		if not self.built then return end
 	end
 
@@ -297,33 +300,24 @@ hud.Update = (function(self, data)
 	self.w.statusText:SetText(status)
 	self.w.statusText:SetTintColor(toHDR(statusColor))
 
-	-- Row 3: Psycho bar (only visible when psychoWarnings > 0)
+	-- Row 3: Psycho line (only visible when psychoWarnings > 0)
 	local showPsycho = data.psychoWarnings > 0 and data.psychoOutburst ~= nil
 	self.w.row3:SetVisible(showPsycho)
 
 	if showPsycho then
-		local pRatio = data.psychoOutburst / 3600
-		if pRatio < 0 then pRatio = 0 end
-		if pRatio > 1 then pRatio = 1 end
-
-		local pFillWidth = math.floor(BAR_WIDTH * pRatio)
-		if pFillWidth < 1 and data.psychoOutburst > 0 then pFillWidth = 1 end
-		self.w.psychoFill:SetSize(pFillWidth, BAR_HEIGHT)
-		self.w.psychoFill:SetTintColor(toHDR(psychoColor(pRatio)))
-
 		local lvl = PSYCHO_LEVELS[data.psychoWarnings]
-		if lvl then
-			self.w.psychoLevel:SetText(lvl.text)
-			self.w.psychoLevel:SetTintColor(toHDR(lvl.color))
-		end
+		local lvlText = lvl and lvl.text or ("["..tostring(data.psychoWarnings).."]")
+		local lvlColor = lvl and lvl.color or COLOR_CYAN
+		local timerText = formatTime(data.psychoOutburst)
 
-		self.w.psychoTimer:SetText(formatTime(data.psychoOutburst))
+		self.w.psychoLine:SetText(lvlText .. "  " .. timerText)
+		self.w.psychoLine:SetTintColor(toHDR(lvlColor))
 	end
 
 	-- Stamina bar margin (matches row positions from Build)
-	local margin = BAR_HEIGHT + FONT_SIZE_SMALL + 16 + FONT_SIZE_SMALL + 8
+	local margin = PANEL_TOP_MARGIN + BAR_HEIGHT + FONT_SIZE_SMALL + 16 + FONT_SIZE_SMALL + 4
 	if showPsycho then
-		margin = margin + 14 + BAR_HEIGHT + FONT_SIZE_SMALL + 8
+		margin = margin + 6 + FONT_SIZE_SMALL + 4
 	end
 	self:SetStaminaMargin(margin)
 end)

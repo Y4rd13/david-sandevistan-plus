@@ -219,6 +219,9 @@ davidsapogee = {
 	,fovPulse = nil  -- { elapsed = 0, duration = 0.4, baseFOV = nil }
 	,nextLaughTime = nil  -- os.clock() timestamp for next psycho laugh
 	,terminalClarity = nil  -- { elapsed = 0, duration = 2.5 }
+	,heartbeatPlaying = false
+	,cheatedDeath = false
+	,nextPsychoMsgTime = nil
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -324,6 +327,8 @@ davidsapogee = {
 		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoSafetyOffEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoLaughEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.NosebleedEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.HeartbeatEffect)
+		self.heartbeatPlaying = false
 	 end)
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
@@ -386,6 +391,7 @@ davidsapogee = {
 		end
 		
 		self.dailyActivations = 0
+		self.cheatedDeath = false
 		self.qs:SaveDailyActivations(0)
 
 		self:Safety(true)
@@ -448,6 +454,15 @@ davidsapogee = {
 			activationMsg = activationMsg.." | PSYCHOSIS "..tostring(levelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings)
 		end
 		self.bbs:SendMessage(activationMsg, 3.0)
+
+		-- Second Heart penalty: V cheated death at psycho 5 — borrowed time
+		if self.cheatedDeath and self.cfg.enableCyberpsychosis then
+			self.cheatedDeath = false
+			self.CyberPsychoWarnings = 5
+			self.PsychoOutburst = 180
+			self:DisableSandevistan("cheatedDeath")
+			self.bbs:SendWarning("NEURAL RELAPSE — BORROWED TIME", 4.0)
+		end
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
@@ -521,25 +536,33 @@ davidsapogee = {
 		self.tremor.intensity = 0
 		self:StopHeartbeat()
 		self.nextLaughTime = nil
-		self.bbs:SendMessage("...", 2.0)
-		self.terminalClarity = { elapsed = 0, duration = 2.5 }
+		local V = Game.GetPlayer()
+		if V and IsDefined(V) then
+			pcall(function() V:SetWarningMessage("DAVID... IT'S TIME TO STOP") end)
+		end
+		self.bbs:SendWarning("DAVID... IT'S TIME TO STOP", 4.0)
+		self.terminalClarity = { elapsed = 0, duration = 4.0 }
 	 end)
 	,KillV_Execute = (function(self)
 		self.terminalClarity = nil
 		self.bbs:SendWarning("SYSTEM FAILURE — NEURAL COLLAPSE", 4.0)
 		self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
 		self.VIsDead = true
+		self.cheatedDeath = true
 		self.OutstandingBuff = 6
 	 end)
 	,RemoveDeadV = (function(self)
 		local V = Game.GetPlayer()
 		if not IsDefined(V) then return end
 		self.VIsDead = false
-		-- sometimes V has a second heart and comes back to life
-		-- in which case we need to let him/her use the menus again!
 		self:StatusEffect_CheckAndRemove('BaseStatusEffect.HeartAttack')
 		if not V.incapacitated then
 			self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
+		end
+		if self.cheatedDeath then
+			-- Second Heart saved V — give some runtime back but psychosis remains
+			self.runTime = math.max(self.runTime, 60)
+			self.bbs:SendWarning("SECOND HEART ENGAGED — BORROWED TIME", 4.0)
 		end
 	 end)
 	,Safety = (function(self,SafetyOn,ForceSafe)
@@ -894,13 +917,13 @@ davidsapogee = {
 
 		-- Target intensity scales with psycho level
 		local target = 0
-		if self.CyberPsychoWarnings == 3 then target = 0.002
-		elseif self.CyberPsychoWarnings == 4 then target = 0.006
-		elseif self.CyberPsychoWarnings >= 5 then target = 0.012
+		if self.CyberPsychoWarnings == 3 then target = 0.003
+		elseif self.CyberPsychoWarnings == 4 then target = 0.007
+		elseif self.CyberPsychoWarnings >= 5 then target = 0.013
 		end
 		-- Overuse adds tremor even before psychosis
 		if self.dailyActivations > (self.cfg.dailySafeActivations or 3) * 2 then
-			target = math.max(target, 0.004)
+			target = math.max(target, 0.003)
 		end
 
 		-- Smooth intensity transitions
@@ -985,6 +1008,68 @@ davidsapogee = {
 			self.nextLaughTime = now + math.random(30, 90)
 		end
 	 end)
+	,psychoMessages_lv4 = {
+		"I CAN STILL GO",
+		"JUST ONE MORE TIME",
+		"I'M FINE... I'M FINE",
+		"DOC SAID THREE TIMES...",
+		"I CAN HANDLE IT",
+		"I'M BUILT DIFFERENT",
+		"NOBODY SETS MY LIMITS",
+		"I PROMISED I'D MAKE IT",
+		"CAN'T STOP NOW",
+	}
+	,psychoMessages_lv5 = {
+		"THEY CAN'T KEEP UP WITH ME",
+		"LUCY...",
+		"MAINE... IS THAT YOU?",
+		"I'M NOT DONE YET",
+		"MOM... GLORIA?",
+		"MY BODY MOVES ON ITS OWN",
+		"EVERYTHING IS SO SLOW",
+		"THE CHROME... IT SINGS",
+		"WHO'S IN THE MIRROR?",
+		"NINE TIMES THE DOSE...",
+		"BETTER IN METAL THAN SKIN",
+		"KEEP RUNNING DAVID",
+		"GLIDING ALONG THE EDGE",
+		"YOU'LL END UP LIKE MAINE",
+		"THE MOON... I CAN SEE IT",
+		"DAVID MARTINEZ DIED HERE",
+	}
+	,PsychoMessage = (function(self)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 4 then
+			self.nextPsychoMsgTime = nil
+			return
+		end
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
+
+		local now = os.clock()
+		if self.nextPsychoMsgTime == nil then
+			if self.CyberPsychoWarnings >= 5 then
+				self.nextPsychoMsgTime = now + math.random(20, 45)
+			else
+				self.nextPsychoMsgTime = now + math.random(60, 120)
+			end
+			return
+		end
+
+		if now < self.nextPsychoMsgTime then return end
+
+		local msgs = self.CyberPsychoWarnings >= 5 and self.psychoMessages_lv5 or self.psychoMessages_lv4
+		local msg = msgs[math.random(1, #msgs)]
+		local V = Game.GetPlayer()
+		if V and IsDefined(V) then
+			pcall(function() V:SetWarningMessage(msg) end)
+		end
+
+		if self.CyberPsychoWarnings >= 5 then
+			self.nextPsychoMsgTime = now + math.random(20, 45)
+		else
+			self.nextPsychoMsgTime = now + math.random(60, 120)
+		end
+	 end)
 	,Heartbeat = (function(self)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		-- Heartbeat at psycho 3+ when idle, or during Sandy + low health
@@ -994,16 +1079,30 @@ davidsapogee = {
 		elseif self.isRunning and self.sps:getHealth(true) < 30 then
 			shouldBeat = true
 		end
-		if not shouldBeat then return end
 
-		local V = Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
-		pcall(function() V:PlaySoundEvent("gmpl_turret_heartbeat_loop_start") end)
+		if shouldBeat and not self.heartbeatPlaying then
+			local V = Game.GetPlayer()
+			if not V or not IsDefined(V) then return end
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "q201_sc_03_v_scared_loop"
+				V:QueueEvent(evt)
+			end)
+			self.heartbeatPlaying = true
+		elseif not shouldBeat and self.heartbeatPlaying then
+			self:StopHeartbeat()
+		end
 	 end)
 	,StopHeartbeat = (function(self)
+		if not self.heartbeatPlaying then return end
+		self.heartbeatPlaying = false
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
-		pcall(function() V:PlaySoundEvent("gmpl_turret_heartbeat_loop_stop") end)
+		pcall(function()
+			local evt = SoundStopEvent.new()
+			evt.soundName = "q201_sc_03_v_scared_loop"
+			V:QueueEvent(evt)
+		end)
 	 end)
 	,Nosebleed = (function(self)
 		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
@@ -1219,6 +1318,7 @@ davidsapogee = {
 			elseif self.displayTick2 == 3 then -- 1/sec +0.75 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				self:PsychoLaugh()
+				self:PsychoMessage()
 				if self.LoadThreeTimer ~= nil then
 					self.LoadThreeTimer = self.LoadThreeTimer - 1
 					if self.LoadThreeTimer <= 0 then
@@ -1961,4 +2061,57 @@ end)
 
 registerInput("ToggleSandyNoSafety", 'Toggle Sandevistan Safety On/Off', function(isKeyDown)
     davidsapogee:ToggleSafety(isKeyDown)
+end)
+
+registerInput("DebugPsychoUp", 'DEBUG: Psycho Level +1', function(isKeyDown)
+	if not isKeyDown then return end
+	if davidsapogee.CyberPsychoWarnings < 5 then
+		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings + 1
+	end
+	davidsapogee:Calculate_PsychoOutburst()
+	davidsapogee:DisableSandevistan("debug")
+	davidsapogee:SaveGame("debug")
+	local names = { "I", "II", "III", "IV", "V" }
+	davidsapogee.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[davidsapogee.CyberPsychoWarnings] or davidsapogee.CyberPsychoWarnings), 2.0)
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings).." PsychoOutburst="..tostring(davidsapogee.PsychoOutburst))
+end)
+
+registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
+	if not isKeyDown then return end
+	if davidsapogee.CyberPsychoWarnings > 0 then
+		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings - 1
+	end
+	if davidsapogee.CyberPsychoWarnings == 0 then
+		davidsapogee.PsychoOutburst = nil
+		davidsapogee:StopHeartbeat()
+		davidsapogee.nextLaughTime = nil
+	end
+	davidsapogee:DisableSandevistan("debug")
+	davidsapogee:SaveGame("debug")
+	local names = { [0] = "CLEAR", "I", "II", "III", "IV", "V" }
+	davidsapogee.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[davidsapogee.CyberPsychoWarnings] or davidsapogee.CyberPsychoWarnings), 2.0)
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings))
+end)
+
+registerInput("DebugPsychoReset", 'DEBUG: Reset All Psycho State', function(isKeyDown)
+	if not isKeyDown then return end
+	davidsapogee.CyberPsychoWarnings = 0
+	davidsapogee.PsychoOutburst = nil
+	davidsapogee.dailyActivations = 0
+	davidsapogee.nextLaughTime = nil
+	davidsapogee.nextPsychoMsgTime = nil
+	davidsapogee.tremor.intensity = 0
+	davidsapogee.cheatedDeath = false
+	davidsapogee:RemoveAllPsychoVFX()
+	davidsapogee:StopHeartbeat()
+	davidsapogee:DisableSandevistan("debug")
+	davidsapogee:SaveGame("debug")
+	davidsapogee.bbs:SendMessage("DEBUG: ALL PSYCHO STATE RESET", 2.0)
+	print("[DSP DEBUG] All psycho state reset")
+end)
+
+registerInput("DebugForceBleed", 'DEBUG: Force BleedingEffect (psycho escalation)', function(isKeyDown)
+	if not isKeyDown then return end
+	davidsapogee:BleedingEffect(true)
+	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings))
 end)
