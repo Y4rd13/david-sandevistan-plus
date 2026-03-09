@@ -332,7 +332,7 @@ davidsapogee = {
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoLaughEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.NosebleedEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.HeartbeatEffect)
-		self.heartbeatPlaying = false
+		self:StopHeartbeat()
 	 end)
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
