@@ -481,7 +481,18 @@ davidsapogee = {
 					self:Calculate_PsychoOutburst()
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
 				end
-				self.bbs:SendWarning("OVERUSE — "..tostring(self.dailyActivations).." ACTIVATIONS TODAY (SAFE: "..tostring(effectiveSafe)..") — REST RECOMMENDED", 4.0)
+				local overuseMessages = {
+					[0] = "OVERUSE — DOC SAID THREE TIMES A DAY, MAX",
+					[1] = "OVERUSE — YOUR BODY IS ADAPTING TO THE SANDY",
+					[2] = "OVERUSE — DEPENDENCY INCREASING — CAN'T GO WITHOUT IT",
+					[3] = "OVERUSE — IGNORING ALL LIMITS — THIS WON'T END WELL",
+					[4] = "OVERUSE — NOBODY SETS MY LIMITS",
+					[5] = nil,
+				}
+				local overuseMsg = overuseMessages[self.CyberPsychoWarnings]
+				if overuseMsg then
+					self.bbs:SendWarning(overuseMsg.." ("..tostring(self.dailyActivations).."x)", 4.0)
+				end
 				if self.dev_mode then
 					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
 				end
