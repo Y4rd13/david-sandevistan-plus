@@ -634,6 +634,9 @@ davidsapogee = {
 			self.lastTick = self.TickLength + 0.001
 			self.SafetyOn = false
 
+			-- Force game's Sandy activation by filling charge
+			pcall(function() self.sps:SandevistanCharge(100) end)
+
 			-- Apply max time dilation (99.35%)
 			local maxDilation = self:findDilationIndex(0.0065)
 			self:TimeDilationEffects_Activate(maxDilation, "Last Breath")
@@ -1182,8 +1185,20 @@ davidsapogee = {
 
 		self.lastBreath.elapsed = self.lastBreath.elapsed + dt
 
+		-- Force Sandy to stay active: re-apply time dilation every frame
+		-- (game may strip effects after revival)
+		if self.isRunning then
+			self:TimeDilationEffects()
+		end
+
 		if self.lastBreath.phase == "peace" then
 			-- Peace phase: no VFX, max dilation, song playing
+			-- Keep Sandy forced on
+			if not self.isRunning then
+				self.isRunning = true
+				self.lastTick = self.TickLength + 0.001
+			end
+
 			-- Transition to decay after peaceTime
 			if self.lastBreath.elapsed >= self.lastBreath.peaceTime then
 				self.lastBreath.phase = "decay"
@@ -1193,9 +1208,11 @@ davidsapogee = {
 				self.bbs:SendWarning("NEURAL COLLAPSE IMMINENT", 4.0)
 				-- Start tremor
 				self.tremor.intensity = 0.004
-				-- Enable psycho messages (rapid)
-				self.nextPsychoMsgTime = os.clock() + math.random(5, 15)
-				self.nextLaughTime = os.clock() + math.random(8, 20)
+				-- Enable psycho messages (rapid, Last Breath specific)
+				self.nextPsychoMsgTime = os.clock() + math.random(3, 6)
+				self.nextLaughTime = os.clock() + math.random(5, 12)
+				-- Schedule first V laugh
+				self.lastBreath.nextVLaugh = os.clock() + math.random(8, 15)
 			end
 
 		elseif self.lastBreath.phase == "decay" then
@@ -1206,8 +1223,29 @@ davidsapogee = {
 			if rtRatio < 0 then rtRatio = 0 end
 			if rtRatio > 1 then rtRatio = 1 end
 
+			-- Keep Sandy forced on
+			if not self.isRunning then
+				self.isRunning = true
+				self.lastTick = self.TickLength + 0.001
+			end
+
 			-- Ramp tremor from 0.004 to 0.015 as runtime depletes
 			self.tremor.intensity = 0.004 + (1 - rtRatio) * 0.011
+
+			-- V's uncontrollable laugh (both male/female play correct variant)
+			local now = os.clock()
+			if self.lastBreath.nextVLaugh and now >= self.lastBreath.nextVLaugh then
+				local V = Game.GetPlayer()
+				if V and IsDefined(V) then
+					-- Try both V laugh events — game plays correct gender variant
+					pcall(function() V:PlaySoundEvent("ono_v_laugh_long") end)
+					self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+				end
+				-- More frequent as runtime depletes
+				local minDelay = 10 + rtRatio * 10  -- 10-20s at full, 10s at empty
+				local maxDelay = 18 + rtRatio * 12  -- 18-30s at full, 18s at empty
+				self.lastBreath.nextVLaugh = now + math.random(math.floor(minDelay), math.floor(maxDelay))
+			end
 
 			-- Check for death: runtime depleted
 			if self.runTime <= 0 then
@@ -1288,17 +1326,44 @@ davidsapogee = {
 		"DAVID... IT'S TIME TO STOP",
 		"DAVID... IT'S TIME TO STOP",
 	}
+	-- Stage 6 messages: delusional, Lucy-focused, can't recognize self (Ep 10)
+	,psychoMessages_lastBreath = {
+		"LUCY...",
+		"LUCY... WAIT FOR ME",
+		"LUCY... I CAN SEE THE MOON",
+		"LUCY... I PROMISED",
+		"WHERE ARE YOU?",
+		"WHO AM I?",
+		"WHO'S DAVID?",
+		"IS THAT... ME?",
+		"I CAN'T FEEL MY HANDS",
+		"MY BODY WON'T STOP",
+		"I'M STILL RUNNING",
+		"I CAN'T STOP RUNNING",
+		"EVERYTHING IS SO BEAUTIFUL",
+		"ALMOST THERE... ALMOST...",
+		"MOM... GLORIA... I'M SORRY",
+		"MAINE... I UNDERSTAND NOW",
+		"THE MOON... SO CLOSE",
+		"I PROMISED I'D TAKE YOU",
+		"DON'T CRY... LUCY...",
+		"I CAN SEE EVERYTHING",
+	}
 	,PsychoMessage = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
-		if self.CyberPsychoWarnings < 4 then
+		if self.CyberPsychoWarnings < 4 and not self.lastBreath then
 			self.nextPsychoMsgTime = nil
 			return
 		end
-		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
 
 		local now = os.clock()
+		local isLastBreath = (self.lastBreath ~= nil and self.lastBreath.phase == "decay")
+
 		if self.nextPsychoMsgTime == nil then
-			if self.CyberPsychoWarnings >= 5 then
+			if isLastBreath then
+				self.nextPsychoMsgTime = now + math.random(4, 8)
+			elseif self.CyberPsychoWarnings >= 5 then
 				self.nextPsychoMsgTime = now + math.random(8, 18)
 			else
 				self.nextPsychoMsgTime = now + math.random(15, 35)
@@ -1308,14 +1373,23 @@ davidsapogee = {
 
 		if now < self.nextPsychoMsgTime then return end
 
-		local msgs = self.CyberPsychoWarnings >= 5 and self.psychoMessages_lv5 or self.psychoMessages_lv4
+		local msgs
+		if isLastBreath then
+			msgs = self.psychoMessages_lastBreath
+		elseif self.CyberPsychoWarnings >= 5 then
+			msgs = self.psychoMessages_lv5
+		else
+			msgs = self.psychoMessages_lv4
+		end
 		local msg = msgs[math.random(1, #msgs)]
 		local V = Game.GetPlayer()
 		if V and IsDefined(V) then
 			pcall(function() V:SetWarningMessage(msg) end)
 		end
 
-		if self.CyberPsychoWarnings >= 5 then
+		if isLastBreath then
+			self.nextPsychoMsgTime = now + math.random(4, 8)
+		elseif self.CyberPsychoWarnings >= 5 then
 			self.nextPsychoMsgTime = now + math.random(8, 18)
 		else
 			self.nextPsychoMsgTime = now + math.random(15, 35)
