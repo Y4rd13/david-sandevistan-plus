@@ -1299,9 +1299,9 @@ davidsapogee = {
 		local now = os.clock()
 		if self.nextPsychoMsgTime == nil then
 			if self.CyberPsychoWarnings >= 5 then
-				self.nextPsychoMsgTime = now + math.random(20, 45)
+				self.nextPsychoMsgTime = now + math.random(8, 18)
 			else
-				self.nextPsychoMsgTime = now + math.random(60, 120)
+				self.nextPsychoMsgTime = now + math.random(15, 35)
 			end
 			return
 		end
@@ -1316,9 +1316,9 @@ davidsapogee = {
 		end
 
 		if self.CyberPsychoWarnings >= 5 then
-			self.nextPsychoMsgTime = now + math.random(20, 45)
+			self.nextPsychoMsgTime = now + math.random(8, 18)
 		else
-			self.nextPsychoMsgTime = now + math.random(60, 120)
+			self.nextPsychoMsgTime = now + math.random(15, 35)
 		end
 	 end)
 	,Heartbeat = (function(self)
