@@ -641,10 +641,10 @@ davidsapogee = {
 			-- Play the song
 			self.lastBreath.songPlaying = self:PlayLastBreathSong()
 
-			self.bbs:SendWarning("LAST BREATH", 5.0)
+			self.bbs:SendWarning("CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH", 6.0)
 
 			-- Delayed lore message
-			self.lastBreathMessage = { elapsed = 0, duration = 3.0, sent = false }
+			self.lastBreathMessage = { elapsed = 0, duration = 4.0, sent = false }
 		end
 	 end)
 	,Safety = (function(self,SafetyOn,ForceSafe)
@@ -2265,6 +2265,21 @@ registerForEvent('onInit', function()
 		davidsapogee:VisitedRipper(VendorName)
 	end)
 	
+	-- Combat death at psycho 5: trigger Last Breath when Second Heart revives V
+	-- OnDeath fires when V dies from any cause — if at psycho 5, mark for Last Breath
+	pcall(function()
+		Observe('PlayerPuppet', 'OnDeath', function(this)
+			if davidsapogee.CyberPsychoWarnings >= 5
+				and davidsapogee.cfg.enableCyberpsychosis
+				and not davidsapogee.VIsDead
+				and not davidsapogee.lastBreath then
+				davidsapogee.VIsDead = true
+				davidsapogee.cheatedDeath = true
+				davidsapogee.OutstandingBuff = 8
+			end
+		end)
+	end)
+
 	Observe('NPCPuppet', 'OnAfterDeathOrDefeat', function(npcPuppet,DefeatEvt)
 		if not IsDefined(npcPuppet) then return end
 		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,false)
