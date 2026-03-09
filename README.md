@@ -140,6 +140,22 @@ Open the game menu: **Settings > Mods > Martinez Sandy+**
   Recommended limit: **0.0065** (99.35%). Values below may cause visual glitches.
   Safety Off and Overclock still stack on top of this value.
 
+#### Progressive Dilation Degradation
+
+Time dilation degrades as runtime depletes — higher psychosis stages degrade faster. The curve follows `rtRatio^exp` where higher exponents mean the peak fades quicker:
+
+| Stage | Dilation Range | Curve | Behavior |
+|-------|---------------|-------|----------|
+| 0 Normal | 90% (fixed) | — | No degradation |
+| 1 Unstable | 92.5% → 90% | exp 1.5 | Nearly linear |
+| 2 Glitching | 93.5% → 90% | exp 1.8 | Slight acceleration |
+| 3 Losing It | 95% → 90% | exp 2.0 | Quadratic drop |
+| 4 On The Edge | 96.5% → 87% | exp 2.3 | Peak fades fast |
+| 5 Cyberpsycho | 97.5% → 85% | exp 2.8 | Brief flash of peak |
+| 6 Last Breath | 99.35% → 90% | Multi-phase | See [dilation curves doc](docs/dilation-curves.md) |
+
+For full curve visualizations, formulas, and Stage 6 phase timeline, see **[docs/dilation-curves.md](docs/dilation-curves.md)**.
+
 ### Duration & Cooldown
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|

@@ -222,7 +222,7 @@ davidsapogee = {
 	,heartbeatPlaying = false
 	,cheatedDeath = false
 	,nextPsychoMsgTime = nil
-	,lastBreath = nil  -- { phase = "peace"|"decay", elapsed = 0, peaceTime = 15, totalRuntime = N, songPlaying = false }
+	,lastBreath = nil  -- { phase = "peace"|"decay", elapsed = 0, peaceTime = 20, totalRuntime = N, songPlaying = false }
 	,lastBreathDeath = nil  -- true when Last Breath death is pending (permanent death)
 	,lastBreathMessage = nil  -- { elapsed = 0, duration = 3, sent = false }
 	,combatNPCs = {}  -- tracked hostile NPCs { [entityID_hash] = npcPuppet }
@@ -400,7 +400,14 @@ davidsapogee = {
 		
 		self.dailyActivations = 0
 		self.cheatedDeath = false
-		if self.lastBreath then self:StopLastBreathSong() end
+		if self.lastBreath then
+			self:StopLastBreathSong()
+			pcall(function()
+				local ts = Game.GetTimeSystem()
+				ts:UnsetTimeDilation("sandevistan")
+				ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
+			end)
+		end
 		self.lastBreath = nil
 		self.lastBreathDeath = nil
 		self.lastBreathMessage = nil
@@ -639,22 +646,13 @@ davidsapogee = {
 			self.nextPsychoMsgTime = nil
 			self.comedownTimer = nil
 
-			-- Auto-activate Sandy at max dilation
-			self.isRunning = true
+			-- Sandy and song are DEFERRED — let V breathe after revival
+			-- 3s: song starts, 5s: Sandy activates, 15s: decay begins
+			self.isRunning = false  -- not yet
 			self.sandyStartRuntime = rt
 			self.lowRuntimeWarned = false
 			self.lastTick = self.TickLength + 0.001
 			self.SafetyOn = false
-
-			-- Force game's Sandy activation by filling charge
-			pcall(function() self.sps:SandevistanCharge(100) end)
-
-			-- Apply max time dilation (99.35%)
-			local maxDilation = self:findDilationIndex(0.0065)
-			self:TimeDilationEffects_Activate(maxDilation, "Last Breath")
-
-			-- Play the song
-			self.lastBreath.songPlaying = self:PlayLastBreathSong()
 
 			self.bbs:SendWarning("CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH", 6.0)
 
@@ -740,28 +738,42 @@ davidsapogee = {
 	-- Psycho-scaled time dilation curve: timeScale at full RT (maxTS) → timeScale at 0 RT (minTS)
 	-- Lower timeScale = higher dilation = faster Sandy
 	,psychoDilationCurve = {
-		[1] = { maxTS = 0.075, minTS = 0.10 },    -- 92.5% → 90%
-		[2] = { maxTS = 0.05,  minTS = 0.10 },    -- 95%   → 90%
-		[3] = { maxTS = 0.025, minTS = 0.075 },   -- 97.5% → 92.5%
-		[4] = { maxTS = 0.01,  minTS = 0.05 },    -- 99%   → 95%
-		[5] = { maxTS = 0.0065, minTS = 0.10 },   -- 99.35% → 90%
+		-- { maxTS, minTS, exp } — see docs/dilation-curves.md
+		[1] = { maxTS = 0.075, minTS = 0.10,  exp = 1.5 },  -- 92.5% → 90%  (subtle)
+		[2] = { maxTS = 0.065, minTS = 0.10,  exp = 1.8 },  -- 93.5% → 90%  (slight accel)
+		[3] = { maxTS = 0.05,  minTS = 0.10,  exp = 2.0 },  -- 95%   → 90%  (quadratic)
+		[4] = { maxTS = 0.035, minTS = 0.13,  exp = 2.3 },  -- 96.5% → 87%  (aggressive)
+		[5] = { maxTS = 0.025, minTS = 0.15,  exp = 2.8 },  -- 97.5% → 85%  (brief peak)
 	}
 	,TimeDilationCalculator = (function(self,DebugInfo)
 		if DebugInfo == nil then DebugInfo = false end
 
-		-- Last Breath override: peace = max dilation, decay = 99.35% → 93%
+		-- Last Breath override: multi-phase dilation curve (see docs/dilation-curves.md)
+		-- Wait(0-5s) → Ramp(5-10s) 90%→99.35% → Peak(10-20s) 99.35% → Decay(20s+) 99.35%→90%
 		if self.lastBreath then
+			local elapsed = self.lastBreath.elapsed or 0
 			local timeScale
 			if self.lastBreath.phase == "peace" then
-				timeScale = 0.0065  -- 99.35%
+				if elapsed < 5 then
+					-- Wait phase: no Sandy yet, base dilation
+					timeScale = 0.10  -- 90%
+				elseif elapsed < 10 then
+					-- Ramp phase: 90% → 99.35% over 5 seconds
+					local rampProgress = (elapsed - 5) / 5
+					timeScale = 0.10 + (0.0065 - 0.10) * rampProgress  -- 0.10 → 0.0065
+				else
+					-- Peak phase: hold at 99.35% (up to peaceTime, max 10s at peak)
+					timeScale = 0.0065  -- 99.35%
+				end
 			else
-				-- Decay: interpolate from 0.0065 (99.35%) to 0.07 (93%) as runtime depletes
+				-- Decay phase: 99.35% → 90% with exponential curve (exp 2.5)
 				local totalRT = self.lastBreath.totalRuntime
 				if totalRT <= 0 then totalRT = 1 end
 				local rtRatio = self.runTime / totalRT
 				if rtRatio < 0 then rtRatio = 0 end
 				if rtRatio > 1 then rtRatio = 1 end
-				timeScale = 0.07 + (0.0065 - 0.07) * rtRatio  -- 0.07 at empty, 0.0065 at full
+				-- (1-progress)^2.5: fast drop from peak, slow approach to 90%
+				timeScale = 0.10 + (0.0065 - 0.10) * (rtRatio ^ 2.5)
 			end
 			local Dilation = self:findDilationIndex(timeScale)
 			return Dilation, "Last Breath"
@@ -781,7 +793,7 @@ davidsapogee = {
 			local rtRatio = self.runTime / maxRT
 			if rtRatio < 0 then rtRatio = 0 end
 			if rtRatio > 1 then rtRatio = 1 end
-			local psychoTS = psychoCurve.minTS + (psychoCurve.maxTS - psychoCurve.minTS) * rtRatio
+			local psychoTS = psychoCurve.minTS + (psychoCurve.maxTS - psychoCurve.minTS) * (rtRatio ^ psychoCurve.exp)
 			if psychoTS < timeScale then
 				timeScale = psychoTS
 				StatusText = "Psycho "..tostring(self.CyberPsychoWarnings)
@@ -1147,7 +1159,7 @@ davidsapogee = {
 	-- Last Breath: David's final stand after Second Heart
 	----------------------------------------------------------------
 	,lastBreathSong = "dsp_last_breath_song"
-	,lastBreathPeaceTime = 15  -- seconds of peace before decay
+	,lastBreathPeaceTime = 20  -- 5s wait + 5s ramp + 10s peak, then decay
 	,lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
 	,PlayLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
@@ -1173,28 +1185,42 @@ davidsapogee = {
 
 		self.lastBreath.elapsed = self.lastBreath.elapsed + dt
 
-		-- Force Sandy to stay active: re-apply time dilation every frame
-		-- Reset tracking var so effects are actually re-applied (game strips them after revival)
-		if self.isRunning then
-			self.TimeDilationActiveEffect = nil
-			self:TimeDilationEffects()
-		end
-		-- Keep game's Sandy charge at max
-		pcall(function() self.sps:SandevistanCharge(100) end)
-
+		-- Force time dilation via TimeSystem directly (bypasses Sandy state machine)
 		if self.lastBreath.phase == "peace" then
-			-- Peace phase: no VFX, max dilation, song playing
-			if not self.isRunning then
-				self.isRunning = true
-				self.lastTick = self.TickLength + 0.001
+			local elapsed = self.lastBreath.elapsed
+
+			-- 3s: Start the song
+			if elapsed >= 3 and not self.lastBreath.songPlaying then
+				self.lastBreath.songPlaying = self:PlayLastBreathSong()
+			end
+
+			-- 5s+: Activate Sandy with ramp curve (90% → 99.35% over 5s, then peak)
+			if elapsed >= 5 then
+				if not self.isRunning then
+					self.isRunning = true
+					self.lastTick = self.TickLength + 0.001
+				end
+				local timeScale
+				if elapsed < 10 then
+					-- Ramp: 90% → 99.35% (timeScale 0.10 → 0.0065) over 5s
+					local rampProgress = (elapsed - 5) / 5
+					timeScale = 0.10 + (0.0065 - 0.10) * rampProgress
+				else
+					-- Peak: hold at 99.35%
+					timeScale = 0.0065
+				end
+				pcall(function()
+					local ts = Game.GetTimeSystem()
+					ts:SetIgnoreTimeDilationOnLocalPlayerZero(true)
+					ts:SetTimeDilation("sandevistan", timeScale)
+				end)
+				pcall(function() self.sps:SandevistanCharge(100) end)
 			end
 
 			-- Transition to decay after peaceTime
-			if self.lastBreath.elapsed >= self.lastBreath.peaceTime then
+			if elapsed >= self.lastBreath.peaceTime then
 				self.lastBreath.phase = "decay"
 				self.lastBreath.elapsed = 0
-				-- VFX/tremor/messages are DEFERRED to 31s into decay
-				-- Only immunity + TTB/Blackwall start at 5s
 			end
 
 		elseif self.lastBreath.phase == "decay" then
@@ -1210,6 +1236,15 @@ davidsapogee = {
 				self.isRunning = true
 				self.lastTick = self.TickLength + 0.001
 			end
+
+			-- Update time dilation: degrades from 99.35% → 90% with exp 2.5 curve
+			pcall(function()
+				local timeScale = 0.10 + (0.0065 - 0.10) * (rtRatio ^ 2.5)
+				local ts = Game.GetTimeSystem()
+				ts:SetIgnoreTimeDilationOnLocalPlayerZero(true)
+				ts:SetTimeDilation("sandevistan", timeScale)
+			end)
+			pcall(function() self.sps:SandevistanCharge(100) end)
 
 			-- === IMMUNITY: First 31 seconds of decay ===
 			if decayElapsed < 31 then
@@ -1305,6 +1340,12 @@ davidsapogee = {
 				self:StopLastBreathSong()
 				self:StopHeartbeat()
 				self.lastBreath = nil
+				-- Restore normal time
+				pcall(function()
+					local ts = Game.GetTimeSystem()
+					ts:UnsetTimeDilation("sandevistan")
+					ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
+				end)
 				self:RemoveAllPsychoVFX()
 				self.tremor.intensity = 0
 				self.nextLaughTime = nil
@@ -1323,7 +1364,7 @@ davidsapogee = {
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 
-		-- VFX on V
+		-- VFX on V (screen glitch)
 		self:StatusEffect_CheckAndApply(self.martinez.TickingTimeBombEffect)
 
 		-- EMP sound
@@ -1336,6 +1377,7 @@ davidsapogee = {
 		-- AoE stun on nearby hostile NPCs within 20m
 		local vPos = V:GetWorldPosition()
 		local stunCount = 0
+		local SEE = Game.GetStatusEffectSystem()
 		for eid, npc in pairs(self.combatNPCs) do
 			pcall(function()
 				if npc and IsDefined(npc) and not npc:IsDead() then
@@ -1345,7 +1387,11 @@ davidsapogee = {
 					local dz = vPos.z - npcPos.z
 					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 					if dist <= 20.0 then
-						self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun', npc)
+						local npcEID = npc:GetEntityID()
+						-- Stunned: game's built-in stun with visible animation
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.Stunned')
+						-- EMPJammed: disables weapons + EMP VFX on the NPC
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.EMPJammed')
 						self:BuffNPCPsychoGlitch(npc, true)
 						stunCount = stunCount + 1
 					end
@@ -1363,7 +1409,7 @@ davidsapogee = {
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 
-		-- Heavy Blackwall VFX on V
+		-- Heavy Blackwall VFX on V (screen distortion)
 		self:StatusEffect_CheckAndApply(self.martinez.BlackwallKillEffect)
 
 		-- Blackwall sound
@@ -1374,8 +1420,10 @@ davidsapogee = {
 		end)
 
 		-- AoE kill on nearby hostile NPCs within 25m
+		-- Uses SystemCollapse (quickhack kill with dramatic VFX/animation on each NPC)
 		local vPos = V:GetWorldPosition()
 		local killCount = 0
+		local SEE = Game.GetStatusEffectSystem()
 		for eid, npc in pairs(self.combatNPCs) do
 			pcall(function()
 				if npc and IsDefined(npc) and not npc:IsDead() then
@@ -1385,7 +1433,11 @@ davidsapogee = {
 					local dz = vPos.z - npcPos.z
 					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 					if dist <= 25.0 then
-						npc:Kill(V, true, true)
+						local npcEID = npc:GetEntityID()
+						-- SystemCollapse: quickhack kill with dramatic overload animation
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.SystemCollapse')
+						-- ForceKill as backup (ensures death even if SystemCollapse doesn't kill)
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.ForceKill')
 						killCount = killCount + 1
 					end
 				end
@@ -1850,6 +1902,12 @@ davidsapogee = {
 	,LoadGamePart3 = (function(self)
 		local doDebug = (self.dev_mode ~= nil)
 		self.hud:Init(self,doDebug)
+		-- Safety: clear any lingering TimeSystem dilation from a previous Stage 6
+		pcall(function()
+			local ts = Game.GetTimeSystem()
+			ts:UnsetTimeDilation("sandevistan")
+			ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
+		end)
 		self:DisableSandevistan("LoadGamePart3")
 		self:UpdateUIText()
 		self.OutstandingBuff = 5 -- check for sandy
@@ -2641,6 +2699,11 @@ registerInput("DebugPsychoReset", 'DEBUG: Reset All Psycho State', function(isKe
 	davidsapogee.cheatedDeath = false
 	if davidsapogee.lastBreath then
 		davidsapogee:StopLastBreathSong()
+		pcall(function()
+			local ts = Game.GetTimeSystem()
+			ts:UnsetTimeDilation("sandevistan")
+			ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
+		end)
 	end
 	davidsapogee.lastBreath = nil
 	davidsapogee.lastBreathDeath = nil

@@ -2,8 +2,6 @@ local hud = {}
 
 hud.Apogee = nil
 hud.healthbarCtrl = nil
-hud.staminabarCtrl = nil
-hud.staminabarRoot = nil
 hud.built = false
 
 -- Widget references
@@ -15,6 +13,7 @@ local BAR_HEIGHT = 10
 local FONT_SIZE_MAIN = 30
 local FONT_SIZE_SMALL = 24
 local PANEL_TOP_MARGIN = 20
+local PANEL_LEFT_OFFSET = 540  -- Push panel to the right of the HP bar
 local FONT_FAMILY = "base\\gameplay\\gui\\fonts\\raj\\raj.inkfontfamily"
 local FONT_STYLE = "Medium"
 
@@ -141,9 +140,6 @@ hud.Init = (function(self, Apogee, doDebug)
 				local cn = controller:GetClassName().value
 				if cn == "gameuiHudHealthbarGameController" then
 					self.healthbarCtrl = controller
-				elseif cn == "StaminabarWidgetGameController" then
-					self.staminabarCtrl = controller
-					self.staminabarRoot = controller:GetRootCompoundWidget()
 				end
 			end
 		end
@@ -164,14 +160,19 @@ hud.Build = (function(self)
 	local buffsHolder = RCW:GetWidgetByPathName("buffsHolder")
 	local barsLayout = buffsHolder:GetWidgetByPathName("barsLayout")
 
-	-- Remove old panel if exists
+	-- Remove old panel from both possible parents (handles migration)
 	local oldPanel = barsLayout:GetWidgetByPathName("DavidMartinezPanel")
-	if oldPanel ~= nil then
-		barsLayout:RemoveChild(oldPanel)
-	end
+	if oldPanel ~= nil then barsLayout:RemoveChild(oldPanel) end
+	oldPanel = buffsHolder:GetWidgetByPathName("DavidMartinezPanel")
+	if oldPanel ~= nil then buffsHolder:RemoveChild(oldPanel) end
 
+	-- Panel as child of buffsHolder, positioned to the right of the HP bar
 	local TextMargin = (self.Apogee and self.Apogee.OverrideTextMargin) or PANEL_TOP_MARGIN
-	local panel = createCanvas(barsLayout, "DavidMartinezPanel", TextMargin)
+	local panel = buffsHolder:AddChild("inkCanvasWidget")
+	panel:SetName(CNameNew("DavidMartinezPanel"))
+	panel:SetAnchor(inkEAnchor.TopLeft)
+	panel:SetAnchorPoint(0.0, 0.0)
+	panel:SetMargin(PANEL_LEFT_OFFSET, TextMargin, 0, 0)
 	self.w.panel = panel
 
 	-- Row 1: Runtime bar + dilation text
@@ -221,7 +222,6 @@ hud.Update = (function(self, data)
 	-- Visibility: hide everything if not wearing Sandy or UI disabled
 	if not data.isWearing or not data.showUI then
 		self.w.panel:SetVisible(false)
-		self:SetStaminaMargin(0)
 		return
 	end
 	self.w.panel:SetVisible(true)
@@ -329,24 +329,6 @@ hud.Update = (function(self, data)
 		end
 	end
 
-	-- Stamina bar margin (only 2 rows now, psycho is inline with Row 1)
-	local margin = PANEL_TOP_MARGIN + BAR_HEIGHT + FONT_SIZE_SMALL + 16 + FONT_SIZE_SMALL + 4
-	self:SetStaminaMargin(margin)
-end)
-
-----------------------------------------------------------------
--- Stamina bar margin
-----------------------------------------------------------------
-
-hud.SetStaminaMargin = (function(self, baseMargin)
-	if self.Apogee and self.Apogee.ForceStaminaMargin then
-		baseMargin = self.Apogee.ForceStaminaMargin
-	elseif self.Apogee and self.Apogee.OverrideStaminaMargin then
-		baseMargin = self.Apogee.OverrideStaminaMargin
-	end
-	if self.staminabarRoot ~= nil and IsDefined(self.staminabarRoot) then
-		self.staminabarRoot:SetMargin(0, baseMargin, 0, 0)
-	end
 end)
 
 ----------------------------------------------------------------
