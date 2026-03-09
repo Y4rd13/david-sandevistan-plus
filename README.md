@@ -32,14 +32,40 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | 3 | Losing It | Subtle glitch | Persistent `hacking_glitch_low` VFX |
 | 4 | On The Edge | Medium distortion | Persistent glitch + drugged VFX |
 | 5 | Cyberpsycho | Full psychosis | 4 simultaneous VFX, immunities, last stand |
+| 6 | Last Breath | All VFX removed → ramp | **Permanent death** — Second Heart revival triggers final stand |
 
 **Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Death only comes when the PsychoOutburst timer runs out.
 
 **Safety ON at Level 5:** Sandy is blocked, Kiroshi optics disabled, V must sleep or recover in a safe area.
 
+### Last Breath (Stage VI — Requires Second Heart)
+
+When V dies at psycho level 5 (from the PsychoOutburst timer or combat damage) and Second Heart revives them, Stage VI begins — David's final stand, inspired by Episode 10 of Edgerunners.
+
+**Phase 1 — Moment of Peace (15s):**
+- All psychosis VFX are stripped — the world is clear for the first time
+- Sandevistan locks ON at maximum dilation (99.35%)
+- "I Really Want to Stay at Your House" plays
+- `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH`
+
+**Phase 2 — Decay (~105s):**
+- CyberpsychoSafetyOff VFX return and intensify
+- Time dilation degrades from 99.35% → 93% as runtime depletes
+- Camera tremor ramps from subtle to severe
+- V laughs uncontrollably (`ono_v_laugh_long`)
+- Delusional messages appear every 4–8s (Lucy, the Moon, confused identity)
+- Sandy cannot be deactivated — V is locked in
+
+**Death:**
+- When runtime hits 0: `THE MOON... I CAN SEE IT`
+- 3s of terminal clarity (all VFX removed)
+- `DAVID MARTINEZ — FLATLINED` — permanent death, no revival
+
+> Last Breath is a one-way trip. There is no recovery from Stage VI.
+
 ### On-Screen Notifications
 
-18 contextual notifications keep the player informed using in-world language:
+20 contextual notifications keep the player informed using in-world language:
 
 | Event | Example | Type |
 |-------|---------|------|
@@ -51,6 +77,8 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | Warning |
 | Psycho recovery | `RECOVERING — PSYCHOSIS LEVEL II` | Info |
 | Death | `SYSTEM FAILURE — NEURAL COLLAPSE` | Warning |
+| Last Breath | `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH` | Warning |
+| Last Breath death | `DAVID MARTINEZ — FLATLINED` | Warning |
 | Sleep | `RECHARGED +120s — RUNTIME: 180/300s` | Info |
 
 ### Sensory Effects (Edgerunners-Accurate)
@@ -66,6 +94,9 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
 | **Exhaustion collapse** | Sandy activation at 3× safe daily limit | David passes out after 8 uses in Ep 2 |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
+| **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
+| **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
+| **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
 
 ## Requirements
 
@@ -205,7 +236,13 @@ PsychoOutburst timer ticks down:
   ├─ Safe area / Club: +5s/tick (recovery)
   └─ Timer reaches 0 → forced episode OR death at level 5
 
-Recovery:
+Death at level 5 (psycho timer OR combat):
+  └─ Second Heart revives V → Last Breath (Stage VI)
+      ├─ Peace (15s): VFX cleared, max dilation, song plays
+      ├─ Decay (~105s): VFX ramp, dilation drops, delusional messages
+      └─ Runtime = 0 → permanent death (DAVID MARTINEZ — FLATLINED)
+
+Recovery (levels 1–5):
   ├─ Safe areas / clubs: gradual recovery (+5s/tick on timer)
   ├─ Sleep ≥ 8hrs: full psychosis cure
   ├─ Sleep < 8hrs at level 5: reduced to level 1
