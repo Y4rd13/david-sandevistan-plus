@@ -291,7 +291,7 @@ davidsapogee = {
 			runTime = self.runTime,
 			MaxRunTime = self.MaxRuntime,
 			dailyActivations = self.dailyActivations or 0,
-			dailySafe = self.cfg.dailySafeActivations or 3,
+			dailySafe = self:getEffectiveSafeActivations(),
 			psychoWarnings = self.CyberPsychoWarnings or 0,
 			psychoOutburst = self.PsychoOutburst,
 			comedownTimer = self.comedownTimer,
@@ -470,19 +470,20 @@ davidsapogee = {
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
 		if self.cfg.enableCyberpsychosis then
 			self.dailyActivations = self.dailyActivations + 1
+			local effectiveSafe = self:getEffectiveSafeActivations()
 			-- Dark Future compat: immunosuppressant blocks psycho acceleration from overuse
 			local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
-			if not dfImmuno and self.dailyActivations > self.cfg.dailySafeActivations then
-				local extraUses = self.dailyActivations - self.cfg.dailySafeActivations
+			if not dfImmuno and self.dailyActivations > effectiveSafe then
+				local extraUses = self.dailyActivations - effectiveSafe
 				if self.PsychoOutburst ~= nil then
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
 				elseif self.CyberPsychoWarnings > 0 then
 					self:Calculate_PsychoOutburst()
 					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
 				end
-				self.bbs:SendWarning("OVERUSE — "..tostring(self.dailyActivations).." ACTIVATIONS TODAY (SAFE: "..tostring(self.cfg.dailySafeActivations)..") — REST RECOMMENDED", 4.0)
+				self.bbs:SendWarning("OVERUSE — "..tostring(self.dailyActivations).." ACTIVATIONS TODAY (SAFE: "..tostring(effectiveSafe)..") — REST RECOMMENDED", 4.0)
 				if self.dev_mode then
-					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(self.cfg.dailySafeActivations)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
+					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
 				end
 			end
 			self.qs:SaveDailyActivations(self.dailyActivations)
@@ -635,22 +636,66 @@ davidsapogee = {
 		end
 		return bestIdx
 	 end)
+	-- Psycho-scaled safe activations: higher psycho = higher tolerance
+	,psychoSafeMultiplier = { [0] = 1, [1] = 1.7, [2] = 2.3, [3] = 3, [4] = 4 }
+	,getEffectiveSafeActivations = (function(self)
+		local base = self.cfg.dailySafeActivations or 3
+		if not self.cfg.enableCyberpsychosis then return base end
+		if self.CyberPsychoWarnings >= 5 then return 999 end
+		local mult = self.psychoSafeMultiplier[self.CyberPsychoWarnings] or 1
+		return math.floor(base * mult)
+	 end)
+	-- Psycho-scaled time dilation curve: timeScale at full RT (maxTS) → timeScale at 0 RT (minTS)
+	-- Lower timeScale = higher dilation = faster Sandy
+	,psychoDilationCurve = {
+		[1] = { maxTS = 0.075, minTS = 0.10 },    -- 92.5% → 90%
+		[2] = { maxTS = 0.05,  minTS = 0.10 },    -- 95%   → 90%
+		[3] = { maxTS = 0.025, minTS = 0.075 },   -- 97.5% → 92.5%
+		[4] = { maxTS = 0.01,  minTS = 0.05 },    -- 99%   → 95%
+		[5] = { maxTS = 0.0065, minTS = 0.10 },   -- 99.35% → 90%
+	}
 	,TimeDilationCalculator = (function(self,DebugInfo)
 		if DebugInfo == nil then DebugInfo = false end
 		local IsEdgeRunner = (self.sps:IsEdgeRunner() == true)
-		local timeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
-		local Dilation = self:findDilationIndex(timeScale)
+		local baseTimeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
+		local timeScale = baseTimeScale
 		local StatusText = 'Default'
 		local outtaTime = (self.runTime < 1)
 
-		if outtaTime then
-			Dilation = 950
-			StatusText = "Runtime Expired"
-		elseif not self.SafetyOn then
-			Dilation = self:findDilationIndex((1000 - self.cfg.safetyOffTimeDilation) / 1000)
-			StatusText = "Safety Off"
+		-- Psycho-scaled dilation: higher psycho = more dilation, scales with runtime
+		local psychoCurve = self.cfg.enableCyberpsychosis and self.psychoDilationCurve[self.CyberPsychoWarnings]
+		if psychoCurve then
+			local maxRT = self.MaxRuntime
+			if maxRT <= 0 then maxRT = 1 end
+			local rtRatio = self.runTime / maxRT
+			if rtRatio < 0 then rtRatio = 0 end
+			if rtRatio > 1 then rtRatio = 1 end
+			local psychoTS = psychoCurve.minTS + (psychoCurve.maxTS - psychoCurve.minTS) * rtRatio
+			if psychoTS < timeScale then
+				timeScale = psychoTS
+				StatusText = "Psycho "..tostring(self.CyberPsychoWarnings)
+			end
 		end
 
+		if outtaTime then
+			if psychoCurve then
+				timeScale = psychoCurve.minTS
+				StatusText = "Psycho "..tostring(self.CyberPsychoWarnings).." (Depleted)"
+			else
+				timeScale = 0.05
+				StatusText = "Runtime Expired"
+			end
+		elseif not self.SafetyOn then
+			local safetyTS = (1000 - self.cfg.safetyOffTimeDilation) / 1000
+			if timeScale > safetyTS then
+				timeScale = safetyTS
+				StatusText = "Safety Off"
+			else
+				StatusText = StatusText.." + Safety Off"
+			end
+		end
+
+		local Dilation = self:findDilationIndex(timeScale)
 		return Dilation, StatusText
 	 end)
 	,TimeDilationEffects = (function(self)
@@ -926,7 +971,7 @@ davidsapogee = {
 		elseif self.CyberPsychoWarnings >= 5 then target = 0.008
 		end
 		-- Overuse adds tremor even before psychosis
-		if self.dailyActivations > (self.cfg.dailySafeActivations or 3) * 2 then
+		if self.dailyActivations > self:getEffectiveSafeActivations() * 2 then
 			target = math.max(target, 0.002)
 		end
 
@@ -1110,14 +1155,14 @@ davidsapogee = {
 	,Nosebleed = (function(self)
 		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
 		if not self.cfg.enableCyberpsychosis then return end
-		if self.dailyActivations <= (self.cfg.dailySafeActivations or 3) then return end
+		if self.dailyActivations <= self:getEffectiveSafeActivations() then return end
 		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 	 end)
 	,ExhaustionCheck = (function(self)
 		-- Exhaustion collapse: David passes out after 8 uses in Ep 2
 		-- Trigger at 3x safe activations — forced deactivation + stagger
 		if not self.cfg.enableCyberpsychosis then return end
-		local threshold = (self.cfg.dailySafeActivations or 3) * 3
+		local threshold = self:getEffectiveSafeActivations() * 3
 		if self.dailyActivations < threshold then return end
 		if not self.isRunning then return end
 
