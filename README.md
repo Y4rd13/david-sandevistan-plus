@@ -50,8 +50,22 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | Cooldown | `SYSTEM COOLDOWN — 5s` | Info |
 | Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | Warning |
 | Psycho recovery | `RECOVERING — PSYCHOSIS LEVEL II` | Info |
-| Death | `SYSTEM FAILURE — FLATLINE` | Warning |
+| Death | `SYSTEM FAILURE — NEURAL COLLAPSE` | Warning |
 | Sleep | `RECHARGED +120s — RUNTIME: 180/300s` | Info |
+
+### Sensory Effects (Edgerunners-Accurate)
+
+Lore-accurate physical effects inspired by David Martinez's deterioration across Episodes 2–10:
+
+| Effect | Trigger | Lore Reference |
+|--------|---------|----------------|
+| **Camera shake** | Psycho lvl 3–5 (progressive intensity) | David's hands shake visibly from Ep 8 onward |
+| **Manic laughter** | Random at psycho lvl 4–5 (`perk_edgerunner_player` VFX) | David laughing uncontrollably in Ep 10 |
+| **FOV pulse** | Every Sandy activation (+12° for 0.4s) | Perception shift on Sandevistan activation |
+| **Heartbeat** | Psycho lvl 3+ idle, or Sandy active with low health | Tension audio during David's deterioration |
+| **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
+| **Exhaustion collapse** | Sandy activation at 3× safe daily limit | David passes out after 8 uses in Ep 2 |
+| **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
 
 ## Requirements
 
