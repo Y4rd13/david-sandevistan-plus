@@ -12,7 +12,6 @@ hud.w = {}
 -- Layout constants
 local BAR_WIDTH = 420
 local BAR_HEIGHT = 10
-local ROW_GAP = 6
 local FONT_SIZE_MAIN = 30
 local FONT_SIZE_SMALL = 24
 local PANEL_TOP_MARGIN = 20
@@ -72,14 +71,6 @@ local function runtimeColor(ratio)
 		return lerpColor(COLOR_YELLOW, COLOR_GREEN, (ratio - 0.5) * 2)
 	else
 		return lerpColor(COLOR_RED, COLOR_YELLOW, ratio * 2)
-	end
-end
-
-local function psychoColor(ratio)
-	if ratio > 0.5 then
-		return lerpColor(COLOR_YELLOW, COLOR_CYAN, (ratio - 0.5) * 2)
-	else
-		return lerpColor(COLOR_MAGENTA, COLOR_YELLOW, ratio * 2)
 	end
 end
 
@@ -193,6 +184,11 @@ hud.Build = (function(self)
 	self.w.dilationText = createText(row1, "DSP_DilationText", FONT_SIZE_MAIN, COLOR_WHITE, textHorizontalAlignment.Left)
 	self.w.dilationText:SetMargin(BAR_WIDTH + 14, -4, 0, 0)
 
+	-- Psycho status: positioned to the right of dilation text (inside Row 1)
+	self.w.psychoLine = createText(row1, "DSP_PsychoLine", FONT_SIZE_SMALL, COLOR_CYAN, textHorizontalAlignment.Left)
+	self.w.psychoLine:SetMargin(BAR_WIDTH + 14, FONT_SIZE_MAIN + 2, 0, 0)
+	self.w.psychoLine:SetVisible(false)
+
 	-- Row 2: Status line (activations + context + recharge)
 	local row2Y = BAR_HEIGHT + FONT_SIZE_SMALL + 16
 	local row2 = createCanvas(panel, "DSP_Row2", row2Y)
@@ -200,13 +196,6 @@ hud.Build = (function(self)
 	self.w.activationsText = createText(row2, "DSP_Activations", FONT_SIZE_SMALL, COLOR_DIM, textHorizontalAlignment.Left)
 	self.w.statusText = createText(row2, "DSP_Status", FONT_SIZE_SMALL, COLOR_WHITE, textHorizontalAlignment.Left)
 	self.w.statusText:SetMargin(170, 0, 0, 0)
-
-	-- Row 3: Psycho status (compact single-line text, hidden by default)
-	local row3Y = row2Y + FONT_SIZE_SMALL + 6
-	local row3 = createCanvas(panel, "DSP_Row3", row3Y)
-	self.w.row3 = row3
-	self.w.psychoLine = createText(row3, "DSP_PsychoLine", FONT_SIZE_SMALL, COLOR_CYAN, textHorizontalAlignment.Left)
-	row3:SetVisible(false)
 
 	self.built = true
 end)
@@ -300,9 +289,9 @@ hud.Update = (function(self, data)
 	self.w.statusText:SetText(status)
 	self.w.statusText:SetTintColor(toHDR(statusColor))
 
-	-- Row 3: Psycho line (only visible when psychoWarnings > 0)
+	-- Psycho line (to the right of dilation text, inside Row 1)
 	local showPsycho = data.psychoWarnings > 0 and data.psychoOutburst ~= nil
-	self.w.row3:SetVisible(showPsycho)
+	self.w.psychoLine:SetVisible(showPsycho)
 
 	if showPsycho then
 		local lvl = PSYCHO_LEVELS[data.psychoWarnings]
@@ -314,11 +303,8 @@ hud.Update = (function(self, data)
 		self.w.psychoLine:SetTintColor(toHDR(lvlColor))
 	end
 
-	-- Stamina bar margin (matches row positions from Build)
+	-- Stamina bar margin (only 2 rows now, psycho is inline with Row 1)
 	local margin = PANEL_TOP_MARGIN + BAR_HEIGHT + FONT_SIZE_SMALL + 16 + FONT_SIZE_SMALL + 4
-	if showPsycho then
-		margin = margin + 6 + FONT_SIZE_SMALL + 4
-	end
 	self:SetStaminaMargin(margin)
 end)
 

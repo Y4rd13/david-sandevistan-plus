@@ -455,13 +455,16 @@ davidsapogee = {
 		end
 		self.bbs:SendMessage(activationMsg, 3.0)
 
-		-- Second Heart penalty: V cheated death at psycho 5 — borrowed time
+		-- Second Heart penalty: V cheated death at psycho 5 — borrowed time, not instant death
 		if self.cheatedDeath and self.cfg.enableCyberpsychosis then
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
-			self.PsychoOutburst = 180
+			if self.PsychoOutburst == nil or self.PsychoOutburst < 600 then
+				self.PsychoOutburst = 600
+			end
 			self:DisableSandevistan("cheatedDeath")
 			self.bbs:SendWarning("NEURAL RELAPSE — BORROWED TIME", 4.0)
+			return
 		end
 
 		-- Daily activation counter — accelerate cyberpsychosis on overuse
@@ -560,8 +563,9 @@ davidsapogee = {
 			self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 		end
 		if self.cheatedDeath then
-			-- Second Heart saved V — give some runtime back but psychosis remains
-			self.runTime = math.max(self.runTime, 60)
+			-- Second Heart saved V — give runtime + psycho timer back, psychosis remains at 5
+			self.runTime = math.max(self.runTime, 120)
+			self.PsychoOutburst = 600
 			self.bbs:SendWarning("SECOND HEART ENGAGED — BORROWED TIME", 4.0)
 		end
 	 end)
@@ -917,13 +921,13 @@ davidsapogee = {
 
 		-- Target intensity scales with psycho level
 		local target = 0
-		if self.CyberPsychoWarnings == 3 then target = 0.003
-		elseif self.CyberPsychoWarnings == 4 then target = 0.007
-		elseif self.CyberPsychoWarnings >= 5 then target = 0.013
+		if self.CyberPsychoWarnings == 3 then target = 0.002
+		elseif self.CyberPsychoWarnings == 4 then target = 0.004
+		elseif self.CyberPsychoWarnings >= 5 then target = 0.008
 		end
 		-- Overuse adds tremor even before psychosis
 		if self.dailyActivations > (self.cfg.dailySafeActivations or 3) * 2 then
-			target = math.max(target, 0.003)
+			target = math.max(target, 0.002)
 		end
 
 		-- Smooth intensity transitions
@@ -1018,6 +1022,7 @@ davidsapogee = {
 		"NOBODY SETS MY LIMITS",
 		"I PROMISED I'D MAKE IT",
 		"CAN'T STOP NOW",
+		"DAVID... IT'S TIME TO STOP",
 	}
 	,psychoMessages_lv5 = {
 		"THEY CAN'T KEEP UP WITH ME",
@@ -1036,6 +1041,8 @@ davidsapogee = {
 		"YOU'LL END UP LIKE MAINE",
 		"THE MOON... I CAN SEE IT",
 		"DAVID MARTINEZ DIED HERE",
+		"DAVID... IT'S TIME TO STOP",
+		"DAVID... IT'S TIME TO STOP",
 	}
 	,PsychoMessage = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
@@ -1070,6 +1077,7 @@ davidsapogee = {
 			self.nextPsychoMsgTime = now + math.random(60, 120)
 		end
 	 end)
+	,heartbeatSoundName = "q005_sc_01_heart_beating"
 	,Heartbeat = (function(self)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		-- Heartbeat at psycho 3+ when idle, or during Sandy + low health
@@ -1080,29 +1088,20 @@ davidsapogee = {
 			shouldBeat = true
 		end
 
-		if shouldBeat and not self.heartbeatPlaying then
-			local V = Game.GetPlayer()
-			if not V or not IsDefined(V) then return end
-			pcall(function()
-				local evt = SoundPlayEvent.new()
-				evt.soundName = "q201_sc_03_v_scared_loop"
-				V:QueueEvent(evt)
-			end)
+		if shouldBeat then
 			self.heartbeatPlaying = true
-		elseif not shouldBeat and self.heartbeatPlaying then
+			local V = GetPlayer()
+			if not V or not IsDefined(V) then return end
+			-- Play one-shot heartbeat sound each tick (1s interval = heartbeat rhythm)
+			-- Uses PlaySoundEvent which is confirmed working (same as Jackie laugh)
+			pcall(function() V:PlaySoundEvent(self.heartbeatSoundName) end)
+		elseif self.heartbeatPlaying then
 			self:StopHeartbeat()
 		end
 	 end)
 	,StopHeartbeat = (function(self)
 		if not self.heartbeatPlaying then return end
 		self.heartbeatPlaying = false
-		local V = Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
-		pcall(function()
-			local evt = SoundStopEvent.new()
-			evt.soundName = "q201_sc_03_v_scared_loop"
-			V:QueueEvent(evt)
-		end)
 	 end)
 	,Nosebleed = (function(self)
 		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
