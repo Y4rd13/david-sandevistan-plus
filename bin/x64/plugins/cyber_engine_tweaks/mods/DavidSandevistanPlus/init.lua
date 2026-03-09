@@ -138,8 +138,8 @@ davidsapogee = {
 	,cfg = {
 		-- Health Drain
 		enableHealthDrain = true,        -- toggle all health drain from sandevistan
-		damageMin = 1.0,                 -- minimum damage % per tick (at full runtime)
-		damageMax = 15.0,                -- maximum damage % per tick (at zero runtime)
+		damageMin = 0.5,                 -- minimum damage % per tick (at full runtime)
+		damageMax = 8.0,                 -- maximum damage % per tick (at zero runtime)
 
 		-- Health Brake
 		enableHealthBrake = false,       -- auto-stop sandy when V's health gets too low
@@ -1136,7 +1136,7 @@ davidsapogee = {
 	----------------------------------------------------------------
 	,lastBreathSong = "dsp_last_breath_song"
 	,lastBreathPeaceTime = 15  -- seconds of peace before decay
-	,lastBreathRuntime = 120   -- seconds of runtime for the last stand
+	,lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
 	,PlayLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return false end
@@ -1162,10 +1162,13 @@ davidsapogee = {
 		self.lastBreath.elapsed = self.lastBreath.elapsed + dt
 
 		-- Force Sandy to stay active: re-apply time dilation every frame
-		-- (game may strip effects after revival)
+		-- Reset tracking var so effects are actually re-applied (game strips them after revival)
 		if self.isRunning then
+			self.TimeDilationActiveEffect = nil
 			self:TimeDilationEffects()
 		end
+		-- Keep game's Sandy charge at max
+		pcall(function() self.sps:SandevistanCharge(100) end)
 
 		if self.lastBreath.phase == "peace" then
 			-- Peace phase: no VFX, max dilation, song playing
@@ -1464,12 +1467,21 @@ davidsapogee = {
 				if self.cfg.enableHealthDrain then
 					local theDamage = DamagePerTick
 					local VsOvershieldDeduction = VsHealthNow - theDamage
-					if theDamage >= VsHealthNow then theDamage = VsHealthNow-2 end
+					-- Health floor: higher at psycho 5+ so V doesn't hover near death
+					local healthFloor = 2
+					if self.lastBreath then
+						healthFloor = 20
+					elseif self.CyberPsychoWarnings >= 5 then
+						healthFloor = 15
+					end
+					if theDamage >= VsHealthNow - healthFloor then
+						theDamage = math.max(VsHealthNow - healthFloor, 0)
+					end
 					self.sps:damage(theDamage)
 					ToDo_DamageHealthPercent = theDamage
-					
-					if VsOvershieldDeduction < 2 and not self.SafetyOn then -- if safety is off use every ounce of V's health pool.
-						theDamage = (VsOvershieldDeduction-2)*-1
+
+					if VsOvershieldDeduction < healthFloor and not self.SafetyOn then -- if safety is off use every ounce of V's health pool.
+						theDamage = (VsOvershieldDeduction-healthFloor)*-1
 						if theDamage >= VsOvershieldNow then theDamage = VsOvershieldNow-2 end
 						self.sps:UseAdrenaline(theDamage)
 						ToDo_DamageHealthPercent = theDamage
