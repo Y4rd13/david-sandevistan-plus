@@ -101,6 +101,17 @@ martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_
 martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
 martinez.HeartbeatEffect_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Heartbeat_SFX1'
 
+martinez.TickingTimeBombEffect              = 'BaseStatusEffect.MartinezSandevistan_TickingTimeBomb'
+martinez.TickingTimeBombEffect_FX1          = 'BaseStatusEffect.MartinezSandevistan_TickingTimeBomb_FX1'
+martinez.TickingTimeBombEffect_SMG          = 'BaseStatusEffect.MartinezSandevistan_TickingTimeBomb_SMG'
+martinez.TickingTimeBombEffect_SM1          = 'BaseStatusEffect.MartinezSandevistan_TickingTimeBomb_SM1'
+
+martinez.BlackwallKillEffect                = 'BaseStatusEffect.MartinezSandevistan_BlackwallKill'
+martinez.BlackwallKillEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_BlackwallKill_FX1'
+martinez.BlackwallKillEffect_FX2            = 'BaseStatusEffect.MartinezSandevistan_BlackwallKill_FX2'
+martinez.BlackwallKillEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_BlackwallKill_SMG'
+martinez.BlackwallKillEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_BlackwallKill_SM1'
+
 martinez.OverclockStatusEffect       = 'BaseStatusEffect.MartinezSandevistan_Overclock'
 martinez.Overclock_LP                = 'BaseStatusEffect.MartinezSandevistan_Overclock_LP'
 
@@ -777,6 +788,70 @@ function martinez.CreateSandevistan(self)
 	})
 	self:CloneRecord(self.HeartbeatEffect_SFX1,VFX_SuperHacked)
 	TweakDB:SetFlat(self.HeartbeatEffect_SFX1..'.name', 'q005_sc_01_heart_beating')
+
+	-- TickingTimeBombEffect: EMP VFX burst on V (4s), Stage 5-6 ability
+	self:CreateStatusEffect(self.TickingTimeBombEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.TickingTimeBombEffect_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.TickingTimeBombEffect_SMG --duration
+		,false --dynamicDuration
+		,{'Buff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData
+	})
+	self:CreateStatModifierGroup(self.TickingTimeBombEffect_SMG, { false, false, {}, false, {self.TickingTimeBombEffect_SM1}, -1, nil })
+	self:CreateConstantStatModifier(self.TickingTimeBombEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 4.0 })
+	self:CloneRecord(self.TickingTimeBombEffect_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.TickingTimeBombEffect_FX1..'.name', 'q305_cerberus_blackwall_glitch_low')
+
+	-- BlackwallKillEffect: heavy Blackwall VFX burst on V (3s), Stage 6 kill ability
+	self:CreateStatusEffect(self.BlackwallKillEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.BlackwallKillEffect_FX1,self.BlackwallKillEffect_FX2} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.BlackwallKillEffect_SMG --duration
+		,false --dynamicDuration
+		,{'Buff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData
+	})
+	self:CreateStatModifierGroup(self.BlackwallKillEffect_SMG, { false, false, {}, false, {self.BlackwallKillEffect_SM1}, -1, nil })
+	self:CreateConstantStatModifier(self.BlackwallKillEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 3.0 })
+	self:CloneRecord(self.BlackwallKillEffect_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.BlackwallKillEffect_FX2,VFX_SuperHacked)
+	TweakDB:SetFlat(self.BlackwallKillEffect_FX1..'.name', 'q305_cerberus_blackwall_glitch_heavy')
+	TweakDB:SetFlat(self.BlackwallKillEffect_FX2..'.name', self.martinez_fx_onscreen_sick_start)
 
 	self:CreateStatusEffect(self.OverclockStatusEffect,{
 		 '' --AIData

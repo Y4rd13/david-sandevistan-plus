@@ -225,6 +225,8 @@ davidsapogee = {
 	,lastBreath = nil  -- { phase = "peace"|"decay", elapsed = 0, peaceTime = 15, totalRuntime = N, songPlaying = false }
 	,lastBreathDeath = nil  -- true when Last Breath death is pending (permanent death)
 	,lastBreathMessage = nil  -- { elapsed = 0, duration = 3, sent = false }
+	,combatNPCs = {}  -- tracked hostile NPCs { [entityID_hash] = npcPuppet }
+	,nextTimeBombTime = nil  -- os.clock() for next Stage 5 Ticking Time Bomb
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -332,6 +334,8 @@ davidsapogee = {
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoLaughEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.NosebleedEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.HeartbeatEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.TickingTimeBombEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.BlackwallKillEffect)
 		self:StopHeartbeat()
 	 end)
 	,DisableSandevistan = (function(self,source)
@@ -400,6 +404,8 @@ davidsapogee = {
 		self.lastBreath = nil
 		self.lastBreathDeath = nil
 		self.lastBreathMessage = nil
+		self.nextTimeBombTime = nil
+		self.combatNPCs = {}
 		self.qs:SaveDailyActivations(0)
 
 		self:Safety(true)
@@ -613,6 +619,12 @@ davidsapogee = {
 				peaceTime = self.lastBreathPeaceTime,
 				totalRuntime = rt,
 				songPlaying = false,
+				-- Combat effects state
+				nextTimeBombTime = nil,
+				nextBlackwallTime = nil,
+				immunityActive = true,  -- first 31s of decay
+				vfxStarted = false,     -- VFX/tremor/messages delayed to 31s
+				peakFired = false,      -- one-shot peak burst at 162s
 			}
 
 			-- Remove ALL effects — moment of peace
@@ -1172,7 +1184,6 @@ davidsapogee = {
 
 		if self.lastBreath.phase == "peace" then
 			-- Peace phase: no VFX, max dilation, song playing
-			-- Keep Sandy forced on
 			if not self.isRunning then
 				self.isRunning = true
 				self.lastTick = self.TickLength + 0.001
@@ -1182,20 +1193,12 @@ davidsapogee = {
 			if self.lastBreath.elapsed >= self.lastBreath.peaceTime then
 				self.lastBreath.phase = "decay"
 				self.lastBreath.elapsed = 0
-				-- Apply all psycho VFX (the ramp-up begins)
-				self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
-				self.bbs:SendWarning("NEURAL COLLAPSE IMMINENT", 4.0)
-				-- Start tremor
-				self.tremor.intensity = 0.004
-				-- Enable psycho messages (rapid, Last Breath specific)
-				self.nextPsychoMsgTime = os.clock() + math.random(3, 6)
-				self.nextLaughTime = os.clock() + math.random(5, 12)
-				-- Schedule first V laugh
-				self.lastBreath.nextVLaugh = os.clock() + math.random(8, 15)
+				-- VFX/tremor/messages are DEFERRED to 31s into decay
+				-- Only immunity + TTB/Blackwall start at 5s
 			end
 
 		elseif self.lastBreath.phase == "decay" then
-			-- Decay phase: VFX active, dilation decaying, tremor increasing
+			local decayElapsed = self.lastBreath.elapsed
 			local totalRT = self.lastBreath.totalRuntime
 			if totalRT <= 0 then totalRT = 1 end
 			local rtRatio = self.runTime / totalRT
@@ -1208,22 +1211,93 @@ davidsapogee = {
 				self.lastTick = self.TickLength + 0.001
 			end
 
-			-- Ramp tremor from 0.004 to 0.015 as runtime depletes
-			self.tremor.intensity = 0.004 + (1 - rtRatio) * 0.011
+			-- === IMMUNITY: First 31 seconds of decay ===
+			if decayElapsed < 31 then
+				self.lastBreath.immunityActive = true
+				local health = self.sps:getHealth(true)
+				if health < 25 then
+					pcall(function()
+						local V = Game.GetPlayer()
+						local SPS = Game.GetStatPoolsSystem()
+						SPS:RequestChangingStatPoolValue(V:GetEntityID(), gamedataStatPoolType.Health, 25 - health, V, true, false)
+					end)
+				end
+			else
+				if self.lastBreath.immunityActive then
+					self.lastBreath.immunityActive = false
+					self.bbs:SendWarning("IMMUNITY FADING", 3.0)
+				end
+			end
 
-			-- V's uncontrollable laugh (both male/female play correct variant)
+			-- === VFX/TREMOR/MESSAGES: Start at 31s into decay ===
+			if decayElapsed >= 31 and not self.lastBreath.vfxStarted then
+				self.lastBreath.vfxStarted = true
+				self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
+				self.bbs:SendWarning("NEURAL COLLAPSE IMMINENT", 4.0)
+				self.tremor.intensity = 0.004
+				self.nextPsychoMsgTime = os.clock() + math.random(3, 6)
+				self.nextLaughTime = os.clock() + math.random(5, 12)
+				self.lastBreath.nextVLaugh = os.clock() + math.random(8, 15)
+			end
+
+			-- Ramp tremor (only after VFX started)
+			if self.lastBreath.vfxStarted then
+				self.tremor.intensity = 0.004 + (1 - rtRatio) * 0.011
+			end
+
+			-- V's uncontrollable laugh (only after VFX started)
 			local now = os.clock()
-			if self.lastBreath.nextVLaugh and now >= self.lastBreath.nextVLaugh then
+			if self.lastBreath.vfxStarted and self.lastBreath.nextVLaugh and now >= self.lastBreath.nextVLaugh then
 				local V = Game.GetPlayer()
 				if V and IsDefined(V) then
-					-- Try both V laugh events — game plays correct gender variant
 					pcall(function() V:PlaySoundEvent("ono_v_laugh_long") end)
 					self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
 				end
-				-- More frequent as runtime depletes
-				local minDelay = 10 + rtRatio * 10  -- 10-20s at full, 10s at empty
-				local maxDelay = 18 + rtRatio * 12  -- 18-30s at full, 18s at empty
+				local minDelay = 10 + rtRatio * 10
+				local maxDelay = 18 + rtRatio * 12
 				self.lastBreath.nextVLaugh = now + math.random(math.floor(minDelay), math.floor(maxDelay))
+			end
+
+			-- === TICKING TIME BOMB + BLACKWALL (5s to 165s into decay) ===
+			if decayElapsed >= 5 and decayElapsed <= 165 then
+				-- progressTowardsPeak: 0.0 at 5s, 1.0 at 162s
+				local progressTowardsPeak = math.min((decayElapsed - 5) / (162 - 5), 1.0)
+
+				-- Ticking Time Bomb
+				if self.lastBreath.nextTimeBombTime == nil then
+					local minD = math.floor(35 - progressTowardsPeak * 25)  -- 35s→10s
+					local maxD = math.floor(55 - progressTowardsPeak * 40)  -- 55s→15s
+					if maxD <= minD then maxD = minD + 5 end
+					self.lastBreath.nextTimeBombTime = now + math.random(minD, maxD)
+				elseif now >= self.lastBreath.nextTimeBombTime then
+					self:TickingTimeBomb()
+					local minD = math.floor(35 - progressTowardsPeak * 25)
+					local maxD = math.floor(55 - progressTowardsPeak * 40)
+					if maxD <= minD then maxD = minD + 5 end
+					self.lastBreath.nextTimeBombTime = now + math.random(minD, maxD)
+				end
+
+				-- Blackwall Kill (starts at 5s, increasingly likely toward peak)
+				if self.lastBreath.nextBlackwallTime == nil then
+					local minD = math.floor(50 - progressTowardsPeak * 30)  -- 50s→20s
+					local maxD = math.floor(80 - progressTowardsPeak * 50)  -- 80s→30s
+					if maxD <= minD then maxD = minD + 5 end
+					self.lastBreath.nextBlackwallTime = now + math.random(minD, maxD)
+				elseif now >= self.lastBreath.nextBlackwallTime then
+					self:BlackwallKill()
+					local minD = math.floor(50 - progressTowardsPeak * 30)
+					local maxD = math.floor(80 - progressTowardsPeak * 50)
+					if maxD <= minD then maxD = minD + 5 end
+					self.lastBreath.nextBlackwallTime = now + math.random(minD, maxD)
+				end
+
+				-- PEAK at 162s: forced burst
+				if decayElapsed >= 160 and decayElapsed < 163 and not self.lastBreath.peakFired then
+					self.lastBreath.peakFired = true
+					self:TickingTimeBomb()
+					self.lastBreath.nextBlackwallTime = now + math.random(1, 2)
+					self.bbs:SendWarning("NEURAL CASCADE — CRITICAL OVERLOAD", 3.0)
+				end
 			end
 
 			-- Check for death: runtime depleted
@@ -1231,7 +1305,6 @@ davidsapogee = {
 				self:StopLastBreathSong()
 				self:StopHeartbeat()
 				self.lastBreath = nil
-				-- Permanent death — no more chances
 				self:RemoveAllPsychoVFX()
 				self.tremor.intensity = 0
 				self.nextLaughTime = nil
@@ -1241,11 +1314,88 @@ davidsapogee = {
 					pcall(function() V:SetWarningMessage("THE MOON... I CAN SEE IT") end)
 				end
 				self.bbs:SendWarning("THE MOON... I CAN SEE IT", 3.0)
-				-- Brief clarity before permanent death
 				self.terminalClarity = { elapsed = 0, duration = 3.0 }
-				-- Prevent Second Heart loop: mark as already used
 				self.lastBreathDeath = true
 			end
+		end
+	 end)
+	,TickingTimeBomb = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+
+		-- VFX on V
+		self:StatusEffect_CheckAndApply(self.martinez.TickingTimeBombEffect)
+
+		-- EMP sound
+		pcall(function()
+			local evt = SoundPlayEvent.new()
+			evt.soundName = "quickhack_shortcircuit"
+			V:QueueEvent(evt)
+		end)
+
+		-- AoE stun on nearby hostile NPCs within 20m
+		local vPos = V:GetWorldPosition()
+		local stunCount = 0
+		for eid, npc in pairs(self.combatNPCs) do
+			pcall(function()
+				if npc and IsDefined(npc) and not npc:IsDead() then
+					local npcPos = npc:GetWorldPosition()
+					local dx = vPos.x - npcPos.x
+					local dy = vPos.y - npcPos.y
+					local dz = vPos.z - npcPos.z
+					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+					if dist <= 20.0 then
+						self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun', npc)
+						self:BuffNPCPsychoGlitch(npc, true)
+						stunCount = stunCount + 1
+					end
+				end
+			end)
+		end
+
+		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Explosion, 30.0)
+
+		if stunCount > 0 then
+			self.bbs:SendWarning("EMP DISCHARGE — "..tostring(stunCount).." STUNNED", 2.0)
+		end
+	 end)
+	,BlackwallKill = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+
+		-- Heavy Blackwall VFX on V
+		self:StatusEffect_CheckAndApply(self.martinez.BlackwallKillEffect)
+
+		-- Blackwall sound
+		pcall(function()
+			local evt = SoundPlayEvent.new()
+			evt.soundName = "quickhack_shortcircuit"
+			V:QueueEvent(evt)
+		end)
+
+		-- AoE kill on nearby hostile NPCs within 25m
+		local vPos = V:GetWorldPosition()
+		local killCount = 0
+		for eid, npc in pairs(self.combatNPCs) do
+			pcall(function()
+				if npc and IsDefined(npc) and not npc:IsDead() then
+					local npcPos = npc:GetWorldPosition()
+					local dx = vPos.x - npcPos.x
+					local dy = vPos.y - npcPos.y
+					local dz = vPos.z - npcPos.z
+					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+					if dist <= 25.0 then
+						npc:Kill(V, true, true)
+						killCount = killCount + 1
+					end
+				end
+			end)
+		end
+
+		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Explosion, 30.0)
+
+		if killCount > 0 then
+			self.bbs:SendWarning("BLACKWALL PROTOCOL — "..tostring(killCount).." FLATLINED", 3.0)
 		end
 	 end)
 	,PsychoLaugh = (function(self)
@@ -1469,7 +1619,9 @@ davidsapogee = {
 					local VsOvershieldDeduction = VsHealthNow - theDamage
 					-- Health floor: higher at psycho 5+ so V doesn't hover near death
 					local healthFloor = 2
-					if self.lastBreath then
+					if self.lastBreath and self.lastBreath.immunityActive then
+						healthFloor = 25
+					elseif self.lastBreath then
 						healthFloor = 20
 					elseif self.CyberPsychoWarnings >= 5 then
 						healthFloor = 15
@@ -1636,6 +1788,16 @@ davidsapogee = {
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				self:PsychoLaugh()
 				self:PsychoMessage()
+				-- Stage 5: Random Ticking Time Bomb (infrequent, only when Sandy running)
+				if self.CyberPsychoWarnings >= 5 and self.isRunning and not self.lastBreath and self.cfg.enableCyberpsychosis then
+					local now = os.clock()
+					if self.nextTimeBombTime == nil then
+						self.nextTimeBombTime = now + math.random(120, 360)
+					elseif now >= self.nextTimeBombTime then
+						self:TickingTimeBomb()
+						self.nextTimeBombTime = now + math.random(180, 480)
+					end
+				end
 				if self.LoadThreeTimer ~= nil then
 					self.LoadThreeTimer = self.LoadThreeTimer - 1
 					if self.LoadThreeTimer <= 0 then
@@ -1667,6 +1829,8 @@ davidsapogee = {
 		self.lastBreath = nil
 		self.lastBreathDeath = nil
 		self.lastBreathMessage = nil
+		self.nextTimeBombTime = nil
+		self.combatNPCs = {}
 		self.HealthBrake = self.qs:LoadOverClockBrake()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
 		self.dailyActivations = self.qs:LoadDailyActivations()
@@ -2345,12 +2509,20 @@ registerForEvent('onInit', function()
 	Observe('NPCPuppet', 'OnAfterDeathOrDefeat', function(npcPuppet,DefeatEvt)
 		if not IsDefined(npcPuppet) then return end
 		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,false)
+		pcall(function()
+			local eid = tostring(npcPuppet:GetEntityID().hash)
+			davidsapogee.combatNPCs[eid] = nil
+		end)
 	end)
 	Observe('NPCPuppet', 'OnPreUninitialize', function(npcPuppet,DefeatEvt)
 		if not IsDefined(npcPuppet) then return end
 		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,false)
+		pcall(function()
+			local eid = tostring(npcPuppet:GetEntityID().hash)
+			davidsapogee.combatNPCs[eid] = nil
+		end)
 	end)
-	
+
 	ObserveAfter('NPCPuppet', 'OnSignalNPCStateChangeSignal', function(npcPuppet,signalId, newValue, userData)
 		-- signalId:int, newValue:bool userData:NPCStateChangeSignal
 		if not IsDefined(npcPuppet) then return end
@@ -2362,9 +2534,18 @@ registerForEvent('onInit', function()
 		if userData.highLevelState==gamedataNPCHighLevelState.Fear then return end
 		if userData.highLevelState==gamedataNPCHighLevelState.Wounded then return end
 		if userData.highLevelState==gamedataNPCHighLevelState.Stealth then return end
-		
+
 		local TurnOn = (userData.highLevelState==gamedataNPCHighLevelState.Combat)
 		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,TurnOn)
+		-- Track combat NPCs for TTB/Blackwall targeting
+		pcall(function()
+			local eid = tostring(npcPuppet:GetEntityID().hash)
+			if TurnOn then
+				davidsapogee.combatNPCs[eid] = npcPuppet
+			else
+				davidsapogee.combatNPCs[eid] = nil
+			end
+		end)
 	end)
 
 	Observe('gameuiPhotoModeMenuController', 'OnShow', function()
