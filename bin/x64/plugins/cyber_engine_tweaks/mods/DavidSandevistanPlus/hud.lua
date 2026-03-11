@@ -39,13 +39,13 @@ end)
 hud.Update = (function(self, data)
 	if self.system == nil then return end
 
-	local runtime = data.runTime or 0
-	local maxRuntime = data.MaxRunTime or 300
-	local dilation = data.dilation or 85
-	local rechargeNotification = data.rechargeNotification or 0
+	local runtime = math.floor(data.runTime or 0)
+	local maxRuntime = math.floor(data.MaxRunTime or 300)
+	local dilation = math.floor(data.dilation or 85)
+	local rechargeNotification = math.floor(data.rechargeNotification or 0)
 
-	local psychoLevel = data.psychoWarnings or 0
-	local psychoTimer = data.psychoOutburst or -1.0
+	local psychoLevel = math.floor(data.psychoWarnings or 0)
+	local psychoTimer = math.floor(data.psychoOutburst or -1)
 	local lastBreathPhase = 0
 	if data.lastBreath then
 		if data.lastBreath.phase == "peace" then
@@ -63,7 +63,7 @@ hud.Update = (function(self, data)
 
 	local dailyActivations = data.dailyActivations or 0
 	local dailySafe = data.dailySafe or 5
-	local comedownTimer = data.comedownTimer or -1.0
+	local comedownTimer = math.floor((data.comedownTimer or -1) * 10)
 	local inSafeArea = data.inSafeArea or false
 	local inClub = data.inClub or false
 	local dfImmuno = data.dfImmuno or false

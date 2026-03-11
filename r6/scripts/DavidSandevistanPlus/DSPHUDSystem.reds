@@ -22,10 +22,7 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_runtimeText: ref<inkText>;
     private let m_dilationText: ref<inkText>;
 
-    // Comedown row
-    private let m_comedownIcon: ref<inkImage>;
-    private let m_comedownBarBG: ref<inkRectangle>;
-    private let m_comedownBarFill: ref<inkRectangle>;
+    // (comedown bar removed — status text is sufficient)
 
     // Psycho row
     private let m_psychoIcon: ref<inkImage>;
@@ -38,17 +35,16 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_statusText: ref<inkText>;
 
     private let m_virtualResolutionWatcher: ref<VirtualResolutionWatcher>;
-    private let m_comedownMax: Float;
 
     // ---------------------------------------------------------------
     // Stored data fields (set by CET via small setter methods)
     // ---------------------------------------------------------------
-    private let m_runtime: Float;
-    private let m_maxRuntime: Float;
+    private let m_runtime: Int32;
+    private let m_maxRuntime: Int32;
     private let m_dilation: Int32;
     private let m_rechargeNotification: Int32;
     private let m_psychoLevel: Int32;
-    private let m_psychoTimer: Float;
+    private let m_psychoTimer: Int32;
     private let m_lastBreathPhase: Int32;
     private let m_isRunning: Bool;
     private let m_isWearing: Bool;
@@ -56,7 +52,7 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_safetyOn: Bool;
     private let m_dailyActivations: Int32;
     private let m_dailySafe: Int32;
-    private let m_comedownTimer: Float;
+    private let m_comedownTimerTenths: Int32;
     private let m_inSafeArea: Bool;
     private let m_inClub: Bool;
     private let m_dfImmuno: Bool;
@@ -126,14 +122,14 @@ public class DSPHUDSystem extends ScriptableSystem {
 
     // --- Small setter methods (3-6 params each) ---
 
-    public func SetBarData(runtime: Float, maxRuntime: Float, dilation: Int32, rechargeNotification: Int32) -> Void {
+    public func SetBarData(runtime: Int32, maxRuntime: Int32, dilation: Int32, rechargeNotification: Int32) -> Void {
         this.m_runtime = runtime;
         this.m_maxRuntime = maxRuntime;
         this.m_dilation = dilation;
         this.m_rechargeNotification = rechargeNotification;
     }
 
-    public func SetPsychoData(psychoLevel: Int32, psychoTimer: Float, lastBreathPhase: Int32) -> Void {
+    public func SetPsychoData(psychoLevel: Int32, psychoTimer: Int32, lastBreathPhase: Int32) -> Void {
         this.m_psychoLevel = psychoLevel;
         this.m_psychoTimer = psychoTimer;
         this.m_lastBreathPhase = lastBreathPhase;
@@ -146,10 +142,10 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_safetyOn = safetyOn;
     }
 
-    public func SetContext(dailyActivations: Int32, dailySafe: Int32, comedownTimer: Float, inSafeArea: Bool, inClub: Bool, dfImmuno: Bool) -> Void {
+    public func SetContext(dailyActivations: Int32, dailySafe: Int32, comedownTimerTenths: Int32, inSafeArea: Bool, inClub: Bool, dfImmuno: Bool) -> Void {
         this.m_dailyActivations = dailyActivations;
         this.m_dailySafe = dailySafe;
-        this.m_comedownTimer = comedownTimer;
+        this.m_comedownTimerTenths = comedownTimerTenths;
         this.m_inSafeArea = inSafeArea;
         this.m_inClub = inClub;
         this.m_dfImmuno = dfImmuno;
@@ -176,11 +172,11 @@ public class DSPHUDSystem extends ScriptableSystem {
         // =============================================================
         // ROW: Runtime bar (always visible)
         // =============================================================
-        let maxRT: Float = this.m_maxRuntime;
+        let maxRT: Float = Cast<Float>(this.m_maxRuntime);
         if maxRT <= 0.0 { maxRT = 1.0; }
-        let ratio: Float = ClampF(this.m_runtime / maxRT, 0.0, 1.0);
+        let ratio: Float = ClampF(Cast<Float>(this.m_runtime) / maxRT, 0.0, 1.0);
         let fillWidth: Float = 620.0 * ratio;
-        if fillWidth < 1.0 && this.m_runtime > 0.0 { fillWidth = 1.0; }
+        if fillWidth < 1.0 && this.m_runtime > 0 { fillWidth = 1.0; }
 
         let rtColor: HDRColor = this.RuntimeColor(ratio);
         this.m_runtimeIcon.SetMargin(inkMargin(0.0, rowY - 15.0, 0.0, 0.0));
@@ -202,7 +198,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         rowY += 16.0;
 
         // Runtime text
-        let rtText: String = IntToString(Cast<Int32>(this.m_runtime)) + "/" + IntToString(Cast<Int32>(maxRT)) + "s";
+        let rtText: String = IntToString(this.m_runtime) + "/" + IntToString(this.m_maxRuntime) + "s";
         if this.m_rechargeNotification > 0 {
             rtText = "+" + IntToString(this.m_rechargeNotification) + "s  " + rtText;
             this.m_runtimeText.SetTintColor(this.Color(0.18, 0.80, 0.44, 1.0));
@@ -215,43 +211,16 @@ public class DSPHUDSystem extends ScriptableSystem {
         rowY += 28.0;
 
         // =============================================================
-        // ROW: Comedown bar (visible only during comedown)
-        // =============================================================
-        if this.m_comedownTimer > 0.0 {
-            if this.m_comedownTimer > this.m_comedownMax {
-                this.m_comedownMax = this.m_comedownTimer;
-            }
-            let cdRatio: Float = ClampF(this.m_comedownTimer / this.m_comedownMax, 0.0, 1.0);
-            let cdWidth: Float = 620.0 * cdRatio;
-            if cdWidth < 1.0 { cdWidth = 1.0; }
-
-            this.m_comedownIcon.SetMargin(inkMargin(0.0, rowY - 16.0, 0.0, 0.0));
-            this.m_comedownIcon.SetVisible(true);
-            this.m_comedownBarBG.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
-            this.m_comedownBarBG.SetVisible(true);
-            this.m_comedownBarFill.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
-            this.m_comedownBarFill.SetSize(Vector2(cdWidth, 8.0));
-            this.m_comedownBarFill.SetVisible(true);
-
-            rowY += 18.0;
-        } else {
-            this.m_comedownIcon.SetVisible(false);
-            this.m_comedownBarBG.SetVisible(false);
-            this.m_comedownBarFill.SetVisible(false);
-            this.m_comedownMax = 0.0;
-        }
-
-        // =============================================================
         // ROW: Psycho bar (visible when psychoLevel > 0 or lastBreath)
         // =============================================================
-        let showPsycho: Bool = this.m_lastBreathPhase > 0 || (this.m_psychoLevel > 0 && this.m_psychoTimer >= 0.0);
+        let showPsycho: Bool = this.m_lastBreathPhase > 0 || (this.m_psychoLevel > 0 && this.m_psychoTimer >= 0);
         if showPsycho {
             let psColor: HDRColor;
             let psFill: Float;
 
             if this.m_lastBreathPhase > 0 {
                 // Last Breath: bar shows remaining runtime as ratio of initial last breath runtime
-                psFill = ClampF(this.m_runtime / maxRT, 0.0, 1.0);
+                psFill = ClampF(Cast<Float>(this.m_runtime) / maxRT, 0.0, 1.0);
                 if this.m_lastBreathPhase == 2 {
                     let pulse: Float = AbsF(SinF(this.m_pulseTimer * 0.5));
                     psColor = this.LerpColor(
@@ -264,7 +233,7 @@ public class DSPHUDSystem extends ScriptableSystem {
                 }
             } else {
                 // Normal psycho: bar shows distance from episode (timer/3600)
-                psFill = ClampF(this.m_psychoTimer / 3600.0, 0.0, 1.0);
+                psFill = ClampF(Cast<Float>(this.m_psychoTimer) / 3600.0, 0.0, 1.0);
                 psColor = this.PsychoLevelColor(this.m_psychoLevel);
             }
 
@@ -287,10 +256,10 @@ public class DSPHUDSystem extends ScriptableSystem {
             this.m_psychoLine.SetMargin(inkMargin(50.0, rowY, 0.0, 0.0));
             this.m_psychoLine.SetVisible(true);
             if this.m_lastBreathPhase > 0 {
-                this.m_psychoLine.SetText("[VI] LAST BREATH  " + this.FormatTime(this.m_runtime));
+                this.m_psychoLine.SetText("[VI] LAST BREATH  " + this.FormatTime(Cast<Float>(this.m_runtime)));
                 this.m_psychoLine.SetTintColor(psColor);
             } else {
-                this.m_psychoLine.SetText(this.PsychoLevelText(this.m_psychoLevel) + "  " + this.FormatTime(this.m_psychoTimer));
+                this.m_psychoLine.SetText(this.PsychoLevelText(this.m_psychoLevel) + "  " + this.FormatTime(Cast<Float>(this.m_psychoTimer)));
                 this.m_psychoLine.SetTintColor(psColor);
             }
 
@@ -325,9 +294,9 @@ public class DSPHUDSystem extends ScriptableSystem {
         } else if !this.m_safetyOn {
             status = "SAFETY OFF";
             statusColor = this.Color(1.0, 0.15, 0.15, 1.0);
-        } else if this.m_comedownTimer > 0.0 {
-            let whole: Int32 = Cast<Int32>(this.m_comedownTimer);
-            let frac: Int32 = Cast<Int32>((this.m_comedownTimer - Cast<Float>(whole)) * 10.0);
+        } else if this.m_comedownTimerTenths > 0 {
+            let whole: Int32 = this.m_comedownTimerTenths / 10;
+            let frac: Int32 = this.m_comedownTimerTenths - (whole * 10);
             if frac < 0 { frac = 0; }
             status = "COMEDOWN " + IntToString(whole) + "." + IntToString(frac) + "s";
             statusColor = this.Color(1.0, 0.6, 0.1, 1.0);
@@ -367,9 +336,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_runtimeBarFill = null;
         this.m_runtimeText = null;
         this.m_dilationText = null;
-        this.m_comedownIcon = null;
-        this.m_comedownBarBG = null;
-        this.m_comedownBarFill = null;
         this.m_psychoIcon = null;
         this.m_psychoBarBG = null;
         this.m_psychoBarFill = null;
@@ -440,41 +406,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         dilationText.SetText("");
         dilationText.Reparent(slot);
         this.m_dilationText = dilationText;
-
-        // --- Comedown icon ---
-        let cdIcon: ref<inkImage> = new inkImage();
-        cdIcon.SetName(n"DSPComedownIcon");
-        cdIcon.SetSize(Vector2(40.0, 40.0));
-        cdIcon.SetHAlign(inkEHorizontalAlign.Left);
-        cdIcon.SetVAlign(inkEVerticalAlign.Top);
-        cdIcon.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\healthbar\\atlas_buffinfo.inkatlas");
-        cdIcon.SetTexturePart(n"synaptic_accelerator");
-        cdIcon.SetTintColor(this.Color(1.0, 0.6, 0.1, 1.0));
-        cdIcon.SetVisible(false);
-        cdIcon.Reparent(slot);
-        this.m_comedownIcon = cdIcon;
-
-        // --- Comedown bar BG ---
-        let comedownBG: ref<inkRectangle> = new inkRectangle();
-        comedownBG.SetName(n"DSPComedownBarBG");
-        comedownBG.SetSize(Vector2(620.0, 8.0));
-        comedownBG.SetHAlign(inkEHorizontalAlign.Left);
-        comedownBG.SetVAlign(inkEVerticalAlign.Top);
-        comedownBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.40));
-        comedownBG.SetVisible(false);
-        comedownBG.Reparent(slot);
-        this.m_comedownBarBG = comedownBG;
-
-        // --- Comedown bar fill ---
-        let comedownFill: ref<inkRectangle> = new inkRectangle();
-        comedownFill.SetName(n"DSPComedownBarFill");
-        comedownFill.SetSize(Vector2(620.0, 8.0));
-        comedownFill.SetHAlign(inkEHorizontalAlign.Left);
-        comedownFill.SetVAlign(inkEVerticalAlign.Top);
-        comedownFill.SetTintColor(this.Color(1.0, 0.6, 0.1, 1.0));
-        comedownFill.SetVisible(false);
-        comedownFill.Reparent(slot);
-        this.m_comedownBarFill = comedownFill;
 
         // --- Psycho icon ---
         let psIcon: ref<inkImage> = new inkImage();

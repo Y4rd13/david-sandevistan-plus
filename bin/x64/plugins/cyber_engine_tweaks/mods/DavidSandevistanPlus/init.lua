@@ -1821,6 +1821,7 @@ davidsapogee = {
 	 end)
 	,CachedInMenu = true
 	,CachedBrainDance = false
+	,runningHudTick = 0
 	,Running = (function(self,dt)
 		if self.isPhotoMode then return end
 		if not self.PlayerAttached then return end
@@ -1828,6 +1829,12 @@ davidsapogee = {
 			self.lastTick = self.lastTick + dt
 			if self.runTime > 0 then self.runTime = self.runTime - dt end
 			if self.runTime < 0 then self.runTime = 0 end
+			-- HUD update during Sandy: direct throttle, bypasses display tick
+			self.runningHudTick = self.runningHudTick + dt
+			if self.runningHudTick >= 0.2 then
+				self.runningHudTick = 0
+				self:UpdateUIText()
+			end
 			if self.lastTick >= self.TickLength then -- TickLength is 1.25s
 				local thisTick = self.lastTick
 				self.lastTick = 0
