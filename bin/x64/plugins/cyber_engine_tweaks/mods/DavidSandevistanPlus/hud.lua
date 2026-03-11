@@ -81,6 +81,22 @@ hud.Update = (function(self, data)
 end)
 
 ----------------------------------------------------------------
+-- Audio — Last Breath song via Audioware (redscript bridge)
+----------------------------------------------------------------
+
+hud.PlaySong = (function(self)
+	if self.system then
+		pcall(function() self.system:PlayLastBreathSong() end)
+	end
+end)
+
+hud.StopSong = (function(self)
+	if self.system then
+		pcall(function() self.system:StopLastBreathSong() end)
+	end
+end)
+
+----------------------------------------------------------------
 -- Visibility control
 ----------------------------------------------------------------
 

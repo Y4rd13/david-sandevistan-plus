@@ -4,6 +4,9 @@
 // Layout is dynamically positioned — hidden rows collapse so there are no gaps.
 
 import Codeware.UI.VirtualResolutionWatcher
+import Audioware.AudioSettingsExt
+import Audioware.Tween
+import Audioware.LinearTween
 
 public class DSPHUDSystem extends ScriptableSystem {
 
@@ -313,6 +316,30 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_statusText.SetMargin(inkMargin(170.0, rowY, 0.0, 0.0));
         this.m_statusText.SetText(status);
         this.m_statusText.SetTintColor(statusColor);
+    }
+
+    // ---------------------------------------------------------------
+    // Audio — Last Breath song via Audioware
+    // ---------------------------------------------------------------
+
+    public func PlayLastBreathSong() -> Void {
+        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
+        if !IsDefined(audioExt) { return; }
+        let settings = new AudioSettingsExt();
+        settings.affectedByTimeDilation = false;
+        settings.fadeIn = LinearTween.Immediate(2.0);
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        audioExt.Play(n"dsp_last_breath_song", player.GetEntityID(), n"", scnDialogLineType.Regular, settings);
+    }
+
+    public func StopLastBreathSong() -> Void {
+        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
+        if !IsDefined(audioExt) { return; }
+        let fadeOut = LinearTween.Immediate(3.0);
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        audioExt.Stop(n"dsp_last_breath_song", player.GetEntityID(), n"", fadeOut);
     }
 
     public func SetVisible(visible: Bool) -> Void {

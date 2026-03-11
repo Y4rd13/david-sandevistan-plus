@@ -63,7 +63,7 @@ TIME    TIME
                                   ├─ Runtime set to max(current, 245s)
                                   └─ "CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH"
 
-  3s     0:00    SONG STARTS      PlayLastBreathSong() → SoundPlayEvent
+  3s     0:00    SONG STARTS      PlayLastBreathSong() → Audioware (affectedByTimeDilation=false)
                                   Intro: soft synth pad, ethereal
                                   Dilation: 90% (base, no Sandy)
 
@@ -385,7 +385,7 @@ SONG ENERGY vs MOD INTENSITY (overlaid)
 |-----------|-------|----------|
 | `lastBreathPeaceTime` | 20s | init.lua — 5s wait + 5s ramp + 10s peak |
 | `lastBreathRuntime` | 245s | init.lua — matches song duration (4:05) |
-| `lastBreathSong` | `"dsp_last_breath_song"` | init.lua — REDmod custom sound event |
+| `lastBreathSong` | `n"dsp_last_breath_song"` | DSPHUDSystem.reds — Audioware event via AudioSystemExt |
 | Dilation peak | 99.35% (0.0065) | Peace ramp target + decay start |
 | Dilation floor | 90% (0.10) | Decay minimum (exp 2.5 curve) |
 | Runtime drain | 1:1 | No Safety Off multiplier during Last Breath |
@@ -397,9 +397,11 @@ SONG ENERGY vs MOD INTENSITY (overlaid)
 | `init.lua` — `RemoveDeadV()` | Last Breath initialization, state flags |
 | `init.lua` — `UpdateLastBreath()` | Per-frame update: peace ramp, song-synced decay |
 | `init.lua` — `TimeDilationCalculator()` | Dilation curve for peace (ramp) and decay (exp 2.5) |
-| `init.lua` — `PlayLastBreathSong()` | SoundPlayEvent for the custom REDmod sound |
+| `init.lua` — `PlayLastBreathSong()` | Calls hud bridge → DSPHUDSystem → Audioware AudioSystemExt |
 | `init.lua` — `TickingTimeBomb()` | EMP wave from V: staggered stun by distance (0-7m/7-14m/14-20m) |
 | `init.lua` — `BlackwallKill()` | Blackwall corruption kill: EP1 HauntedBlackwallForceKill with fallback (25m) |
-| `hud.lua` | "[VI] LAST BREATH" display, pulsing red during decay |
+| `hud.lua` | "[VI] LAST BREATH" display, pulsing red during decay, audio bridge |
 | `martinez.lua` | CyberpsychoSafetyOffEffect, PsychoLaughEffect TweakDB records |
-| `mods/DavidSandevistanSound/` | REDmod custom sound: `last_breath_song.wav` |
+| `DSPHUDSystem.reds` — `PlayLastBreathSong()` | Audioware playback with `affectedByTimeDilation = false` + 2s fade-in |
+| `DSPHUDSystem.reds` — `StopLastBreathSong()` | Audioware stop with 3s fade-out |
+| `r6/audioware/DavidSandevistanPlus/` | Audioware manifest + `last_breath_song.ogg` |

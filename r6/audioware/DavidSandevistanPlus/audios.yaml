@@ -1,0 +1,7 @@
+version: 1.0.0
+sfx:
+  dsp_last_breath_song:
+    file: last_breath_song.ogg
+    settings:
+      volume: 0.8
+      loop: false

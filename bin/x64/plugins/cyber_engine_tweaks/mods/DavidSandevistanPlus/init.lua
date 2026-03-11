@@ -1165,56 +1165,16 @@ davidsapogee = {
 	----------------------------------------------------------------
 	-- Last Breath: David's final stand after Second Heart
 	----------------------------------------------------------------
-	,lastBreathSong = "dsp_last_breath_song"
 	,lastBreathPeaceTime = 20  -- 5s wait + 5s ramp + 10s peak, then decay
 	,lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
 	,PlayLastBreathSong = (function(self)
-		local V = Game.GetPlayer()
-		if not V or not IsDefined(V) then return false end
-		local played = false
-
-		-- Method 1: REDmod custom sound via SoundPlayEvent
-		pcall(function()
-			local evt = SoundPlayEvent.new()
-			evt.soundName = self.lastBreathSong
-			V:QueueEvent(evt)
-			played = true
-			print('[DSP] LastBreath song: SoundPlayEvent queued ('..self.lastBreathSong..')')
-		end)
-
-		-- Method 2: REDmod custom sound via AudioSystem
-		pcall(function()
-			Game.GetAudioSystem():Play(self.lastBreathSong)
-			print('[DSP] LastBreath song: AudioSystem:Play queued')
-		end)
-
-		-- Method 3: Game built-in radio song as fallback
-		pcall(function()
-			local evt2 = SoundPlayEvent.new()
-			evt2.soundName = "mus_radio_05_pop_i_want_to_stay_at_your_house"
-			V:QueueEvent(evt2)
-			print('[DSP] LastBreath song: built-in radio fallback queued')
-		end)
-
-		return played
+		self.hud:PlaySong()
+		print('[DSP] LastBreath song: Audioware play requested')
+		return true
 	 end)
 	,StopLastBreathSong = (function(self)
-		local V = Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
-		-- Stop all methods
-		pcall(function()
-			local evt = SoundStopEvent.new()
-			evt.soundName = self.lastBreathSong
-			V:QueueEvent(evt)
-		end)
-		pcall(function()
-			Game.GetAudioSystem():Stop(self.lastBreathSong)
-		end)
-		pcall(function()
-			local evt2 = SoundStopEvent.new()
-			evt2.soundName = "mus_radio_05_pop_i_want_to_stay_at_your_house"
-			V:QueueEvent(evt2)
-		end)
+		self.hud:StopSong()
+		print('[DSP] LastBreath song: Audioware stop requested')
 	 end)
 	,UpdateLastBreath = (function(self, dt)
 		if not self.lastBreath then return end

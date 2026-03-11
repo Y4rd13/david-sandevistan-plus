@@ -116,7 +116,8 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 - [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107)
 - [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
 - [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198)
-- [REDmod](https://www.cyberpunk.net/en/modding-support) (included with the game — must be enabled for Last Breath audio)
+- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) (HUD auto-scaling via VirtualResolutionWatcher)
+- [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001) (Last Breath song playback, independent of Wwise)
 
 ## Installation
 
@@ -135,14 +136,14 @@ Cyberpunk 2077/
 │   │   └── gui.lua
 │   └── MartinezPLUS/
 │       └── init.lua
-└── mods/
-    └── DavidSandevistanSound/
-        ├── info.json
-        └── customSounds/
-            └── last_breath_song.wav
+├── r6/audioware/DavidSandevistanPlus/
+│   ├── audios.yaml
+│   └── last_breath_song.ogg
+└── r6/scripts/DavidSandevistanPlus/
+    └── DSPHUDSystem.reds
 ```
 
-> **Note:** After installing, enable REDmod in your game launcher (GOG/Steam) and deploy mods. The `DavidSandevistanSound` REDmod provides the "I Really Want to Stay at Your House" audio for the Last Breath sequence.
+> **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
 
 ## Settings
 
