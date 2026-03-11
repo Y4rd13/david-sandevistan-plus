@@ -44,8 +44,8 @@ At high psychosis levels and during Last Breath, V's cyberware malfunctions offe
 
 | Effect | Range | What Happens | Visual |
 |--------|-------|-------------|--------|
-| **Ticking Time Bomb** | 20m AoE | EMP discharge stuns nearby enemies | Stun animation + EMP pulse + electrical arcs on NPCs |
-| **Blackwall Kill** | 25m AoE | Blackwall corruption kills nearby enemies | Digital glitch/hack VFX → system collapse death animation |
+| **Ticking Time Bomb** | 20m AoE | EMP wave radiates outward from V, stunning enemies | Electrical arcs on V (epicenter) + staggered stun wave expanding by distance |
+| **Blackwall Kill** | 25m AoE | Blackwall corruption spreads to nearby enemies | Cyberware malfunction → BrainMelt death animation → lingering black corruption on corpses (EP1 VFX, with fallback) |
 
 ### Last Breath (Stage VI — Requires Second Heart)
 

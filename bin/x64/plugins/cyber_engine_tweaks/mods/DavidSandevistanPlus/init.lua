@@ -2732,7 +2732,6 @@ registerForEvent('onInit', function()
 	end)
 	
 	ObserveAfter("healthbarWidgetGameController", "OnPlayerAttach", function(this, value)
-		davidsapogee.hud.healthbarCtrl = this
 		davidsapogee:LoadGame(3)
 	end)
 

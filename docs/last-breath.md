@@ -107,8 +107,8 @@ TIME    TIME
                   ┈┈┈┈┈┈ SONG: CHORUS 1 (beat drops!) ┈┈┈┈┈┈
 
  +58s    1:15    ★ CHORUS 1       FIRST combat effects fire:
-                  DROP             ├─ TickingTimeBomb() (AoE stun + EMP, 20m)
-                                  ├─ BlackwallKill in 2s (SystemCollapse, 15m)
+                  DROP             ├─ TickingTimeBomb() (EMP wave from V, staggered 20m)
+                                  ├─ BlackwallKill in 2s (Blackwall corruption, 25m)
                                   ├─ Tremor: 0.006
                                   ├─ PsychoMessages start (4-8s intervals)
                                   ├─ V laughs start (12-22s intervals)
@@ -398,8 +398,8 @@ SONG ENERGY vs MOD INTENSITY (overlaid)
 | `init.lua` — `UpdateLastBreath()` | Per-frame update: peace ramp, song-synced decay |
 | `init.lua` — `TimeDilationCalculator()` | Dilation curve for peace (ramp) and decay (exp 2.5) |
 | `init.lua` — `PlayLastBreathSong()` | SoundPlayEvent for the custom REDmod sound |
-| `init.lua` — `TickingTimeBomb()` | AoE stun + EMP on nearby NPCs (20m) |
-| `init.lua` — `BlackwallKill()` | SystemCollapse + ForceKill on nearby NPCs (15m) |
+| `init.lua` — `TickingTimeBomb()` | EMP wave from V: staggered stun by distance (0-7m/7-14m/14-20m) |
+| `init.lua` — `BlackwallKill()` | Blackwall corruption kill: EP1 HauntedBlackwallForceKill with fallback (25m) |
 | `hud.lua` | "[VI] LAST BREATH" display, pulsing red during decay |
 | `martinez.lua` | CyberpsychoSafetyOffEffect, PsychoLaughEffect TweakDB records |
 | `mods/DavidSandevistanSound/` | REDmod custom sound: `last_breath_song.wav` |
