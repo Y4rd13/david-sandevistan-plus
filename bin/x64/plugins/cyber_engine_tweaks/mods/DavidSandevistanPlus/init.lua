@@ -244,7 +244,7 @@ davidsapogee = {
 			self.Localization:Init()
 			self.bbs:Init()
 			self.gui:Init(self)
-			self.sps:Init(self)
+			print('[DSP] sps:Init skipped (Codeware compat)')
 			self.GMGC:Init(self)
 			--UI:Init() is done in Load3
 			self.TimeSkip.Apogee = self -- give TimeSkip a pointer so we don't have to use callback functions!
@@ -997,9 +997,9 @@ davidsapogee = {
 		if not IsDefined(V) then return end
 		local TS = Game.GetTransactionSystem()
 		if not IsDefined(TS) then return end
-		local HeatLevel = self.GetHeatLevel()
+		local HeatLevel = self:GetHeatLevel()
 		local TransferSucess = false
-		local Bribe =  self.Apogee.bbs:GetThatValue(self.Apogee:GetHeatLevel())
+		local Bribe =  self.bbs:GetThatValue(self:GetHeatLevel())
 		TransferSucess = TS:RemoveMoney(V,Bribe, "money")
 		if TransferSucess then
 			if HeatLevel == 5 then
@@ -1022,7 +1022,7 @@ davidsapogee = {
 	,CanBribeNCPD = (function(self)
 		local NetRunnerLevel = self.sps:NetRunnerLevel()
 		local V = Game.GetPlayer()
-		local HeatLevel = self.GetHeatLevel()
+		local HeatLevel = self:GetHeatLevel()
 		local Credits = self:GetCredits()
 		local output = (NetRunnerLevel.Rules.CanBribeNCPD) and (not V.inCombat) and (HeatLevel > 1) and (Credits>self.bbs.ThatValue)
 		return output
@@ -1171,20 +1171,49 @@ davidsapogee = {
 	,PlayLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return false end
-		local ok, err = pcall(function()
+		local played = false
+
+		-- Method 1: REDmod custom sound via SoundPlayEvent
+		pcall(function()
 			local evt = SoundPlayEvent.new()
 			evt.soundName = self.lastBreathSong
 			V:QueueEvent(evt)
+			played = true
+			print('[DSP] LastBreath song: SoundPlayEvent queued ('..self.lastBreathSong..')')
 		end)
-		return ok
+
+		-- Method 2: REDmod custom sound via AudioSystem
+		pcall(function()
+			Game.GetAudioSystem():Play(self.lastBreathSong)
+			print('[DSP] LastBreath song: AudioSystem:Play queued')
+		end)
+
+		-- Method 3: Game built-in radio song as fallback
+		pcall(function()
+			local evt2 = SoundPlayEvent.new()
+			evt2.soundName = "mus_radio_05_pop_i_want_to_stay_at_your_house"
+			V:QueueEvent(evt2)
+			print('[DSP] LastBreath song: built-in radio fallback queued')
+		end)
+
+		return played
 	 end)
 	,StopLastBreathSong = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
+		-- Stop all methods
 		pcall(function()
 			local evt = SoundStopEvent.new()
 			evt.soundName = self.lastBreathSong
 			V:QueueEvent(evt)
+		end)
+		pcall(function()
+			Game.GetAudioSystem():Stop(self.lastBreathSong)
+		end)
+		pcall(function()
+			local evt2 = SoundStopEvent.new()
+			evt2.soundName = "mus_radio_05_pop_i_want_to_stay_at_your_house"
+			V:QueueEvent(evt2)
 		end)
 	 end)
 	,UpdateLastBreath = (function(self, dt)
@@ -2153,7 +2182,8 @@ davidsapogee = {
 	,sps = {
 		 Apogee = nil
 		,Init = (function(self,Apogee)
-			self.Apogee = Apogee
+			-- NO-OP: writing to sps during onInit crashes with Codeware RTTI
+			-- all sps methods reference global davidsapogee directly
 		 end)
 		,InControl = (function(self)
 			local V = Game.GetPlayer()
@@ -2163,12 +2193,12 @@ davidsapogee = {
 			if not IsDefined(SES) then return false end
 
 			local CombatZone = not SES:HasStatusEffect(VEntity,'GameplayRestriction.NoCombat')
-			self.Apogee.InDaClub = SES:HasStatusEffect(VEntity,'GameplayRestriction.InDaClub')
+			davidsapogee.InDaClub = SES:HasStatusEffect(VEntity,'GameplayRestriction.InDaClub')
 			local NotInSceneTier = (V:GetSceneTier() == 1)
 			return NotInSceneTier and CombatZone
 		 end)
 		,HideNamePlates = (function(self)
-			local bbs = self.Apogee.bbs
+			local bbs = davidsapogee.bbs
 			bbs:BlackBoardSet('UI_InterfaceOptions','NPCNameplatesEnabled',false)
 			bbs:BlackBoardSet('UI_InterfaceOptions','ObjectMarkersEnabled',false)
 		 end)
@@ -2177,7 +2207,7 @@ davidsapogee = {
 			local npc_nameplates = SS:GetVar('/interface/hud', 'npc_nameplates'):GetValue()
 			local object_markers = SS:GetVar('/interface/hud', 'object_markers'):GetValue()
 			
-			local bbs = self.Apogee.bbs
+			local bbs = davidsapogee.bbs
 			bbs:BlackBoardSet('UI_InterfaceOptions','NPCNameplatesEnabled',npc_nameplates)
 			bbs:BlackBoardSet('UI_InterfaceOptions','ObjectMarkersEnabled',object_markers)
 		 end)
@@ -2308,7 +2338,7 @@ davidsapogee = {
 			local V = Game.GetPlayer()
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			if self.Apogee.isRunning then
+			if davidsapogee.isRunning then
 				SPS:RequestSettingStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,0.1,V,false)
 			end
 		 end)
@@ -2323,9 +2353,9 @@ davidsapogee = {
 		--[[ Note to self: This function should be used everywhere to check for functionality ]]--
 		,NetRunnerLevel = (function(self)
 			local IsEdgeRunner = self:IsEdgeRunner()
-			local SafetyOn = self.Apogee.SafetyOn
+			local SafetyOn = davidsapogee.SafetyOn
 			local IsWearingCyberDeck = self:IsWearingCyberDeck()
-			local IsWearingApogee = self.Apogee:IsWearingApogee()
+			local IsWearingApogee = davidsapogee:IsWearingApogee()
 			local GameLoaded = (IsWearingApogee ~= nil) and (IsEdgeRunner~=nil)
 			local CanEdgeRunnerPerks = IsWearingApogee and IsEdgeRunner
 			local CanUnbrickSandevistan = IsWearingApogee
@@ -2349,7 +2379,7 @@ davidsapogee = {
 			 }
 		 end)
 		,IsEdgeRunner = (function(self)
-			if not self.Apogee.cfg.requireEdgeRunnerPerk then return true end
+			if not davidsapogee.cfg.requireEdgeRunnerPerk then return true end
 			local V = Game.GetPlayer()
 			if V == nil or (not IsDefined(V)) then return nil end
 			local PDS = PlayerDevelopmentSystem.GetInstance(V)
@@ -2702,6 +2732,7 @@ registerForEvent('onInit', function()
 	end)
 	
 	ObserveAfter("healthbarWidgetGameController", "OnPlayerAttach", function(this, value)
+		davidsapogee.hud.healthbarCtrl = this
 		davidsapogee:LoadGame(3)
 	end)
 
@@ -2779,6 +2810,14 @@ registerForEvent('onInit', function()
 end)
 
 registerForEvent('onUpdate', function(dt)
+    -- CET restart recovery (moved from onDraw: game API calls in onDraw crash with Codeware during Loading world)
+    if davidsapogee.gui and (not davidsapogee.LoadGameRun) and (not davidsapogee.TriedLoadGameRun) then
+        local V = Game.GetPlayer()
+        if V and IsDefined(V) and not Game.GetSystemRequestsHandler():IsPreGame() then
+            print('[DSP] CET Restart Recovery: LoadGame()')
+            davidsapogee:LoadGame()
+        end
+    end
     davidsapogee:Running(dt)
     davidsapogee:UpdateTremor(dt)
     davidsapogee:UpdateFOVPulse(dt)
@@ -2800,7 +2839,6 @@ end)
 
 registerForEvent("onDraw", function()
 	if davidsapogee.gui ~= nil then
-		if (not davidsapogee.LoadGameRun) and (not davidsapogee.TriedLoadGameRun) then print('David\'s Apogee Restarted') davidsapogee:LoadGame() end -- this should only happen when CET is restarted
 		davidsapogee.gui:Draw()
 	end
 end)
