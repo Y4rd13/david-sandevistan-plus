@@ -6,12 +6,13 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 
 - **Lore-accurate defaults** — Safety OFF from the start, like David in Edgerunners
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- 21 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
-- Native Settings UI tab with 12 subcategories
+- 41 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
+- Native Settings UI tab with 15 subcategories
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
 - No EdgeRunner perk gate — full runtime from day 1, like David in the anime
 - No health brake by default — David never had an auto-stop
 - Config persists across sessions via `config.json`
+- **Lore-accurate gameplay systems** — enhanced comedown, graduated recovery, non-linear drain, micro-episodes (see below)
 
 ### Custom HUD
 
@@ -76,6 +77,60 @@ When V dies at psycho level 5 and Second Heart revives them, Stage VI begins —
 >
 > For the full song-synced timeline, effect graphs, and implementation details, see **[docs/last-breath.md](docs/last-breath.md)**.
 
+### Lore-Accurate Gameplay Systems
+
+Four interconnected systems that make gameplay feel like David's experience in Edgerunners. All toggleable — disable any system without side effects. For formulas, cross-system interactions, and implementation details, see **[docs/lore-systems.md](docs/lore-systems.md)**.
+
+#### Enhanced Comedown
+
+Deactivating the Sandy now has real consequences — not just a brief bleed effect. V suffers stat penalties (40% slower, 70% less stamina regen, 50% less armor), visual distortion, and can't reactivate during comedown.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Duration | 5–20s | Scales with runtime used (threshold: 60s) |
+| Psycho multiplier | ×1.5 | Duration extended at psycho 3+ (up to 30s) |
+| Sandy blocked | Yes | Can't reactivate during comedown |
+| Tremor | Yes (psycho 3+) | Camera shake during comedown at high psycho |
+
+#### Doc Prescription (Graduated Recovery)
+
+Recovery is a process, not a button. Sleep cures -1 level max. Ripperdoc visits provide treatment doses. Higher psycho levels require more treatments — level 5 can't go below 4 without a ripper visit.
+
+| Psycho Level | Required Treatments | Min Ripper Visits | Sleep Alone? |
+|---|---|---|---|
+| 1 | 1 | 0 | Yes (1 sleep) |
+| 2 | 2 | 0 | Yes (2 sleeps) |
+| 3 | 3 | 1 | No |
+| 4 | 5 | 2 | No |
+| 5 | 7 | 3 | No — can't go below 4 without ripper |
+
+HUD shows `RX 2/5` next to psycho level when a prescription is active. Dark Future immunosuppressant counts as a partial treatment dose (60s accumulation = 0.5 dose).
+
+#### Non-Linear Runtime Drain
+
+The Sandy isn't a battery — it's a body. Drain accelerates the longer V stays in dilation. Session fatigue makes each activation less effective. Max runtime degrades with sustained use.
+
+| System | Effect | Default |
+|--------|--------|---------|
+| **Accelerating drain** | After 60s continuous use, drain rate increases exponentially (exp 1.5) | First 60s normal, 120s = 2× drain, 180s = 3.8× |
+| **Session fatigue** | Each activation past safe limit reduces dilation effectiveness | -2% per overuse, cap -10% |
+| **Runtime degradation** | Each session costs 1% max runtime per 60s of use | Cap 50% loss, sleep recovers 75%, ripper restores 100% |
+
+#### Micro-Episodes
+
+Random involuntary symptoms between major psycho episodes. Unpredictable and cumulative — David's deterioration wasn't on a timer.
+
+| Type | Min Level | Effect |
+|------|-----------|--------|
+| Visual glitch | 1 | Brief `hacking_glitch_low` (0.5–1.5s) |
+| Tremor burst | 2 | Camera shake spike (1–3s) |
+| Nosebleed | 2 | `burnout_glitch` VFX (3s) |
+| Manic laugh | 3 | `perk_edgerunner_player` VFX (3s) |
+| Sandy flash | 3 | Involuntary Sandy activation (1–2s), auto-stops |
+| Medium glitch | 4 | Glitch + drugged VFX (1.5–3s) |
+
+Frequency: every 5–10min at level 1, every 5–15s at level 5. Suppressed during comedown, Last Breath, menu/braindance, and while DF immunosuppressant is active.
+
 ### On-Screen Notifications
 
 20 contextual notifications keep the player informed using in-world language:
@@ -106,6 +161,7 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **Heartbeat** | Psycho lvl 3+ idle, or Sandy active with low health | Tension audio during David's deterioration |
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
 | **Exhaustion collapse** | Sandy activation at 3× safe daily limit | David passes out after 8 uses in Ep 2 |
+| **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
@@ -233,9 +289,38 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Comedown | on/off | on | Apply debuff after deactivating Sandy |
-| Base Duration | 1–10 sec | 3.0 | Minimum comedown after short use |
-| Max Duration | 3–20 sec | 8.0 | Maximum comedown after prolonged use |
+| Base Duration | 1–10 sec | 5.0 | Minimum comedown after short use |
+| Max Duration | 3–30 sec | 20.0 | Maximum comedown after prolonged use |
 | Scaling Threshold | 10–300 sec | 60 | Runtime used before comedown reaches max |
+| Block Sandy During Comedown | on/off | on | Prevent reactivation during comedown |
+| Psycho Multiplier | 1.0–3.0 | 1.5 | Duration multiplier at psycho level 3+ |
+| Tremor at High Psycho | on/off | on | Camera shake during comedown at psycho 3+ |
+
+### Prescription (Graduated Recovery)
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Prescription | on/off | on | Require multiple treatments to cure psychosis |
+| Max Recovery Per Sleep | 1–5 | 1 | Maximum psycho levels recovered per sleep |
+| Ripper Recovery Levels | 1–3 | 1 | Psycho levels recovered per ripperdoc visit |
+
+### Non-Linear Drain
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Non-Linear Drain | on/off | on | Drain accelerates with sustained use |
+| Drain Exponent | 1.0–3.0 | 1.5 | Acceleration curve steepness |
+| Acceleration Start | 10–120 sec | 60 | Seconds before acceleration kicks in |
+| Enable Session Fatigue | on/off | on | Repeated activations reduce dilation effectiveness |
+| Fatigue Penalty | 0.01–0.05 | 0.02 | Dilation loss per excess activation (2% default) |
+| Max Fatigue Penalty | 0.05–0.20 | 0.10 | Maximum dilation penalty cap (10% default) |
+| Enable Runtime Degradation | on/off | on | Max runtime degrades with sustained use |
+| Sleep Recovery % | 0.50–1.00 | 0.75 | How much degraded max runtime sleep restores |
+| Ripper Full Restore | on/off | on | Ripperdoc fully restores max runtime |
+
+### Micro-Episodes
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Enable Micro-Episodes | on/off | on | Random involuntary symptoms at psycho 1+ |
+| Frequency Multiplier | 0.25–4.0 | 1.0 | Scale episode frequency (0.5 = half, 2.0 = double) |
 
 ### Perk Gates
 | Setting | Range | Default | Description |
@@ -272,11 +357,13 @@ Death at level 5 (psycho timer OR combat):
       ├─ Decay (~105s): VFX ramp, dilation drops, delusional messages
       └─ Runtime = 0 → permanent death (DAVID MARTINEZ — FLATLINED)
 
-Recovery (levels 1–5):
+Recovery (levels 1–5) — Graduated:
   ├─ Safe areas / clubs: gradual recovery (+5s/tick on timer)
-  ├─ Sleep ≥ 8hrs: full psychosis cure
-  ├─ Sleep < 8hrs at level 5: reduced to level 1
-  └─ Visit Viktor: equivalent to 8hr rest (5min cooldown)
+  ├─ Sleep: -1 psycho level max per rest + partial treatment dose
+  ├─ Visit Viktor: -1 level + treatment dose + 50% runtime recharge
+  ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
+  ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
+  └─ HUD shows prescription progress: "RX completed/total"
 ```
 
 ## Compatibility
