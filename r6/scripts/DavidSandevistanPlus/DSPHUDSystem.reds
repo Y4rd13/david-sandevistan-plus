@@ -183,15 +183,15 @@ public class DSPHUDSystem extends ScriptableSystem {
         if fillWidth < 1.0 && this.m_runtime > 0.0 { fillWidth = 1.0; }
 
         let rtColor: HDRColor = this.RuntimeColor(ratio);
-        this.m_runtimeIcon.SetMargin(inkMargin(0.0, rowY - 9.0, 0.0, 0.0));
+        this.m_runtimeIcon.SetMargin(inkMargin(0.0, rowY - 15.0, 0.0, 0.0));
         this.m_runtimeIcon.SetTintColor(rtColor);
-        this.m_runtimeBarBG.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
-        this.m_runtimeBarFill.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
+        this.m_runtimeBarBG.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
+        this.m_runtimeBarFill.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
         this.m_runtimeBarFill.SetSize(Vector2(fillWidth, 10.0));
         this.m_runtimeBarFill.SetTintColor(rtColor);
 
         // Dilation — to the right of bar
-        this.m_dilationText.SetMargin(inkMargin(668.0, rowY - 4.0, 0.0, 0.0));
+        this.m_dilationText.SetMargin(inkMargin(680.0, rowY - 4.0, 0.0, 0.0));
         this.m_dilationText.SetText(IntToString(this.m_dilation) + "%");
         if this.m_isRunning {
             this.m_dilationText.SetTintColor(this.Color(0.85, 0.85, 0.85, 1.0));
@@ -209,7 +209,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         } else {
             this.m_runtimeText.SetTintColor(this.Color(0.85, 0.85, 0.85, 1.0));
         }
-        this.m_runtimeText.SetMargin(inkMargin(38.0, rowY, 0.0, 0.0));
+        this.m_runtimeText.SetMargin(inkMargin(50.0, rowY, 0.0, 0.0));
         this.m_runtimeText.SetText(rtText);
 
         rowY += 28.0;
@@ -225,11 +225,11 @@ public class DSPHUDSystem extends ScriptableSystem {
             let cdWidth: Float = 620.0 * cdRatio;
             if cdWidth < 1.0 { cdWidth = 1.0; }
 
-            this.m_comedownIcon.SetMargin(inkMargin(0.0, rowY - 10.0, 0.0, 0.0));
+            this.m_comedownIcon.SetMargin(inkMargin(0.0, rowY - 16.0, 0.0, 0.0));
             this.m_comedownIcon.SetVisible(true);
-            this.m_comedownBarBG.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
+            this.m_comedownBarBG.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
             this.m_comedownBarBG.SetVisible(true);
-            this.m_comedownBarFill.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
+            this.m_comedownBarFill.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
             this.m_comedownBarFill.SetSize(Vector2(cdWidth, 8.0));
             this.m_comedownBarFill.SetVisible(true);
 
@@ -271,12 +271,12 @@ public class DSPHUDSystem extends ScriptableSystem {
             let psWidth: Float = 620.0 * psFill;
             if psWidth < 1.0 && psFill > 0.0 { psWidth = 1.0; }
 
-            this.m_psychoIcon.SetMargin(inkMargin(0.0, rowY - 9.0, 0.0, 0.0));
+            this.m_psychoIcon.SetMargin(inkMargin(0.0, rowY - 15.0, 0.0, 0.0));
             this.m_psychoIcon.SetTintColor(psColor);
             this.m_psychoIcon.SetVisible(true);
-            this.m_psychoBarBG.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
+            this.m_psychoBarBG.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
             this.m_psychoBarBG.SetVisible(true);
-            this.m_psychoBarFill.SetMargin(inkMargin(34.0, rowY, 0.0, 0.0));
+            this.m_psychoBarFill.SetMargin(inkMargin(46.0, rowY, 0.0, 0.0));
             this.m_psychoBarFill.SetSize(Vector2(psWidth, 10.0));
             this.m_psychoBarFill.SetTintColor(psColor);
             this.m_psychoBarFill.SetVisible(true);
@@ -284,7 +284,7 @@ public class DSPHUDSystem extends ScriptableSystem {
             rowY += 14.0;
 
             // Psycho text line
-            this.m_psychoLine.SetMargin(inkMargin(38.0, rowY, 0.0, 0.0));
+            this.m_psychoLine.SetMargin(inkMargin(50.0, rowY, 0.0, 0.0));
             this.m_psychoLine.SetVisible(true);
             if this.m_lastBreathPhase > 0 {
                 this.m_psychoLine.SetText("[VI] LAST BREATH  " + this.FormatTime(this.m_runtime));
@@ -388,7 +388,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         // --- Runtime icon ---
         let rtIcon: ref<inkImage> = new inkImage();
         rtIcon.SetName(n"DSPRuntimeIcon");
-        rtIcon.SetSize(Vector2(28.0, 28.0));
+        rtIcon.SetSize(Vector2(40.0, 40.0));
         rtIcon.SetHAlign(inkEHorizontalAlign.Left);
         rtIcon.SetVAlign(inkEVerticalAlign.Top);
         rtIcon.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\healthbar\\atlas_buffinfo.inkatlas");
@@ -403,7 +403,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         runtimeBG.SetSize(Vector2(620.0, 10.0));
         runtimeBG.SetHAlign(inkEHorizontalAlign.Left);
         runtimeBG.SetVAlign(inkEVerticalAlign.Top);
-        runtimeBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.70));
+        runtimeBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.40));
         runtimeBG.Reparent(slot);
         this.m_runtimeBarBG = runtimeBG;
 
@@ -444,7 +444,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         // --- Comedown icon ---
         let cdIcon: ref<inkImage> = new inkImage();
         cdIcon.SetName(n"DSPComedownIcon");
-        cdIcon.SetSize(Vector2(28.0, 28.0));
+        cdIcon.SetSize(Vector2(40.0, 40.0));
         cdIcon.SetHAlign(inkEHorizontalAlign.Left);
         cdIcon.SetVAlign(inkEVerticalAlign.Top);
         cdIcon.SetAtlasResource(r"base\\gameplay\\gui\\widgets\\healthbar\\atlas_buffinfo.inkatlas");
@@ -460,7 +460,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         comedownBG.SetSize(Vector2(620.0, 8.0));
         comedownBG.SetHAlign(inkEHorizontalAlign.Left);
         comedownBG.SetVAlign(inkEVerticalAlign.Top);
-        comedownBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.70));
+        comedownBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.40));
         comedownBG.SetVisible(false);
         comedownBG.Reparent(slot);
         this.m_comedownBarBG = comedownBG;
@@ -479,7 +479,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         // --- Psycho icon ---
         let psIcon: ref<inkImage> = new inkImage();
         psIcon.SetName(n"DSPPsychoIcon");
-        psIcon.SetSize(Vector2(28.0, 28.0));
+        psIcon.SetSize(Vector2(40.0, 40.0));
         psIcon.SetHAlign(inkEHorizontalAlign.Left);
         psIcon.SetVAlign(inkEVerticalAlign.Top);
         psIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\icons\\quickhacks_icons.inkatlas");
@@ -495,7 +495,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         psychoBG.SetSize(Vector2(620.0, 10.0));
         psychoBG.SetHAlign(inkEHorizontalAlign.Left);
         psychoBG.SetVAlign(inkEVerticalAlign.Top);
-        psychoBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.70));
+        psychoBG.SetTintColor(this.Color(0.12, 0.12, 0.14, 0.40));
         psychoBG.SetVisible(false);
         psychoBG.Reparent(slot);
         this.m_psychoBarBG = psychoBG;

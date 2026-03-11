@@ -1932,7 +1932,12 @@ davidsapogee = {
 		self.displayTick = self.displayTick + dt
 		if self.displayTick >= 0.25 then -- tick every 1/4 second
 			self.displayTick = 0
-			
+
+			-- HUD update every tick (0.25s) for smooth bar animation
+			if not (self.CachedInMenu or self.CachedBrainDance) then
+				self:UpdateUIText()
+			end
+
 			-- split the second tick into 4 parts to spread the load evenly
 			self.displayTick2 = self.displayTick2 + 1
 			if self.displayTick2 > 3 then self.displayTick2 = 0 end
@@ -1942,7 +1947,6 @@ davidsapogee = {
 				self.CachedBrainDance = self.bbs:InBrainDance() -- only check InBrainDance once per second
 				self.VIsInControl = self.sps:InControl()
 				if self.CachedInMenu or self.CachedBrainDance then return end
-				self:UpdateUIText()
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				if self.PsychoOutburst ~= nil and self.cfg.enableCyberpsychosis then
