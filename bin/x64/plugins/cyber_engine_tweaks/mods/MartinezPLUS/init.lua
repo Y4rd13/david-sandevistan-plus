@@ -34,9 +34,26 @@ local defaults = {
 	psychoAccelPerExtraUse = 30,
 	safetyOffTimeDilation = 975,
 	enableComedown = true,
-	comedownBaseDuration = 3.0,
-	comedownMaxDuration = 8.0,
+	comedownBaseDuration = 5.0,
+	comedownMaxDuration = 20.0,
 	comedownRuntimeThreshold = 60,
+	comedownBlockSandy = true,
+	comedownPsychoMultiplier = 1.5,
+	comedownTremorAtPsycho = true,
+	enablePrescription = true,
+	maxPsychoRecoveryPerSleep = 1,
+	ripperRecoveryLevels = 1,
+	enableNonLinearDrain = true,
+	drainExponent = 1.5,
+	drainAccelStartSec = 60,
+	enableSessionFatigue = true,
+	sessionFatiguePenalty = 0.02,
+	maxSessionFatiguePenalty = 0.10,
+	enableRuntimeDegradation = true,
+	sleepRecoveryPercent = 0.75,
+	ripperFullRestore = true,
+	enableMicroEpisodes = true,
+	microEpisodeFrequency = 1.0,
 	requireEdgeRunnerPerk = true,
 	timeDilationNoPerk = 0.05,
 	timeDilationWithPerk = 0.0065,
@@ -57,6 +74,12 @@ local gameplayKeys = {
 	"dailySafeActivations", "psychoAccelPerExtraUse",
 	"safetyOffTimeDilation",
 	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
+	"comedownBlockSandy", "comedownPsychoMultiplier", "comedownTremorAtPsycho",
+	"enablePrescription", "maxPsychoRecoveryPerSleep", "ripperRecoveryLevels",
+	"enableNonLinearDrain", "drainExponent", "drainAccelStartSec",
+	"enableSessionFatigue", "sessionFatiguePenalty", "maxSessionFatiguePenalty",
+	"enableRuntimeDegradation", "sleepRecoveryPercent", "ripperFullRestore",
+	"enableMicroEpisodes", "microEpisodeFrequency",
 	"timeDilationNoPerk", "timeDilationWithPerk",
 	"tickLength",
 }
@@ -149,12 +172,15 @@ local function initUI()
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
 	local catCD = tab .. "/Comedown"
+	local catRX = tab .. "/Prescription"
+	local catNLD = tab .. "/NonLinearDrain"
+	local catME = tab .. "/MicroEpisodes"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD, catRX, catNLD, catME}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -668,6 +694,232 @@ local function initUI()
 		defaults.comedownRuntimeThreshold,
 		function(value)
 			cfg.comedownRuntimeThreshold = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catCD,
+		"Block Sandy During Comedown",
+		"Prevent Sandy reactivation during comedown. (Default: ON)\n"
+			.. "Lore: David couldn't just pop it again instantly — his body needed to recover.",
+		cfg.comedownBlockSandy,
+		defaults.comedownBlockSandy,
+		function(value)
+			cfg.comedownBlockSandy = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catCD,
+		"Psycho Duration Multiplier",
+		"Comedown duration multiplier at psycho level 3+. (Default: 1.5)\n"
+			.. "Higher psycho = longer comedown. 1.5 = 50% longer at psycho 3+.",
+		1.0, 3.0, 0.1, "%.1f",
+		cfg.comedownPsychoMultiplier,
+		defaults.comedownPsychoMultiplier,
+		function(value)
+			cfg.comedownPsychoMultiplier = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catCD,
+		"Tremor During Comedown (Psycho 3+)",
+		"Camera shake during comedown at psycho level 3+. (Default: ON)",
+		cfg.comedownTremorAtPsycho,
+		defaults.comedownTremorAtPsycho,
+		function(value)
+			cfg.comedownTremorAtPsycho = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- DOC PRESCRIPTION (Graduated Recovery)
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catRX, "Doc Prescription (Graduated Recovery)")
+
+	nativeSettings.addSwitch(
+		catRX,
+		"Enable Prescription System",
+		"Recovery is a process, not instant. Sleep = -1 level max. (Default: ON)\n"
+			.. "Lore: Doc prescribed treatments over time — David couldn't just sleep it off.\n"
+			.. "When OFF: original instant-cure behavior.",
+		cfg.enablePrescription,
+		defaults.enablePrescription,
+		function(value)
+			cfg.enablePrescription = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catRX,
+		"Max Recovery per Sleep",
+		"Maximum psycho levels recovered per sleep session. (Default: 1)\n"
+			.. "Higher values = faster sleep recovery.",
+		1, 5, 1,
+		cfg.maxPsychoRecoveryPerSleep,
+		defaults.maxPsychoRecoveryPerSleep,
+		function(value)
+			cfg.maxPsychoRecoveryPerSleep = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catRX,
+		"Ripper Recovery Levels",
+		"Psycho levels recovered per ripperdoc visit. (Default: 1)",
+		1, 3, 1,
+		cfg.ripperRecoveryLevels,
+		defaults.ripperRecoveryLevels,
+		function(value)
+			cfg.ripperRecoveryLevels = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- NON-LINEAR DRAIN & SESSION FATIGUE
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catNLD, "Non-Linear Drain & Fatigue")
+
+	nativeSettings.addSwitch(
+		catNLD,
+		"Enable Non-Linear Drain",
+		"Runtime drain accelerates the longer Sandy is active. (Default: ON)\n"
+			.. "First 60s = normal. Then drain increases exponentially.\n"
+			.. "Lore: David's body deteriorated faster the longer he pushed.",
+		cfg.enableNonLinearDrain,
+		defaults.enableNonLinearDrain,
+		function(value)
+			cfg.enableNonLinearDrain = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNLD,
+		"Drain Exponent",
+		"Acceleration curve exponent. (Default: 1.5)\n"
+			.. "Higher = more aggressive drain at sustained use.",
+		1.0, 3.0, 0.1, "%.1f",
+		cfg.drainExponent,
+		defaults.drainExponent,
+		function(value)
+			cfg.drainExponent = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNLD,
+		"Drain Acceleration Start (sec)",
+		"Seconds of active Sandy before drain acceleration kicks in. (Default: 60)",
+		10, 180, 5,
+		cfg.drainAccelStartSec,
+		defaults.drainAccelStartSec,
+		function(value)
+			cfg.drainAccelStartSec = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catNLD,
+		"Enable Session Fatigue",
+		"Each overuse activation makes dilation less effective. (Default: ON)\n"
+			.. "Resets on sleep. Stacks with psycho dilation curves.",
+		cfg.enableSessionFatigue,
+		defaults.enableSessionFatigue,
+		function(value)
+			cfg.enableSessionFatigue = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNLD,
+		"Fatigue Penalty per Overuse",
+		"Time dilation loss per overuse activation. (Default: 0.02 = 2%)\n"
+			.. "Example: 5 overuses = 10% less effective dilation.",
+		0.01, 0.10, 0.01, "%.2f",
+		cfg.sessionFatiguePenalty,
+		defaults.sessionFatiguePenalty,
+		function(value)
+			cfg.sessionFatiguePenalty = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNLD,
+		"Max Fatigue Penalty",
+		"Cap for total session fatigue penalty. (Default: 0.10 = 10%)",
+		0.05, 0.30, 0.01, "%.2f",
+		cfg.maxSessionFatiguePenalty,
+		defaults.maxSessionFatiguePenalty,
+		function(value)
+			cfg.maxSessionFatiguePenalty = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catNLD,
+		"Enable Runtime Degradation",
+		"Each Sandy session costs max runtime (1%/60s). (Default: ON)\n"
+			.. "Sleep recovers 75%. Ripperdoc restores 100%.\n"
+			.. "Capped at 50% max runtime loss.",
+		cfg.enableRuntimeDegradation,
+		defaults.enableRuntimeDegradation,
+		function(value)
+			cfg.enableRuntimeDegradation = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNLD,
+		"Sleep Recovery (%)",
+		"Percentage of degraded max runtime recovered per sleep. (Default: 0.75 = 75%)",
+		0.25, 1.0, 0.05, "%.2f",
+		cfg.sleepRecoveryPercent,
+		defaults.sleepRecoveryPercent,
+		function(value)
+			cfg.sleepRecoveryPercent = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catNLD,
+		"Ripper Full Restore",
+		"Ripperdoc visit restores 100% max runtime. (Default: ON)",
+		cfg.ripperFullRestore,
+		defaults.ripperFullRestore,
+		function(value)
+			cfg.ripperFullRestore = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- MICRO-EPISODES
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catME, "Micro-Episodes (Random Symptoms)")
+
+	nativeSettings.addSwitch(
+		catME,
+		"Enable Micro-Episodes",
+		"Random involuntary symptoms between psycho episodes. (Default: ON)\n"
+			.. "Visual glitches, tremors, nosebleeds, involuntary Sandy flashes.\n"
+			.. "Frequency scales with psycho level. Suppressed during comedown.",
+		cfg.enableMicroEpisodes,
+		defaults.enableMicroEpisodes,
+		function(value)
+			cfg.enableMicroEpisodes = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catME,
+		"Frequency Multiplier",
+		"Multiplier for micro-episode frequency. (Default: 1.0)\n"
+			.. "0.5 = half as frequent, 2.0 = twice as frequent.",
+		0.25, 3.0, 0.25, "%.2f",
+		cfg.microEpisodeFrequency,
+		defaults.microEpisodeFrequency,
+		function(value)
+			cfg.microEpisodeFrequency = value
 			applyAll()
 		end)
 

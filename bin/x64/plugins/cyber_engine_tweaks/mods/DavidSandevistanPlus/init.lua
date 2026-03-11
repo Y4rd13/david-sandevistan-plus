@@ -163,11 +163,14 @@ davidsapogee = {
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
 
-		-- Comedown
+		-- Comedown (Enhanced)
 		enableComedown = true,           -- apply debuff after deactivating sandevistan
-		comedownBaseDuration = 3.0,      -- base duration in seconds
-		comedownMaxDuration = 8.0,       -- max duration after long sandy use
+		comedownBaseDuration = 5.0,      -- base duration in seconds (enhanced: was 3.0)
+		comedownMaxDuration = 20.0,      -- max duration after long sandy use (enhanced: was 8.0)
 		comedownRuntimeThreshold = 60,   -- seconds of sandy use before comedown starts scaling
+		comedownBlockSandy = true,       -- can't reactivate during comedown
+		comedownPsychoMultiplier = 1.5,  -- duration multiplier at psycho 3+
+		comedownTremorAtPsycho = true,   -- tremor during comedown at psycho 3+
 
 		-- Perk Gates
 		requireEdgeRunnerPerk = true,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
@@ -175,6 +178,30 @@ davidsapogee = {
 		-- Time Dilation
 		timeDilationNoPerk = 0.05,       -- time scale without EdgeRunner perk (95%)
 		timeDilationWithPerk = 0.0065,   -- time scale with EdgeRunner perk (99.35%)
+
+		-- Doc Prescription (Graduated Recovery)
+		enablePrescription = true,       -- recovery is a process, not instant
+		maxPsychoRecoveryPerSleep = 1,   -- max levels recovered per sleep
+		ripperRecoveryLevels = 1,        -- levels per ripperdoc visit
+
+		-- Non-Linear Runtime Drain
+		enableNonLinearDrain = true,     -- drain accelerates the longer Sandy is active
+		drainExponent = 1.5,             -- acceleration curve exponent
+		drainAccelStartSec = 60,         -- seconds before acceleration kicks in
+
+		-- Session Fatigue
+		enableSessionFatigue = true,     -- each activation in a session is less effective
+		sessionFatiguePenalty = 0.02,    -- dilation loss per overuse activation (2%)
+		maxSessionFatiguePenalty = 0.10, -- cap at 10% penalty
+
+		-- Max Runtime Degradation
+		enableRuntimeDegradation = true, -- each Sandy session costs max runtime
+		sleepRecoveryPercent = 0.75,     -- sleep recovers 75% of degraded max
+		ripperFullRestore = true,        -- ripper restores 100% max
+
+		-- Micro-Episodes
+		enableMicroEpisodes = true,      -- random involuntary symptoms between episodes
+		microEpisodeFrequency = 1.0,     -- multiplier (0.5 = half, 2.0 = double)
 
 		-- Tick
 		tickLength = 1.25,               -- main game loop tick interval in seconds
@@ -200,6 +227,7 @@ davidsapogee = {
 	,sandyStartRuntime = 0
 	,lowRuntimeWarned = false
 	,comedownTimer = nil
+	,comedownTremor = false
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
 	,MinorBleedingOn = false
@@ -227,6 +255,16 @@ davidsapogee = {
 	,lastBreathMessage = nil  -- { elapsed = 0, duration = 3, sent = false }
 	,combatNPCs = {}  -- tracked hostile NPCs { [entityID_hash] = npcPuppet }
 	,nextTimeBombTime = nil  -- os.clock() for next Stage 5 Ticking Time Bomb
+	-- Prescription system state
+	,prescribedDoses = 0
+	,completedDoses = 0
+	-- Session fatigue state
+	,sessionActivations = 0
+	-- Max runtime degradation
+	,maxRuntimeDegraded = 0  -- total seconds lost from max runtime
+	-- Micro-episodes state
+	,microEpisodeTimer = nil
+	,lastMicroEpisodeType = nil
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -305,6 +343,8 @@ davidsapogee = {
 			inClub = self.InDaClub,
 			dfImmuno = dfImmuno,
 			lastBreath = self.lastBreath,
+			prescribedDoses = self.prescribedDoses or 0,
+			completedDoses = self.completedDoses or 0,
 		})
 	 end)
 	,GetApogeeIndex = (function(self)
@@ -336,6 +376,7 @@ davidsapogee = {
 		self:StatusEffect_CheckAndRemove(self.martinez.HeartbeatEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.TickingTimeBombEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.BlackwallKillEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
 		self:StopHeartbeat()
 	 end)
 	,DisableSandevistan = (function(self,source)
@@ -385,20 +426,55 @@ davidsapogee = {
 	,Rested = (function(self,RestedHours)
 		RestedHours = math.floor(RestedHours)
 		if RestedHours < 1 then return end
-		
+
 		local prevPsycho = self.CyberPsychoWarnings
-		if RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
-			self.CyberPsychoWarnings = 1 -- no free lunch for the cyberpsycho; full night's sleep or the psychosis cycle continues tomorrow.
-			self:Calculate_PsychoOutburst() -- reset the timer
+
+		if self.cfg.enablePrescription and prevPsycho > 0 then
+			-- Graduated recovery: max -1 level per sleep
+			local maxRecovery = self.cfg.maxPsychoRecoveryPerSleep or 1
+			local requiredDoses, requiredRipper = self:GetPrescription(prevPsycho)
+			-- Can't sleep below level that requires ripper visits
+			local minLevelFromSleep = 0
+			for lvl = prevPsycho, 0, -1 do
+				local _, minRip = self:GetPrescription(lvl)
+				if minRip > 0 and (self.completedDoses or 0) < requiredRipper then
+					minLevelFromSleep = lvl
+					break
+				end
+			end
+			local newLevel = math.max(prevPsycho - maxRecovery, minLevelFromSleep, 0)
+			-- Count sleep as a dose
+			if newLevel < prevPsycho and self.prescribedDoses > 0 then
+				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
+			end
+			self.CyberPsychoWarnings = newLevel
+			if newLevel > 0 then
+				self:Calculate_PsychoOutburst()
+				local remaining = self.prescribedDoses - self.completedDoses
+				local levelNames = { "I", "II", "III", "IV", "V" }
+				self.bbs:SendWarning("PARTIAL RECOVERY — PSYCHOSIS ["..tostring(levelNames[newLevel] or newLevel).."] — "..tostring(remaining).." TREATMENTS REMAINING", 5.0)
+			else
+				self.prescribedDoses = 0
+				self.completedDoses = 0
+				self.bbs:SendMessage("FULL REST — PSYCHOSIS CLEARED", 3.0)
+			end
+			-- Reset micro-episode timer for new level
+			self:ResetMicroEpisodeTimer()
+		elseif RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
+			self.CyberPsychoWarnings = 1
+			self:Calculate_PsychoOutburst()
 			self.bbs:SendWarning("PARTIAL REST — PSYCHOSIS REDUCED TO LEVEL I — FULL NIGHT REQUIRED", 5.0)
 		else
 			self.CyberPsychoWarnings = 0
 			if prevPsycho > 0 then
 				self.bbs:SendMessage("FULL REST — PSYCHOSIS CLEARED", 3.0)
 			end
+			self.prescribedDoses = 0
+			self.completedDoses = 0
 		end
-		
+
 		self.dailyActivations = 0
+		self.sessionActivations = 0
 		self.cheatedDeath = false
 		if self.lastBreath then
 			self:StopLastBreathSong()
@@ -415,16 +491,29 @@ davidsapogee = {
 		self.combatNPCs = {}
 		self.qs:SaveDailyActivations(0)
 
+		-- Clear comedown state on rest
+		self.comedownTimer = nil
+		self.comedownTremor = false
+		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
+
+		-- Sleep recovers degraded max runtime (75% by default)
+		if self.cfg.enableRuntimeDegradation and (self.maxRuntimeDegraded or 0) > 0 then
+			local recovery = self.maxRuntimeDegraded * (self.cfg.sleepRecoveryPercent or 0.75)
+			self.maxRuntimeDegraded = self.maxRuntimeDegraded - recovery
+			if self.maxRuntimeDegraded < 1 then self.maxRuntimeDegraded = 0 end
+		end
+
 		self:Safety(true)
 		self:DisableSandevistan()
 		if RestedHours > self.MaxRechargePerSleep then RestedHours = self.MaxRechargePerSleep end
+		local effectiveMax = self:GetEffectiveMaxRuntime()
 		RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
 		if self.dev_mode then
 			print('Apogee:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
 		end
 		local oldRuntime = self.runTime
 		self.runTime = self.runTime + RestedRuntime + 1
-		if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
+		if self.runTime > effectiveMax then self.runTime = effectiveMax end
 		self.rechargeNotification = math.floor(self.runTime - oldRuntime)
 		self.rechargeNotificationTimer = 8
 		if self.rechargeNotification > 0 then
@@ -437,12 +526,54 @@ davidsapogee = {
 		local isRested = ""
 		if VendorName == nil then VendorName = "" end
 		if VendorName ~= "" and self.ViktorCooldown == nil then -- At Ripper + no cooldown
-			self:Rested(8)
-			isRested = "Rested(8)"
-			self.ViktorCooldown = 300 -- 5min cooldown before you can rest at Viktor's again!
+			-- Prescription system: ripper visit = treatment
+			if self.cfg.enablePrescription and self.CyberPsychoWarnings > 0 then
+				-- Issue prescription on first visit at this level
+				local requiredDoses, requiredRipper = self:GetPrescription(self.CyberPsychoWarnings)
+				if self.prescribedDoses == 0 or self.prescribedDoses ~= requiredDoses then
+					self.prescribedDoses = requiredDoses
+					self.completedDoses = 0
+				end
+				-- Ripper visit counts as a treatment dose + recovers 1 level
+				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
+				local recoveryLevels = self.cfg.ripperRecoveryLevels or 1
+				local prevLevel = self.CyberPsychoWarnings
+				self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - recoveryLevels, 0)
+				-- Grant runtime recharge (50% max)
+				local oldRuntime = self.runTime
+				local effectiveMax = self:GetEffectiveMaxRuntime()
+				self.runTime = math.min(self.runTime + effectiveMax * 0.5, effectiveMax)
+				self.rechargeNotification = math.floor(self.runTime - oldRuntime)
+				self.rechargeNotificationTimer = 8
+				-- Full max runtime restore at ripper
+				if self.cfg.ripperFullRestore then
+					self.maxRuntimeDegraded = 0
+				end
+				if self.completedDoses >= self.prescribedDoses then
+					self.prescribedDoses = 0
+					self.completedDoses = 0
+					self.bbs:SendMessage("TREATMENT COMPLETE — PSYCHOSIS CLEARED — DOC SAYS TAKE IT EASY", 5.0)
+				else
+					local remaining = self.prescribedDoses - self.completedDoses
+					local levelNames = { "I", "II", "III", "IV", "V" }
+					local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
+					self.bbs:SendMessage("TREATMENT "..tostring(self.completedDoses).."/"..tostring(self.prescribedDoses).." — PSYCHOSIS ["..lvl.."]", 4.0)
+				end
+				if self.CyberPsychoWarnings > 0 then
+					self:Calculate_PsychoOutburst()
+				else
+					self.PsychoOutburst = nil
+				end
+				self:ResetMicroEpisodeTimer()
+				self:DisableSandevistan("VisitedRipper")
+			else
+				self:Rested(8)
+			end
+			isRested = "Treatment"
+			self.ViktorCooldown = 300 -- 5min cooldown
 		end
 		if self.dev_mode then
-			print('Apogee:VisitedRipper("'..VendorName..'") '..tostring(isRested))
+			print('Apogee:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' prescribedDoses='..tostring(self.prescribedDoses)..' completedDoses='..tostring(self.completedDoses))
 		end
 	 end)
 	,DamageCalculator = (function(self,MaxRuntime,runTime)
@@ -461,8 +592,16 @@ davidsapogee = {
 		if self.martinez == nil then return end
 		if not self:IsWearingApogee() then return end
 
+		-- Block reactivation during comedown
+		if self.comedownTimer and self.comedownTimer > 0 and self.cfg.comedownBlockSandy then
+			self.bbs:SendWarning("COOLDOWN ACTIVE — "..tostring(math.floor(self.comedownTimer)).."s REMAINING", 2.0)
+			self.sps:EndSandevistan()
+			return
+		end
+
 		self.isRunning = true
 		self.sandyStartRuntime = self.runTime
+		self.sessionActivations = (self.sessionActivations or 0) + 1
 		self.lowRuntimeWarned = false
 		-- set initial charge level on startup!
 		self:SandevistanCharge()
@@ -552,11 +691,27 @@ davidsapogee = {
 			if runtimeUsed > 0 then
 				local scale = math.min(runtimeUsed / self.cfg.comedownRuntimeThreshold, 1.0)
 				local duration = self.cfg.comedownBaseDuration + (self.cfg.comedownMaxDuration - self.cfg.comedownBaseDuration) * scale
+				-- Psycho multiplier at level 3+
+				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 3 then
+					duration = duration * self.cfg.comedownPsychoMultiplier
+				end
 				self.comedownTimer = duration
-				self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
+				self:StatusEffect_CheckAndApply(self.martinez.ComedownEffect)
+				-- Tremor during comedown at psycho 3+
+				if self.cfg.comedownTremorAtPsycho and self.CyberPsychoWarnings >= 3 then
+					self.comedownTremor = true
+				end
 				self.bbs:SendMessage("SYSTEM COOLDOWN — "..tostring(math.floor(duration)).."s", 2.5)
 				if self.dev_mode then
-					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s')
+					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s psychoMult='..(self.CyberPsychoWarnings >= 3 and tostring(self.cfg.comedownPsychoMultiplier) or "1.0"))
+				end
+
+				-- Max runtime degradation: 1% per 60s of Sandy use
+				if self.cfg.enableRuntimeDegradation then
+					local degradation = (runtimeUsed / 60) * (self.MaxRuntime * 0.01)
+					self.maxRuntimeDegraded = (self.maxRuntimeDegraded or 0) + degradation
+					local maxLoss = self.MaxRuntime * 0.5
+					if self.maxRuntimeDegraded > maxLoss then self.maxRuntimeDegraded = maxLoss end
 				end
 			end
 		end
@@ -646,12 +801,14 @@ davidsapogee = {
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
 			self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
 			self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
+			self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
 			self.MinorBleedingOn = false
 			self.tremor.intensity = 0
 			self:StopHeartbeat()
 			self.nextLaughTime = nil
 			self.nextPsychoMsgTime = nil
 			self.comedownTimer = nil
+			self.comedownTremor = false
 
 			-- Sandy and song are DEFERRED — let V breathe after revival
 			-- 3s: song starts, 5s: Sandy activates, 15s: decay begins
@@ -804,6 +961,19 @@ davidsapogee = {
 			if psychoTS < timeScale then
 				timeScale = psychoTS
 				StatusText = "Psycho "..tostring(self.CyberPsychoWarnings)
+			end
+		end
+
+		-- Session fatigue: each overuse activation makes dilation less effective
+		if self.cfg.enableSessionFatigue and not self.lastBreath then
+			local effectiveSafe = self:getEffectiveSafeActivations()
+			local excessUses = math.max(0, (self.sessionActivations or 0) - effectiveSafe)
+			if excessUses > 0 then
+				local penalty = math.min(excessUses * self.cfg.sessionFatiguePenalty, self.cfg.maxSessionFatiguePenalty)
+				timeScale = timeScale + penalty
+				if penalty > 0 then
+					StatusText = StatusText.." (Fatigued)"
+				end
 			end
 		end
 
@@ -1103,6 +1273,10 @@ davidsapogee = {
 		-- Overuse adds tremor even before psychosis
 		if self.dailyActivations > self:getEffectiveSafeActivations() * 2 then
 			target = math.max(target, 0.002)
+		end
+		-- Comedown tremor at psycho 3+
+		if self.comedownTremor then
+			target = math.max(target, 0.003)
 		end
 
 		-- Smooth intensity transitions
@@ -1779,6 +1953,112 @@ davidsapogee = {
 		self.runTime = math.max(self.runTime - 30, 0)
 		self:SaveGame("ExhaustionCollapse")
 	 end)
+	,GetEffectiveMaxRuntime = (function(self)
+		if not self.cfg.enableRuntimeDegradation then return self.MaxRuntime end
+		local degraded = self.maxRuntimeDegraded or 0
+		local maxLoss = self.MaxRuntime * 0.5
+		if degraded > maxLoss then degraded = maxLoss end
+		return math.max(self.MaxRuntime - degraded, self.MaxRuntime * 0.5)
+	 end)
+	-- Prescription table: { requiredTreatments, minRipperVisits }
+	,prescriptionTable = {
+		[0] = { 0, 0 },
+		[1] = { 1, 0 },
+		[2] = { 2, 0 },
+		[3] = { 3, 1 },
+		[4] = { 5, 2 },
+		[5] = { 7, 3 },
+	}
+	,GetPrescription = (function(self, level)
+		local entry = self.prescriptionTable[level]
+		if entry then return entry[1], entry[2] end
+		return 0, 0
+	 end)
+	-- Micro-episode pool: { type, minLevel, weight, effectKey, duration }
+	,microEpisodePool = {
+		{ type = "visual_glitch",  minLevel = 1, weight = 10, duration = { 0.5, 1.5 } },
+		{ type = "tremor_burst",   minLevel = 2, weight = 7,  duration = { 1.0, 3.0 } },
+		{ type = "nosebleed",      minLevel = 2, weight = 5,  duration = { 3.0, 3.0 } },
+		{ type = "manic_laugh",    minLevel = 3, weight = 4,  duration = { 3.0, 3.0 } },
+		{ type = "sandy_flash",    minLevel = 3, weight = 3,  duration = { 1.0, 2.0 } },
+		{ type = "medium_glitch",  minLevel = 4, weight = 2,  duration = { 1.5, 3.0 } },
+	}
+	-- Micro-episode interval ranges by psycho level (min, max in seconds)
+	,microEpisodeIntervals = {
+		[1] = { 300, 600 },   -- 5-10 min
+		[2] = { 120, 300 },   -- 2-5 min
+		[3] = { 30, 120 },    -- 30s-2min
+		[4] = { 15, 60 },     -- 15s-1min
+		[5] = { 5, 15 },      -- 5-15s
+	}
+	,ResetMicroEpisodeTimer = (function(self)
+		if not self.cfg.enableMicroEpisodes then self.microEpisodeTimer = nil return end
+		if self.CyberPsychoWarnings < 1 then self.microEpisodeTimer = nil return end
+		local interval = self.microEpisodeIntervals[self.CyberPsychoWarnings]
+		if not interval then self.microEpisodeTimer = nil return end
+		local freq = self.cfg.microEpisodeFrequency or 1.0
+		local minT = interval[1] / freq
+		local maxT = interval[2] / freq
+		if minT < 3 then minT = 3 end
+		if maxT < minT then maxT = minT end
+		self.microEpisodeTimer = minT + math.random() * (maxT - minT)
+	 end)
+	,FireMicroEpisode = (function(self)
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.comedownTimer then return end
+		if self.lastBreath then return end
+		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+		if dfImmuno then return end
+
+		-- Build eligible pool
+		local eligible = {}
+		local totalWeight = 0
+		for _, ep in ipairs(self.microEpisodePool) do
+			if self.CyberPsychoWarnings >= ep.minLevel and ep.type ~= self.lastMicroEpisodeType then
+				totalWeight = totalWeight + ep.weight
+				eligible[#eligible + 1] = ep
+			end
+		end
+		if #eligible == 0 then return end
+
+		-- Weighted random selection
+		local roll = math.random() * totalWeight
+		local cumulative = 0
+		local selected = eligible[1]
+		for _, ep in ipairs(eligible) do
+			cumulative = cumulative + ep.weight
+			if roll <= cumulative then selected = ep break end
+		end
+		self.lastMicroEpisodeType = selected.type
+
+		-- Apply effect
+		local dur = selected.duration[1] + math.random() * (selected.duration[2] - selected.duration[1])
+		if selected.type == "visual_glitch" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+		elseif selected.type == "tremor_burst" then
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
+		elseif selected.type == "nosebleed" then
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		elseif selected.type == "manic_laugh" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+		elseif selected.type == "sandy_flash" then
+			if not self.isRunning and self:IsWearingApogee() then
+				self.bbs:StartSandevistan()
+				self.microEpisodeSandyFlash = dur
+			end
+		elseif selected.type == "medium_glitch" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+		end
+
+		-- Auto-remove brief effects after duration
+		if selected.type == "visual_glitch" or selected.type == "medium_glitch" then
+			self.microEpisodeCleanup = { timer = dur, type = selected.type }
+		end
+
+		if self.dev_mode then
+			print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings))
+		end
+	 end)
 	,CachedInMenu = true
 	,CachedBrainDance = false
 	,runningHudTick = 0
@@ -1787,7 +2067,18 @@ davidsapogee = {
 		if not self.PlayerAttached then return end
 		if self.isRunning then
 			self.lastTick = self.lastTick + dt
-			if self.runTime > 0 then self.runTime = self.runTime - dt end
+			-- Non-linear drain: accelerates the longer Sandy is active
+			if self.runTime > 0 then
+				local drainRate = 1.0
+				if self.cfg.enableNonLinearDrain and not self.lastBreath then
+					local activeSeconds = (self.sandyStartRuntime or self.runTime) - self.runTime
+					if activeSeconds > self.cfg.drainAccelStartSec then
+						local overTime = (activeSeconds - self.cfg.drainAccelStartSec) / 60
+						drainRate = 1.0 + (overTime ^ self.cfg.drainExponent)
+					end
+				end
+				self.runTime = self.runTime - dt * drainRate
+			end
 			if self.runTime < 0 then self.runTime = 0 end
 			-- HUD update during Sandy: direct throttle, bypasses display tick
 			self.runningHudTick = self.runningHudTick + dt
@@ -1883,7 +2174,33 @@ davidsapogee = {
 			self.comedownTimer = self.comedownTimer - dt
 			if self.comedownTimer <= 0 then
 				self.comedownTimer = nil
-				self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
+				self.comedownTremor = false
+				self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
+			end
+		end
+
+		-- Micro-episode cleanup timer (auto-remove brief VFX)
+		if self.microEpisodeCleanup then
+			self.microEpisodeCleanup.timer = self.microEpisodeCleanup.timer - dt
+			if self.microEpisodeCleanup.timer <= 0 then
+				local epType = self.microEpisodeCleanup.type
+				if epType == "visual_glitch" then
+					self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
+				elseif epType == "medium_glitch" then
+					self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
+				end
+				self.microEpisodeCleanup = nil
+			end
+		end
+
+		-- Micro-episode Sandy flash auto-stop
+		if self.microEpisodeSandyFlash then
+			self.microEpisodeSandyFlash = self.microEpisodeSandyFlash - dt
+			if self.microEpisodeSandyFlash <= 0 then
+				self.microEpisodeSandyFlash = nil
+				if self.isRunning then
+					self.sps:EndSandevistan()
+				end
 			end
 		end
 
@@ -2013,6 +2330,17 @@ davidsapogee = {
 						self.nextTimeBombTime = now + math.random(180, 480)
 					end
 				end
+				-- Micro-episodes: random involuntary symptoms at psycho 1+
+				if self.cfg.enableMicroEpisodes and self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0 and not self.lastBreath then
+					if self.microEpisodeTimer == nil then
+						self:ResetMicroEpisodeTimer()
+					elseif self.microEpisodeTimer > 0 then
+						self.microEpisodeTimer = self.microEpisodeTimer - 1
+					else
+						self:FireMicroEpisode()
+						self:ResetMicroEpisodeTimer()
+					end
+				end
 				if self.LoadThreeTimer ~= nil then
 					self.LoadThreeTimer = self.LoadThreeTimer - 1
 					if self.LoadThreeTimer <= 0 then
@@ -2049,6 +2377,12 @@ davidsapogee = {
 		self.HealthBrake = self.qs:LoadOverClockBrake()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
 		self.dailyActivations = self.qs:LoadDailyActivations()
+		self.prescribedDoses = self.qs:LoadPrescribedDoses()
+		self.completedDoses = self.qs:LoadCompletedDoses()
+		self.maxRuntimeDegraded = self.qs:LoadRuntimeDegraded()
+		self.sessionActivations = 0
+		self.microEpisodeTimer = nil
+		self.comedownTremor = false
 		if self.HealthBrake == -1 then self.HealthBrake = self.cfg.healthBrakeDefault end
 		if self.CyberPsychoWarnings == -1 then self.CyberPsychoWarnings = 0 end
 		if self.dev_mode then
@@ -2128,6 +2462,9 @@ davidsapogee = {
 		self.qs:SaveOverClockBrake(self.HealthBrake)
 		self.qs:SaveCyberPsycho(self.CyberPsychoWarnings)
 		self.qs:SaveDailyActivations(self.dailyActivations)
+		self.qs:SavePrescribedDoses(self.prescribedDoses or 0)
+		self.qs:SaveCompletedDoses(self.completedDoses or 0)
+		self.qs:SaveRuntimeDegraded(self.maxRuntimeDegraded or 0)
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DavidsApogee:SaveGame() Completed')
@@ -2364,6 +2701,9 @@ davidsapogee = {
 		,OCBufferFactName = 'martinezsandevistan_overclock_buffer'
 		,CyberPsychoFactName = 'martinezsandevistan_cyberpsycho'
 		,DailyActivationsFactName = 'martinezsandevistan_dailyactivations'
+		,PrescribedDosesFactName = 'martinezsandevistan_prescribeddoses'
+		,CompletedDosesFactName = 'martinezsandevistan_completeddoses'
+		,RuntimeDegradedFactName = 'martinezsandevistan_runtimedegraded'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
@@ -2405,6 +2745,30 @@ davidsapogee = {
 		 end)
 		,LoadDailyActivations = (function(self)
 			local v = self:GetFactValue(self.DailyActivationsFactName)-1
+			if v < 0 then return 0 end
+			return v
+		 end)
+		,SavePrescribedDoses = (function(self,value)
+			self:SetFactValue(self.PrescribedDosesFactName,value+1)
+		 end)
+		,LoadPrescribedDoses = (function(self)
+			local v = self:GetFactValue(self.PrescribedDosesFactName)-1
+			if v < 0 then return 0 end
+			return v
+		 end)
+		,SaveCompletedDoses = (function(self,value)
+			self:SetFactValue(self.CompletedDosesFactName,value+1)
+		 end)
+		,LoadCompletedDoses = (function(self)
+			local v = self:GetFactValue(self.CompletedDosesFactName)-1
+			if v < 0 then return 0 end
+			return v
+		 end)
+		,SaveRuntimeDegraded = (function(self,value)
+			self:SetFactValue(self.RuntimeDegradedFactName,math.floor(value)+1)
+		 end)
+		,LoadRuntimeDegraded = (function(self)
+			local v = self:GetFactValue(self.RuntimeDegradedFactName)-1
 			if v < 0 then return 0 end
 			return v
 		 end)

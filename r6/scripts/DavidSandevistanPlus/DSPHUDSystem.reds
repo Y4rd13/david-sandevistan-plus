@@ -49,6 +49,8 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_psychoLevel: Int32;
     private let m_psychoTimer: Int32;
     private let m_lastBreathPhase: Int32;
+    private let m_prescribedDoses: Int32;
+    private let m_completedDoses: Int32;
     private let m_isRunning: Bool;
     private let m_isWearing: Bool;
     private let m_showUI: Bool;
@@ -132,10 +134,12 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_rechargeNotification = rechargeNotification;
     }
 
-    public func SetPsychoData(psychoLevel: Int32, psychoTimer: Int32, lastBreathPhase: Int32) -> Void {
+    public func SetPsychoData(psychoLevel: Int32, psychoTimer: Int32, lastBreathPhase: Int32, prescribedDoses: Int32, completedDoses: Int32) -> Void {
         this.m_psychoLevel = psychoLevel;
         this.m_psychoTimer = psychoTimer;
         this.m_lastBreathPhase = lastBreathPhase;
+        this.m_prescribedDoses = prescribedDoses;
+        this.m_completedDoses = completedDoses;
     }
 
     public func SetState(isRunning: Bool, isWearing: Bool, showUI: Bool, safetyOn: Bool) -> Void {
@@ -262,7 +266,11 @@ public class DSPHUDSystem extends ScriptableSystem {
                 this.m_psychoLine.SetText("[VI] LAST BREATH  " + this.FormatTime(Cast<Float>(this.m_runtime)));
                 this.m_psychoLine.SetTintColor(psColor);
             } else {
-                this.m_psychoLine.SetText(this.PsychoLevelText(this.m_psychoLevel) + "  " + this.FormatTime(Cast<Float>(this.m_psychoTimer)));
+                let psychoStr: String = this.PsychoLevelText(this.m_psychoLevel) + "  " + this.FormatTime(Cast<Float>(this.m_psychoTimer));
+                if this.m_prescribedDoses > 0 {
+                    psychoStr = psychoStr + "  RX " + IntToString(this.m_completedDoses) + "/" + IntToString(this.m_prescribedDoses);
+                }
+                this.m_psychoLine.SetText(psychoStr);
                 this.m_psychoLine.SetTintColor(psColor);
             }
 

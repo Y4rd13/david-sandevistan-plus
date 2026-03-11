@@ -98,6 +98,15 @@ martinez.NosebleedEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_
 martinez.NosebleedEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SMG'
 martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SM1'
 
+martinez.ComedownEffect                 = 'BaseStatusEffect.MartinezSandevistan_Comedown'
+martinez.ComedownEffect_LP              = 'BaseStatusEffect.MartinezSandevistan_Comedown_LP'
+martinez.ComedownEffect_SMG             = 'BaseStatusEffect.MartinezSandevistan_Comedown_SMG'
+martinez.ComedownEffect_SM1             = 'BaseStatusEffect.MartinezSandevistan_Comedown_SM1'
+martinez.ComedownEffect_SM2             = 'BaseStatusEffect.MartinezSandevistan_Comedown_SM2'
+martinez.ComedownEffect_SM3             = 'BaseStatusEffect.MartinezSandevistan_Comedown_SM3'
+martinez.ComedownEffect_FX1             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX1'
+martinez.ComedownEffect_FX2             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX2'
+
 martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
 martinez.HeartbeatEffect_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Heartbeat_SFX1'
 
@@ -788,6 +797,44 @@ function martinez.CreateSandevistan(self)
 	})
 	self:CloneRecord(self.HeartbeatEffect_SFX1,VFX_SuperHacked)
 	TweakDB:SetFlat(self.HeartbeatEffect_SFX1..'.name', 'q005_sc_01_heart_beating')
+
+	-- ComedownEffect: stat penalties after Sandy deactivation (infinite — controlled by Lua timer)
+	-- MaxSpeed × 0.6, StaminaRegenRate × 0.3, Armor × 0.5 + VFX
+	self:CreateStatusEffect(self.ComedownEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.ComedownEffect_FX1,self.ComedownEffect_FX2} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration (infinite — removed by Lua comedownTimer)
+		,false --dynamicDuration
+		,{'Debuff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{self.ComedownEffect_LP} --packages (stat penalties)
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,BleedingIcon --uiData
+	})
+	local ComedownStats = { self.ComedownEffect_SM1, self.ComedownEffect_SM2, self.ComedownEffect_SM3 }
+	self:CreateLogicPackage(self.ComedownEffect_LP, { '', {}, {}, {}, '' , false, {}, ComedownStats })
+	self:CreateStatModifierGroup(self.ComedownEffect_SMG, { false, false, {}, false, ComedownStats, -1, nil })
+	self:CreateConstantStatModifier(self.ComedownEffect_SM1, { 'Multiplier', 'BaseStats.MaxSpeed', 0.6 })
+	self:CreateConstantStatModifier(self.ComedownEffect_SM2, { 'Multiplier', 'BaseStats.StaminaRegenRate', 0.3 })
+	self:CreateConstantStatModifier(self.ComedownEffect_SM3, { 'Multiplier', 'BaseStats.Armor', 0.5 })
+	self:CloneRecord(self.ComedownEffect_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.ComedownEffect_FX2,VFX_SuperHacked)
+	TweakDB:SetFlat(self.ComedownEffect_FX1..'.name', 'burnout_glitch')
+	TweakDB:SetFlat(self.ComedownEffect_FX2..'.name', 'hacking_glitch_low')
 
 	-- TickingTimeBombEffect: EMP VFX burst on V (4s), Stage 5-6 ability
 	self:CreateStatusEffect(self.TickingTimeBombEffect,{

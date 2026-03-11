@@ -54,6 +54,8 @@ hud.Update = (function(self, data)
 			lastBreathPhase = 2
 		end
 	end
+	local prescribedDoses = math.floor(data.prescribedDoses or 0)
+	local completedDoses = math.floor(data.completedDoses or 0)
 
 	local isRunning = data.isRunning or false
 	local isWearing = data.isWearing or false
@@ -70,7 +72,7 @@ hud.Update = (function(self, data)
 
 	local ok, err = pcall(function()
 		self.system:SetBarData(runtime, maxRuntime, dilation, rechargeNotification)
-		self.system:SetPsychoData(psychoLevel, psychoTimer, lastBreathPhase)
+		self.system:SetPsychoData(psychoLevel, psychoTimer, lastBreathPhase, prescribedDoses, completedDoses)
 		self.system:SetState(isRunning, isWearing, showUI, safetyOn)
 		self.system:SetContext(dailyActivations, dailySafe, comedownTimer, inSafeArea, inClub, dfImmuno)
 		self.system:RefreshHUD()
