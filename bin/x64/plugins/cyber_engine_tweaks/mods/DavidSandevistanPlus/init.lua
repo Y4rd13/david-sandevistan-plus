@@ -157,8 +157,20 @@ davidsapogee = {
 
 		-- Cyberpsychosis
 		enableCyberpsychosis = true,     -- toggle entire cyberpsychosis system
-		dailySafeActivations = 3,        -- activations per day before psycho acceleration (Doc's warning)
-		psychoAccelPerExtraUse = 30,     -- seconds subtracted from PsychoOutburst per extra activation
+		dailySafeActivations = 3,        -- activations per day before strain acceleration (Doc's warning)
+
+		-- Neural Strain
+		strainPerActivation = 5,         -- strain added per Sandy activation
+		strainPerOveruseBonus = 3,       -- extra strain per activation beyond safe limit
+		strainPerMinuteActive = 2,       -- strain per 60s of Sandy active time
+		strainPerSecSafetyOff = 0.15,    -- strain/sec while Safety OFF
+		strainPerKillBase = 3,           -- base kill strain (overridden by faction cost from redscript)
+		strainPerComedown5s = 1,         -- strain per 5s of comedown
+		strainDrainSafeArea = 0.05,      -- strain/sec drain in safe areas
+		strainDrainSleep = 40,           -- strain drained per sleep (scaled by hours)
+		strainDrainRipper = 25,          -- strain drained per ripperdoc visit
+		strainDrainImmunoblocker = 0.1,  -- strain/sec drain while Immunoblocker active
+		strainDrainDFImmuno = 0.08,      -- strain/sec drain while DF Immunosuppressant active
 
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
@@ -217,6 +229,9 @@ davidsapogee = {
 	,displayTick2 = 0
 	,MaxRuntime = -1
 	,runTime = -1
+	,neuralStrain = 0
+	,strainComedownAccum = 0  -- accumulator for comedown strain (fires every 5s)
+	,strainActiveAccum = 0    -- accumulator for Sandy-active strain (fires every 60s)
 	,PsychoMessageWaiting = false
 	,HealthBrake = -1
 	,FullRechargeHours = -1
@@ -325,6 +340,7 @@ davidsapogee = {
 		local dilation = self.TimeDilationActualSpeed
 		if dilation == nil then dilation = 85 end
 		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+		local immunoblockerActive = self:IsImmunoblockerActive()
 		self.hud:Update({
 			isWearing = self:IsWearingApogee() or false,
 			showUI = self.ShowUIText,
@@ -336,7 +352,6 @@ davidsapogee = {
 			dailyActivations = self.dailyActivations or 0,
 			dailySafe = self:getEffectiveSafeActivations(),
 			psychoWarnings = self.CyberPsychoWarnings or 0,
-			psychoOutburst = self.PsychoOutburst,
 			comedownTimer = self.comedownTimer,
 			rechargeNotification = self.rechargeNotification,
 			inSafeArea = self.PlayerInSafeArea,
@@ -345,6 +360,10 @@ davidsapogee = {
 			lastBreath = self.lastBreath,
 			prescribedDoses = self.prescribedDoses or 0,
 			completedDoses = self.completedDoses or 0,
+			neuralStrain = self.neuralStrain or 0,
+			strainThreshold = self:GetStrainThreshold(),
+			strainGuaranteed = self:GetStrainGuaranteed(),
+			immunoblockerActive = immunoblockerActive,
 		})
 	 end)
 	,GetApogeeIndex = (function(self)
@@ -448,8 +467,10 @@ davidsapogee = {
 				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
 			end
 			self.CyberPsychoWarnings = newLevel
+			-- Drain strain on sleep (scaled by hours)
+			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8)
+			self.neuralStrain = math.max((self.neuralStrain or 0) - strainDrain, 0)
 			if newLevel > 0 then
-				self:Calculate_PsychoOutburst()
 				local remaining = self.prescribedDoses - self.completedDoses
 				local levelNames = { "I", "II", "III", "IV", "V" }
 				self.bbs:SendWarning("PARTIAL RECOVERY — PSYCHOSIS ["..tostring(levelNames[newLevel] or newLevel).."] — "..tostring(remaining).." TREATMENTS REMAINING", 5.0)
@@ -462,7 +483,7 @@ davidsapogee = {
 			self:ResetMicroEpisodeTimer()
 		elseif RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
 			self.CyberPsychoWarnings = 1
-			self:Calculate_PsychoOutburst()
+			self.neuralStrain = 0
 			self.bbs:SendWarning("PARTIAL REST — PSYCHOSIS REDUCED TO LEVEL I — FULL NIGHT REQUIRED", 5.0)
 		else
 			self.CyberPsychoWarnings = 0
@@ -559,11 +580,8 @@ davidsapogee = {
 					local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
 					self.bbs:SendMessage("TREATMENT "..tostring(self.completedDoses).."/"..tostring(self.prescribedDoses).." — PSYCHOSIS ["..lvl.."]", 4.0)
 				end
-				if self.CyberPsychoWarnings > 0 then
-					self:Calculate_PsychoOutburst()
-				else
-					self.PsychoOutburst = nil
-				end
+				-- Ripper drains strain
+				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper, 0)
 				self:ResetMicroEpisodeTimer()
 				self:DisableSandevistan("VisitedRipper")
 			else
@@ -620,28 +638,24 @@ davidsapogee = {
 		if self.cheatedDeath and self.cfg.enableCyberpsychosis and not self.lastBreath then
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
-			if self.PsychoOutburst == nil or self.PsychoOutburst < 600 then
-				self.PsychoOutburst = 600
-			end
 			self:DisableSandevistan("cheatedDeath")
 			self.bbs:SendWarning("NEURAL RELAPSE — BORROWED TIME", 4.0)
 			return
 		end
 
-		-- Daily activation counter — accelerate cyberpsychosis on overuse
+		-- Daily activation counter + Neural Strain on activation
 		if self.cfg.enableCyberpsychosis then
 			self.dailyActivations = self.dailyActivations + 1
 			local effectiveSafe = self:getEffectiveSafeActivations()
-			-- Dark Future compat: immunosuppressant blocks psycho acceleration from overuse
+
+			-- Base activation strain
+			self:AddStrain(self.cfg.strainPerActivation)
+
+			-- Extra strain per overuse activation
 			local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
 			if not dfImmuno and self.dailyActivations > effectiveSafe then
 				local extraUses = self.dailyActivations - effectiveSafe
-				if self.PsychoOutburst ~= nil then
-					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
-				elseif self.CyberPsychoWarnings > 0 then
-					self:Calculate_PsychoOutburst()
-					self.PsychoOutburst = self.PsychoOutburst - (self.cfg.psychoAccelPerExtraUse * extraUses)
-				end
+				self:AddStrain(self.cfg.strainPerOveruseBonus * extraUses)
 				local overuseMessages = {
 					[0] = "OVERUSE — DOC SAID THREE TIMES A DAY, MAX",
 					[1] = "OVERUSE — YOUR BODY IS ADAPTING TO THE SANDY",
@@ -655,7 +669,7 @@ davidsapogee = {
 					self.bbs:SendWarning(overuseMsg.." ("..tostring(self.dailyActivations).."x)", 4.0)
 				end
 				if self.dev_mode then
-					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') PsychoAccel='..tostring(self.cfg.psychoAccelPerExtraUse * extraUses)..'s')
+					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') strain='..tostring(self.neuralStrain))
 				end
 			end
 			self.qs:SaveDailyActivations(self.dailyActivations)
@@ -770,7 +784,7 @@ davidsapogee = {
 		if self.cheatedDeath then
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
-			self.PsychoOutburst = nil  -- No more psycho timer — death comes from runtime
+			self.neuralStrain = 0  -- No more strain — death comes from runtime
 
 			-- Initialize Last Breath state
 			self.runTime = math.max(self.runTime, self.lastBreathRuntime)
@@ -1208,13 +1222,61 @@ davidsapogee = {
 		if self:GetHeatLevel() > 0 then
 			self:NCPDIsWatching() -- Come find V !
 		end
-		self:Calculate_PsychoOutburst()
+		-- Reset strain after episode fires (accumulation starts fresh)
+		self.neuralStrain = 0
 	 end)
-	,Calculate_PsychoOutburst = (function(self)
-		local FasterPussyCatKillKill = (self.CyberPsychoWarnings+1)/2 ---from:1 to:3.5
-		if FasterPussyCatKillKill == 0 then FasterPussyCatKillKill = 1 end -- We NEVER want divide by zero
-		self.PsychoOutburst = math.random(300, 3600) -- random 5-60 minute cooldown
-		self.PsychoOutburst = self.PsychoOutburst / FasterPussyCatKillKill
+	,GetStrainThreshold = (function(self)
+		local thresholds = { [0]=60, [1]=50, [2]=40, [3]=30, [4]=20, [5]=10 }
+		return thresholds[self.CyberPsychoWarnings] or 60
+	 end)
+	,GetStrainGuaranteed = (function(self)
+		local guaranteed = { [0]=100, [1]=90, [2]=80, [3]=70, [4]=60, [5]=50 }
+		return guaranteed[self.CyberPsychoWarnings] or 100
+	 end)
+	,AddStrain = (function(self, amount)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.lastBreath then return end
+		if self:IsImmunoblockerActive() then return end  -- Immunoblocker blocks ALL accumulation
+		self.neuralStrain = self.neuralStrain + amount
+		local guaranteed = self:GetStrainGuaranteed()
+		if self.neuralStrain > guaranteed then self.neuralStrain = guaranteed end
+	 end)
+	,CheckStrainEpisode = (function(self)
+		-- Called once per second in displayTick. Returns true if episode fires.
+		if not self.cfg.enableCyberpsychosis then return false end
+		if self.CyberPsychoWarnings == 0 then return false end
+		if self.lastBreath then return false end
+		local threshold = self:GetStrainThreshold()
+		local guaranteed = self:GetStrainGuaranteed()
+		if self.neuralStrain < threshold then return false end
+		-- At or above guaranteed: forced episode
+		if self.neuralStrain >= guaranteed then
+			self:TriggerStrainEpisode()
+			return true
+		end
+		-- Between threshold and guaranteed: dice roll each second
+		local chance = (self.neuralStrain - threshold) / 200
+		if math.random() < chance then
+			self:TriggerStrainEpisode()
+			return true
+		end
+		return false
+	 end)
+	,TriggerStrainEpisode = (function(self)
+		-- Fire a psycho episode: escalate level, MartinezFury, reset strain
+		self.runTime = 0
+		self.sps:EndSandevistan()
+		if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
+			self:KillV()
+		else
+			self:Safety(true,true)
+			self:BleedingEffect()
+		end
+	 end)
+	,IsImmunoblockerActive = (function(self)
+		return self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Common)
+			or self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Uncommon)
+			or self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Rare)
 	 end)
 	,Calculate_SandevistanCharge = (function(self)
 		local CooldownBuffer = 0.05 -- the buffer stops the sandevistan from running out of cooldown
@@ -2009,6 +2071,7 @@ davidsapogee = {
 		if self.lastBreath then return end
 		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
 		if dfImmuno then return end
+		if self:IsImmunoblockerActive() then return end
 
 		-- Build eligible pool
 		local eligible = {}
@@ -2157,7 +2220,7 @@ davidsapogee = {
 						end
 					elseif VsHealthNow < self.cfg.safetyOffKillThreshold and VsOvershieldNow < self.cfg.safetyOffKillThreshold then
 						-- Safety OFF + health critical: force psycho escalation even if runtime > 0
-						-- Death only comes from PsychoOutburst timer expiring at level 5
+						-- Death only comes from strain episode at level 5
 						self.sps:EndSandevistan()
 						self:BleedingEffect(true)
 					elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
@@ -2233,63 +2296,61 @@ davidsapogee = {
 				if self.CachedInMenu or self.CachedBrainDance then return end
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
-				if self.PsychoOutburst ~= nil and self.cfg.enableCyberpsychosis then
-					-- Dark Future compat: detect DF consumables
-					local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
-					local dfEndotrisine = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Endotrisine')
 
-					if (self.CyberPsychoWarnings == 0) then
-						self.PsychoOutburst = nil
-					elseif dfImmuno then
-						-- Immunosuppressant: pause psycho progression (recover like safe area)
-						self.PsychoOutburst = self.PsychoOutburst + 5
-					elseif self.PlayerInSafeArea or self.InDaClub then -- Safe Area
-						self.PsychoOutburst = self.PsychoOutburst + (dfEndotrisine and 10 or 5)
-					elseif not self.VIsInControl then -- Scene Area
-						self.PsychoOutburst = self.PsychoOutburst + (dfEndotrisine and 10 or 5)
-					elseif not self.SafetyOn then -- Safety Limiters Lifted = MORE PSYCHO
-						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 5 or 10)
-					elseif self.isRunning then
-						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 1 or 2)
-					else
-						self.PsychoOutburst = self.PsychoOutburst - (dfEndotrisine and 0 or 1)
-					end
-					
-					if self.PsychoOutburst ~= nil and self.PsychoOutburst > 3600 then
-						self.CyberPsychoWarnings = self.CyberPsychoWarnings - 1
-						if self.CyberPsychoWarnings == 0 then
-							self.PsychoOutburst = nil
-							self:StopHeartbeat()
-							self.bbs:SendMessage("PSYCHOSIS CLEARED — SYSTEMS NOMINAL", 3.0)
-						else
-							self.PsychoOutburst = 61
-							local recLevelNames = { "I", "II", "III", "IV" }
-							self.bbs:SendMessage("RECOVERING — PSYCHOSIS LEVEL "..tostring(recLevelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings), 3.0)
+				-- Neural Strain tick (1/sec)
+				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0 and not self.lastBreath then
+					local immunoblocker = self:IsImmunoblockerActive()
+					local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
+
+					-- Strain accumulation sources (blocked by Immunoblocker)
+					if not immunoblocker then
+						-- Safety OFF: +0.15/sec
+						if not self.SafetyOn then
+							self:AddStrain(self.cfg.strainPerSecSafetyOff)
 						end
-						if self.CyberPsychoWarnings < 3 then self:StopHeartbeat() end
-						self:DisableSandevistan("PsychoOutburst")
-						self:SaveGame("Psycho Safe Area")
-					elseif self.PsychoOutburst ~= nil and self.PsychoOutburst <= 0 then
-						self.PsychoOutburst = nil
-						if self:IsWearingApogee() then
-							self.runTime = 0
-							self.sps:EndSandevistan()
-							if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
-								self:KillV()
-							else
-								self:Safety(true,true)
-								self:BleedingEffect()
+						-- Comedown: +1 per 5s (accumulated)
+						if self.comedownTimer and self.comedownTimer > 0 then
+							self.strainComedownAccum = (self.strainComedownAccum or 0) + 1
+							if self.strainComedownAccum >= 5 then
+								self:AddStrain(self.cfg.strainPerComedown5s)
+								self.strainComedownAccum = 0
 							end
+						else
+							self.strainComedownAccum = 0
+						end
+						-- Sandy active: +2 per 60s (accumulated)
+						if self.isRunning then
+							self.strainActiveAccum = (self.strainActiveAccum or 0) + 1
+							if self.strainActiveAccum >= 60 then
+								self:AddStrain(self.cfg.strainPerMinuteActive)
+								self.strainActiveAccum = 0
+							end
+						else
+							self.strainActiveAccum = 0
+						end
+						-- Kill strain from redscript bridge
+						local killStrain = 0
+						pcall(function()
+							killStrain = self.hud.system:GetAndClearKillStrain()
+						end)
+						if killStrain > 0 then
+							self:AddStrain(killStrain)
 						end
 					end
-					if self.PsychoOutburst ~= nil and (not self.SafetyOn) then
-						self.PsychoOutburst_UI = true
-						self.bbs:BlackBoardSet('UI_HUDCountdownTimer','Active',true,nil)
-						self.bbs:BlackBoardSet('UI_HUDCountdownTimer','Progress',nil,self.PsychoOutburst/10)
-					elseif self.PsychoOutburst_UI then
-						self.PsychoOutburst_UI = nil
-						self.bbs:BlackBoardSet('UI_HUDCountdownTimer','Active',false,nil)
+
+					-- Strain drain sources (always active)
+					if immunoblocker then
+						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainImmunoblocker, 0)
 					end
+					if dfImmuno then
+						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainDFImmuno, 0)
+					end
+					if (self.PlayerInSafeArea or self.InDaClub) and not self.isRunning then
+						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainSafeArea, 0)
+					end
+
+					-- Dice roll: check for strain episode
+					self:CheckStrainEpisode()
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
@@ -2380,6 +2441,9 @@ davidsapogee = {
 		self.prescribedDoses = self.qs:LoadPrescribedDoses()
 		self.completedDoses = self.qs:LoadCompletedDoses()
 		self.maxRuntimeDegraded = self.qs:LoadRuntimeDegraded()
+		self.neuralStrain = self.qs:LoadNeuralStrain()
+		self.strainComedownAccum = 0
+		self.strainActiveAccum = 0
 		self.sessionActivations = 0
 		self.microEpisodeTimer = nil
 		self.comedownTremor = false
@@ -2409,7 +2473,6 @@ davidsapogee = {
 		self:UpdateUIText()
 		self.OutstandingBuff = 5 -- check for sandy
 		if self.cfg.enableCyberpsychosis and (self.CyberPsychoWarnings > 0) then
-			self:Calculate_PsychoOutburst()
 			local levelNames = { "I: UNSTABLE", "II: GLITCHING", "III: LOSING IT", "IV: ON THE EDGE", "V: CYBERPSYCHO" }
 			local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
 			self.bbs:SendWarning("PSYCHOSIS ACTIVE — LEVEL "..lvl, 4.0)
@@ -2465,6 +2528,7 @@ davidsapogee = {
 		self.qs:SavePrescribedDoses(self.prescribedDoses or 0)
 		self.qs:SaveCompletedDoses(self.completedDoses or 0)
 		self.qs:SaveRuntimeDegraded(self.maxRuntimeDegraded or 0)
+		self.qs:SaveNeuralStrain(self.neuralStrain or 0)
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DavidsApogee:SaveGame() Completed')
@@ -2704,6 +2768,7 @@ davidsapogee = {
 		,PrescribedDosesFactName = 'martinezsandevistan_prescribeddoses'
 		,CompletedDosesFactName = 'martinezsandevistan_completeddoses'
 		,RuntimeDegradedFactName = 'martinezsandevistan_runtimedegraded'
+		,NeuralStrainFactName = 'martinezsandevistan_neuralstrain'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
@@ -2771,6 +2836,15 @@ davidsapogee = {
 			local v = self:GetFactValue(self.RuntimeDegradedFactName)-1
 			if v < 0 then return 0 end
 			return v
+		 end)
+		,SaveNeuralStrain = (function(self,value)
+			-- Store strain ×10 for 0.1 resolution, +1 offset for quest facts
+			self:SetFactValue(self.NeuralStrainFactName, math.floor(value * 10) + 1)
+		 end)
+		,LoadNeuralStrain = (function(self)
+			local v = self:GetFactValue(self.NeuralStrainFactName) - 1
+			if v < 0 then return 0 end
+			return v / 10  -- Convert back from ×10
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
@@ -3198,12 +3272,11 @@ registerInput("DebugPsychoUp", 'DEBUG: Psycho Level +1', function(isKeyDown)
 	if davidsapogee.CyberPsychoWarnings < 5 then
 		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings + 1
 	end
-	davidsapogee:Calculate_PsychoOutburst()
 	davidsapogee:DisableSandevistan("debug")
 	davidsapogee:SaveGame("debug")
 	local names = { "I", "II", "III", "IV", "V" }
 	davidsapogee.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[davidsapogee.CyberPsychoWarnings] or davidsapogee.CyberPsychoWarnings), 2.0)
-	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings).." PsychoOutburst="..tostring(davidsapogee.PsychoOutburst))
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings).." strain="..tostring(davidsapogee.neuralStrain))
 end)
 
 registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
@@ -3212,7 +3285,7 @@ registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
 		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings - 1
 	end
 	if davidsapogee.CyberPsychoWarnings == 0 then
-		davidsapogee.PsychoOutburst = nil
+		davidsapogee.neuralStrain = 0
 		davidsapogee:StopHeartbeat()
 		davidsapogee.nextLaughTime = nil
 	end
@@ -3226,7 +3299,7 @@ end)
 registerInput("DebugPsychoReset", 'DEBUG: Reset All Psycho State', function(isKeyDown)
 	if not isKeyDown then return end
 	davidsapogee.CyberPsychoWarnings = 0
-	davidsapogee.PsychoOutburst = nil
+	davidsapogee.neuralStrain = 0
 	davidsapogee.dailyActivations = 0
 	davidsapogee.nextLaughTime = nil
 	davidsapogee.nextPsychoMsgTime = nil

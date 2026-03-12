@@ -31,7 +31,17 @@ local defaults = {
 	maxRechargePerSleep = 10,
 	enableCyberpsychosis = true,
 	dailySafeActivations = 3,
-	psychoAccelPerExtraUse = 30,
+	strainPerActivation = 5,
+	strainPerOveruseBonus = 3,
+	strainPerMinuteActive = 2,
+	strainPerSecSafetyOff = 0.15,
+	strainPerKillBase = 3,
+	strainPerComedown5s = 1,
+	strainDrainSafeArea = 0.05,
+	strainDrainSleep = 40,
+	strainDrainRipper = 25,
+	strainDrainImmunoblocker = 0.1,
+	strainDrainDFImmuno = 0.08,
 	safetyOffTimeDilation = 975,
 	enableComedown = true,
 	comedownBaseDuration = 5.0,
@@ -71,7 +81,11 @@ local gameplayKeys = {
 	"enableHealthBrake", "healthBrakeDefault", "requiredHealthMin",
 	"safetyOffDrainMultiplier", "enableSafetyOffKill", "safetyOffKillThreshold",
 	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis",
-	"dailySafeActivations", "psychoAccelPerExtraUse",
+	"dailySafeActivations",
+	"strainPerActivation", "strainPerOveruseBonus", "strainPerMinuteActive",
+	"strainPerSecSafetyOff", "strainPerKillBase", "strainPerComedown5s",
+	"strainDrainSafeArea", "strainDrainSleep", "strainDrainRipper",
+	"strainDrainImmunoblocker", "strainDrainDFImmuno",
 	"safetyOffTimeDilation",
 	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
 	"comedownBlockSandy", "comedownPsychoMultiplier", "comedownTremorAtPsycho",
@@ -171,6 +185,7 @@ local function initUI()
 	local catSO = tab .. "/SafetyOff"
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
+	local catNS = tab .. "/NeuralStrain"
 	local catCD = tab .. "/Comedown"
 	local catRX = tab .. "/Prescription"
 	local catNLD = tab .. "/NonLinearDrain"
@@ -180,7 +195,7 @@ local function initUI()
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catCD, catRX, catNLD, catME}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catNS, catCD, catRX, catNLD, catME}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -627,17 +642,132 @@ local function initUI()
 			applyAll()
 		end)
 
+	------------------------------------------------------------
+	-- NEURAL STRAIN
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catNS, "Neural Strain (Episode Trigger)")
+
 	nativeSettings.addRangeInt(
-		catCP,
-		"Psycho Acceleration per Extra Use",
-		"Seconds subtracted from the Psycho Outburst timer per extra activation. (Default: 30)\n"
-			.. "Higher = faster cyberpsychosis progression when overusing the Sandevistan.\n"
-			.. "Effect stacks: 4th use = -30s, 5th = -60s, 6th = -90s, etc.",
-		5, 120, 5,
-		cfg.psychoAccelPerExtraUse,
-		defaults.psychoAccelPerExtraUse,
+		catNS,
+		"Strain per Activation",
+		"Neural strain added each time the Sandevistan activates. (Default: 5)\n"
+			.. "Higher = faster strain buildup per use.",
+		1, 20, 1,
+		cfg.strainPerActivation,
+		defaults.strainPerActivation,
 		function(value)
-			cfg.psychoAccelPerExtraUse = value
+			cfg.strainPerActivation = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNS,
+		"Strain per Overuse Bonus",
+		"Extra strain per activation beyond the safe daily limit. (Default: 3)\n"
+			.. "Stacks: 4th use = +3, 5th = +6, 6th = +9, etc.",
+		1, 15, 1,
+		cfg.strainPerOveruseBonus,
+		defaults.strainPerOveruseBonus,
+		function(value)
+			cfg.strainPerOveruseBonus = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNS,
+		"Strain per Minute Active",
+		"Strain added per 60 seconds of Sandy active time. (Default: 2)",
+		1, 10, 1,
+		cfg.strainPerMinuteActive,
+		defaults.strainPerMinuteActive,
+		function(value)
+			cfg.strainPerMinuteActive = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNS,
+		"Strain per Second (Safety OFF)",
+		"Strain accumulated per second while Safety Limiters are OFF. (Default: 0.15)",
+		0.01, 1.0, 0.01, "%.2f",
+		cfg.strainPerSecSafetyOff,
+		defaults.strainPerSecSafetyOff,
+		function(value)
+			cfg.strainPerSecSafetyOff = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNS,
+		"Strain per Comedown (5s)",
+		"Strain added every 5 seconds during comedown. (Default: 1)",
+		0, 5, 1,
+		cfg.strainPerComedown5s,
+		defaults.strainPerComedown5s,
+		function(value)
+			cfg.strainPerComedown5s = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNS,
+		"Drain per Second (Safe Area)",
+		"Strain drained per second in safe areas/clubs. (Default: 0.05)",
+		0.01, 0.5, 0.01, "%.2f",
+		cfg.strainDrainSafeArea,
+		defaults.strainDrainSafeArea,
+		function(value)
+			cfg.strainDrainSafeArea = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNS,
+		"Drain per Sleep",
+		"Strain drained per sleep session (scaled by hours). (Default: 40)",
+		10, 100, 5,
+		cfg.strainDrainSleep,
+		defaults.strainDrainSleep,
+		function(value)
+			cfg.strainDrainSleep = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catNS,
+		"Drain per Ripperdoc Visit",
+		"Strain drained per ripperdoc visit. (Default: 25)",
+		5, 60, 5,
+		cfg.strainDrainRipper,
+		defaults.strainDrainRipper,
+		function(value)
+			cfg.strainDrainRipper = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNS,
+		"Drain per Second (Immunoblocker)",
+		"Strain drained per second while Immunoblocker is active. (Default: 0.10)\n"
+			.. "Immunoblocker also BLOCKS all strain accumulation.",
+		0.01, 0.5, 0.01, "%.2f",
+		cfg.strainDrainImmunoblocker,
+		defaults.strainDrainImmunoblocker,
+		function(value)
+			cfg.strainDrainImmunoblocker = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catNS,
+		"Drain per Second (DF Immunosuppressant)",
+		"Strain drained per second while Dark Future Immunosuppressant is active. (Default: 0.08)\n"
+			.. "Weaker than Immunoblocker — does NOT block accumulation.",
+		0.01, 0.5, 0.01, "%.2f",
+		cfg.strainDrainDFImmuno,
+		defaults.strainDrainDFImmuno,
+		function(value)
+			cfg.strainDrainDFImmuno = value
 			applyAll()
 		end)
 

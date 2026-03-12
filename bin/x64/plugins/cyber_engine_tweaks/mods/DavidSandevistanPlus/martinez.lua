@@ -107,6 +107,34 @@ martinez.ComedownEffect_SM3             = 'BaseStatusEffect.MartinezSandevistan_
 martinez.ComedownEffect_FX1             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX1'
 martinez.ComedownEffect_FX2             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX2'
 
+martinez.ImmunoblockerEffect_Common      = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common'
+martinez.ImmunoblockerEffect_Common_SMG  = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common_SMG'
+martinez.ImmunoblockerEffect_Common_SM1  = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common_SM1'
+martinez.ImmunoblockerEffect_Uncommon    = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon'
+martinez.ImmunoblockerEffect_Uncommon_SMG= 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon_SMG'
+martinez.ImmunoblockerEffect_Uncommon_SM1= 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon_SM1'
+martinez.ImmunoblockerEffect_Rare        = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare'
+martinez.ImmunoblockerEffect_Rare_SMG    = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare_SMG'
+martinez.ImmunoblockerEffect_Rare_SM1    = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare_SM1'
+martinez.ImmunoblockerItem_Common        = 'Items.MartinezImmunoblockerCommon'
+martinez.ImmunoblockerItem_Uncommon      = 'Items.MartinezImmunoblockerUncommon'
+martinez.ImmunoblockerItem_Rare          = 'Items.MartinezImmunoblockerRare'
+martinez.ImmunoblockerAction_Common      = 'ItemAction.MartinezImmunoblockerUse_Common'
+martinez.ImmunoblockerAction_Uncommon    = 'ItemAction.MartinezImmunoblockerUse_Uncommon'
+martinez.ImmunoblockerAction_Rare        = 'ItemAction.MartinezImmunoblockerUse_Rare'
+martinez.ImmunoblockerEffect_Common_OAE  = 'ObjectActionEffect.MartinezImmunoblocker_Common'
+martinez.ImmunoblockerEffect_Uncommon_OAE= 'ObjectActionEffect.MartinezImmunoblocker_Uncommon'
+martinez.ImmunoblockerEffect_Rare_OAE    = 'ObjectActionEffect.MartinezImmunoblocker_Rare'
+
+martinez.ImmunoblockerVendors = {
+	'Vendors.wat_lch_ripperdoc_01',
+	'Vendors.wat_kab_ripperdoc_01',
+	'Vendors.std_arr_ripperdoc_01',
+	'Vendors.pac_wwd_ripperdoc_01',
+	'Vendors.hey_spr_ripperdoc_01',
+	'Vendors.wbr_jpn_ripperdoc_01',
+}
+
 martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
 martinez.HeartbeatEffect_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Heartbeat_SFX1'
 
@@ -1012,6 +1040,7 @@ function martinez.CreateSandevistan(self)
 	local Modifier_09_HeadShotMultiplier = self:GetHeadShotMultiplier()
 	self:CreateCombinedStatModifier(self.Stat_Modifier_09, { 'Additive', '*', 'Player', 'BaseStats.Cool', 'BaseStats.AttunementHelper', Modifier_09_HeadShotMultiplier })
 	self:TweakViktorsShop()
+	self:CreateImmunoblockerItems()
 end
 
 function martinez.EditHeat5Strategy(self)
@@ -1132,6 +1161,117 @@ function martinez.SearchInventory(self, RecordList, RecordName)
         end
     end
 	return output
+end
+
+function martinez.CreateImmunoblockerItems(self)
+	local SandevistanIcon = TweakDB:GetFlat('BaseStatusEffect.SandevistanCooldown.uiData')
+
+	-- Helper: create one tier of Immunoblocker (status effect + consumable item + action + vendor)
+	local function createTier(effectName, effectSMG, effectSM1, itemName, actionName, oaeName, durationSec, quality, quantityPreset, price)
+		-- Duration stat modifier (same pattern as timed status effects)
+		self:CreateStatModifierGroup(effectSMG, { false, false, {}, false, {effectSM1}, -1, nil })
+		self:CreateConstantStatModifier(effectSM1, { 'Additive', 'BaseStats.MaxDuration', durationSec * 1.0 })
+
+		-- Status effect (detection-only — no stat packages, just tagged)
+		self:CreateStatusEffect(effectName,{
+			 '' --AIData
+			,{} --SFX
+			,{} --VFX
+			,'' --additionalParam
+			,{} --debugTags
+			,effectSMG --duration
+			,false --dynamicDuration
+			,{'Buff','Immunoblocker'} --gameplayTags
+			,{} --immunityStats
+			,false --isAffectedByTimeDilationNPC
+			,false --isAffectedByTimeDilationPlayer
+			,'RTDB.StatusEffect_inline0' --maxStacks
+			,{} --packages (detection-only — no stats)
+			,nil --playerData
+			,false --reapplyPackagesOnMaxStacks
+			,false --removeAllStacksWhenDurationEnds
+			,nil --removeAllStacksWhenDurationEndsStatModifiers
+			,false --removeOnStoryTier
+			,false --replicated
+			,false --savable
+			,'BaseStatusEffectTypes.Misc' --statusEffectType
+			,true --stopActiveSfxOnDeactivate
+			,SandevistanIcon --uiData
+		})
+
+		-- Object Action Effect: bridge between action and status effect
+		self:CreateRecord(oaeName, 'gamedataObjectActionEffect_Record')
+		TweakDB:SetFlatNoUpdate(oaeName..'.statusEffect', effectName)
+		TweakDB:SetFlatNoUpdate(oaeName..'.percentMissing', false)
+		TweakDB:SetFlatNoUpdate(oaeName..'.resistanceFlag', 'None')
+		TweakDB:SetFlatNoUpdate(oaeName..'.range', 0.0)
+		TweakDB:Update(oaeName)
+
+		-- Item Action: consume action
+		self:CreateRecord(actionName, 'gamedataItemAction_Record')
+		TweakDB:SetFlatNoUpdate(actionName..'.startEffects', {oaeName})
+		TweakDB:SetFlatNoUpdate(actionName..'.completionEffects', {})
+		TweakDB:SetFlatNoUpdate(actionName..'.removeAfterUse', true)
+		TweakDB:Update(actionName)
+
+		-- Consumable Item
+		self:CreateRecord(itemName, 'gamedataConsumableItem_Record')
+		TweakDB:SetFlatNoUpdate(itemName..'.displayName', LocKey('DavidSandevistanPlus-Immunoblocker'))
+		TweakDB:SetFlatNoUpdate(itemName..'.localizedDescription', LocKey('DavidSandevistanPlus-Immunoblocker-Desc'))
+		TweakDB:SetFlatNoUpdate(itemName..'.quality', quality)
+		TweakDB:SetFlatNoUpdate(itemName..'.itemType', 'ItemType.Con_LongLasting')
+		TweakDB:SetFlatNoUpdate(itemName..'.itemCategory', 'ItemCategory.Consumable')
+		TweakDB:SetFlatNoUpdate(itemName..'.equipArea', 'EquipmentArea.Consumable')
+		TweakDB:SetFlatNoUpdate(itemName..'.objectActions', {actionName, 'ItemAction.Drop', 'ItemAction.Disassemble'})
+		TweakDB:SetFlatNoUpdate(itemName..'.tags', {'Consumable', 'Drug', 'HasModel', 'Inhaler'})
+		TweakDB:SetFlatNoUpdate(itemName..'.icon', 'UIIcon.ItemIcon')
+		TweakDB:SetFlatNoUpdate(itemName..'.iconPath', 'inhaler_3_health_beriteback')
+		TweakDB:SetFlatNoUpdate(itemName..'.animFeatureName', 'ItemData')
+		TweakDB:SetFlatNoUpdate(itemName..'.animName', 'ui_garment_pose')
+		TweakDB:SetFlatNoUpdate(itemName..'.canDrop', true)
+		TweakDB:SetFlatNoUpdate(itemName..'.mass', 0.5)
+		TweakDB:SetFlatNoUpdate(itemName..'.blueprint', 'Items.GenericShardBlueprint')
+		TweakDB:SetFlatNoUpdate(itemName..'.entityName', 'base_inhaler')
+		TweakDB:SetFlatNoUpdate(itemName..'.dropObject', 'base_inhaler')
+		TweakDB:SetFlatNoUpdate(itemName..'.OnLooted', {})
+		TweakDB:SetFlatNoUpdate(itemName..'.OnEquip', {})
+		TweakDB:SetFlatNoUpdate(itemName..'.OnAttach', {})
+		TweakDB:SetFlatNoUpdate(itemName..'.buyPrice', {})
+		TweakDB:SetFlatNoUpdate(itemName..'.sellPrice', {})
+		TweakDB:SetFlatNoUpdate(itemName..'.statModifiers', {})
+		TweakDB:Update(itemName)
+
+		-- Add to ripperdoc vendors
+		for _, vendorRecord in ipairs(self.ImmunoblockerVendors) do
+			local vendorItemName = vendorRecord..'_'..itemName:gsub('Items%.', '')
+			self:CreateRecord(vendorItemName, 'gamedataVendorItem_Record')
+			TweakDB:SetFlatNoUpdate(vendorItemName..'.generationPrereqs', {})
+			TweakDB:SetFlatNoUpdate(vendorItemName..'.item', itemName)
+			TweakDB:SetFlatNoUpdate(vendorItemName..'.quantity', {quantityPreset})
+			TweakDB:Update(vendorItemName)
+			local stock = TweakDB:GetFlat(vendorRecord..'.itemStock')
+			if not self:SearchInventory(stock, vendorItemName) then
+				table.insert(stock, vendorItemName)
+				TweakDB:SetFlat(vendorRecord..'.itemStock', stock)
+			end
+		end
+	end
+
+	createTier(
+		self.ImmunoblockerEffect_Common, self.ImmunoblockerEffect_Common_SMG, self.ImmunoblockerEffect_Common_SM1,
+		self.ImmunoblockerItem_Common, self.ImmunoblockerAction_Common, self.ImmunoblockerEffect_Common_OAE,
+		500, 'Quality.Common', 'Vendors.Always_Present', 500
+	)
+	createTier(
+		self.ImmunoblockerEffect_Uncommon, self.ImmunoblockerEffect_Uncommon_SMG, self.ImmunoblockerEffect_Uncommon_SM1,
+		self.ImmunoblockerItem_Uncommon, self.ImmunoblockerAction_Uncommon, self.ImmunoblockerEffect_Uncommon_OAE,
+		1000, 'Quality.Uncommon', 'Vendors.Commonly_Present', 1200
+	)
+	createTier(
+		self.ImmunoblockerEffect_Rare, self.ImmunoblockerEffect_Rare_SMG, self.ImmunoblockerEffect_Rare_SM1,
+		self.ImmunoblockerItem_Rare, self.ImmunoblockerAction_Rare, self.ImmunoblockerEffect_Rare_OAE,
+		1800, 'Quality.Rare', 'Vendors.Uncommonly_Present', 2500
+	)
 end
 
 function martinez.GetHeadShotMultiplier(self)

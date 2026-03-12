@@ -45,7 +45,6 @@ hud.Update = (function(self, data)
 	local rechargeNotification = math.floor(data.rechargeNotification or 0)
 
 	local psychoLevel = math.floor(data.psychoWarnings or 0)
-	local psychoTimer = math.floor(data.psychoOutburst or -1)
 	local lastBreathPhase = 0
 	if data.lastBreath then
 		if data.lastBreath.phase == "peace" then
@@ -70,11 +69,18 @@ hud.Update = (function(self, data)
 	local inClub = data.inClub or false
 	local dfImmuno = data.dfImmuno or false
 
+	-- Neural Strain data (×10 + math.floor for CET→redscript Int32 safety)
+	local neuralStrain = math.floor((data.neuralStrain or 0) * 10)
+	local strainThreshold = math.floor((data.strainThreshold or 60) * 10)
+	local strainGuaranteed = math.floor((data.strainGuaranteed or 100) * 10)
+	local immunoblockerActive = data.immunoblockerActive or false
+
 	local ok, err = pcall(function()
 		self.system:SetBarData(runtime, maxRuntime, dilation, rechargeNotification)
-		self.system:SetPsychoData(psychoLevel, psychoTimer, lastBreathPhase, prescribedDoses, completedDoses)
+		self.system:SetPsychoData(psychoLevel, lastBreathPhase, prescribedDoses, completedDoses)
 		self.system:SetState(isRunning, isWearing, showUI, safetyOn)
 		self.system:SetContext(dailyActivations, dailySafe, comedownTimer, inSafeArea, inClub, dfImmuno)
+		self.system:SetStrainData(neuralStrain, strainThreshold, strainGuaranteed, immunoblockerActive)
 		self.system:RefreshHUD()
 	end)
 	if not ok then

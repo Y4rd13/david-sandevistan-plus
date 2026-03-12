@@ -54,24 +54,25 @@ gui.drawUIWindow = (function(self)
 			ImGui.TextColored(1, 0, 0, 1, l.Debug_Missing)
 		end
 		if IsWearingApogee and ImGui.CollapsingHeader(l.Debug_Section1_Title, ImGuiTreeNodeFlags.DefaultOpen) then
-			if self.Apogee.PsychoOutburst ~= nil and self.Apogee.PsychoOutburst > 0 then
-				local OutOf = 60
-				local TheTime = self.Apogee.PsychoOutburst
-				-- calculate each time segment 1hr/30min/15min/5min/60s based on 0-100% of that time segment
-				    if self.Apogee.PsychoOutburst > 1800 then TheTime = TheTime - 1800; OutOf = 1800 -- 1hr section: 30min time segment
-				elseif self.Apogee.PsychoOutburst > 900 then TheTime = TheTime - 900; OutOf = 900 -- 30min section: 15min time segment
-				elseif self.Apogee.PsychoOutburst > 300 then TheTime = TheTime - 300; OutOf = 600 -- 15min section: 10min time segment
-				elseif self.Apogee.PsychoOutburst > 60 then TheTime = TheTime - 60; OutOf = 240 -- 5min section: 4min time segment
+			local strain = self.Apogee.neuralStrain or 0
+			local threshold = self.Apogee:GetStrainThreshold()
+			local guaranteed = self.Apogee:GetStrainGuaranteed()
+			if strain > 0 then
+				local ratio = strain / guaranteed
+				local cR, cG, cB
+				if strain < threshold then
+					cR, cG, cB = 0.2, 0.5, 1.0
+				elseif strain < guaranteed then
+					local t = (strain - threshold) / (guaranteed - threshold)
+					cR = 0.2 + t * 0.8
+					cG = 0.5 * (1 - t)
+					cB = 1.0 * (1 - t)
+				else
+					cR, cG, cB = 1.0, 0.0, 0.0
 				end
-				--[[ Cyan->Magenta ]]--
-				local cR = (self.Apogee.PsychoOutburst/3600)
-				local cG = (((3600-self.Apogee.PsychoOutburst)-900)/2700)
-				if cG < 0 then cG = 0 end
-				local cB = (math.abs((3600-self.Apogee.PsychoOutburst)-1800)/3600)+0.5
-				
-				ImGui.PushStyleColor(ImGuiCol.PlotHistogram, cR, cG, cB, 1.0) -- Orange outline when "ON"
-				local psychosis_meter = (TheTime / OutOf)
-				ImGui.ProgressBar(psychosis_meter, -1, WindowHeight/3,"## PsychoMeter")
+				ImGui.PushStyleColor(ImGuiCol.PlotHistogram, cR, cG, cB, 1.0)
+				ImGui.ProgressBar(ratio, -1, WindowHeight/3, string.format("STRAIN %.1f/%.0f", strain, guaranteed))
+				ImGui.PopStyleColor()
 			end
 			if not NetRunnerLevels.SafetyOn then
 				ImGui.TextColored(1, 0, 0, 1, l.Debug_Section3_SafetyOff1)

@@ -92,12 +92,18 @@ Recovery is a process, not an instant cure. Each psycho level requires a specifi
 
 ### HUD Display
 
-`SetPsychoData()` expanded from 3 to 5 params:
+`SetPsychoData()` now takes 4 params (timer removed — replaced by Neural Strain bar):
 ```redscript
-SetPsychoData(psychoLevel, psychoTimer, lastBreathPhase, prescribedDoses, completedDoses)
+SetPsychoData(psychoLevel, lastBreathPhase, prescribedDoses, completedDoses)
+```
+
+New `SetStrainData()` for Neural Strain bar:
+```redscript
+SetStrainData(neuralStrain, strainThreshold, strainGuaranteed, immunoblockerActive)
 ```
 
 Displays `RX 2/5` next to psycho level when prescription is active.
+Strain bar shows `STRAIN 45/60` with blue→yellow→red color coding.
 
 ### Persistence
 
@@ -292,11 +298,13 @@ All parameters with their cfg key names:
 
 | File | Changes |
 |------|---------|
-| `init.lua` | All 4 systems: `End()`, `Start()`, `Running()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `UpdateTremor()`, `displayTick`, new helpers |
-| `martinez.lua` | `ComedownEffect` TweakDB record with stat modifiers and VFX |
-| `hud.lua` | Passes `prescribedDoses`/`completedDoses` to redscript bridge |
-| `DSPHUDSystem.reds` | `SetPsychoData` expanded to 5 params, "RX X/Y" display |
-| `MartinezPLUS/init.lua` | ~20 new settings across 3 new subcategories |
+| `init.lua` | All systems: `End()`, `Start()`, `Running()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `UpdateTremor()`, `displayTick`, Neural Strain accumulation/drain/dice roll, `IsImmunoblockerActive()` |
+| `martinez.lua` | `ComedownEffect` TweakDB record, Immunoblocker consumable items (3 tiers) + vendor records |
+| `hud.lua` | Passes `prescribedDoses`/`completedDoses` + strain data to redscript bridge |
+| `DSPHUDSystem.reds` | `SetPsychoData` (4 params, no timer), `SetStrainData`, strain bar, kill strain bridge |
+| `DSPKillTracker.reds` | **NEW** — `@wrapMethod(ScriptedPuppet) RewardKiller()` → faction-based strain costs |
+| `gui.lua` | PsychoOutburst progress bar → Neural Strain bar |
+| `MartinezPLUS/init.lua` | ~30 new settings across 4 subcategories (incl. Neural Strain) |
 
 ## Verification Checklist
 
