@@ -115,13 +115,15 @@ When strain exceeds the threshold, a dice roll fires each second: `chance = (str
 
 #### Immunoblocker (Consumable Item)
 
-Doc's prescribed medication. Purchased from ripperdocs, blocks all strain accumulation and drains existing strain while active. Also suppresses micro-episodes and counts as a prescription treatment dose.
+Doc's prescribed medication — *"Nine times your customary dosage."* Purchased from ripperdoc TRADE tabs, blocks all strain accumulation and drains existing strain while active. Also suppresses micro-episodes and counts as a prescription treatment dose. Each tier has a custom inventory icon and lore-accurate pricing.
 
-| Tier | Duration | Availability |
-|------|----------|-------------|
-| Common | 500s (8 min) | Always present |
-| Uncommon | 1000s (16 min) | Commonly present |
-| Rare | 1800s (30 min) | Uncommonly present |
+| Tier | Name | Duration | Price | Availability |
+|------|------|----------|-------|-------------|
+| Common | Immunoblocker | 500s (8 min) | 2,000€$ | Always present |
+| Uncommon | Immunoblocker — High Dosage | 1000s (16 min) | 6,000€$ | Commonly present |
+| Rare | Military-Grade Immunoblocker | 1800s (30 min) | 20,000€$ | Uncommonly present |
+
+Available at 5 ripperdocs: Viktor (Watson), Cassius Ryder (Kabuki), Arroyo, Heywood, Japantown. Pacifica excluded (no TRADE tab vendor in-game).
 
 #### Enhanced Comedown
 

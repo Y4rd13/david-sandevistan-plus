@@ -79,27 +79,43 @@ Strain reaching 0 means "safe within current level" but doesn't reduce the level
 
 ## System 2: Immunoblocker (Consumable Item)
 
-Doc's prescribed medication — a consumable item purchasable from ripperdocs.
+Doc's prescribed medication — *"Nine times your customary dosage."* A consumable item purchasable from ripperdoc TRADE tabs.
 
 ### Item Tiers
 
-| Tier | Duration | Quantity | Vendor Availability |
-|------|----------|----------|---------------------|
-| Common | 500s (8 min) | Always Present | All 6 ripperdocs |
-| Uncommon | 1000s (16 min) | Commonly Present | All 6 ripperdocs |
-| Rare | 1800s (30 min) | Uncommonly Present | All 6 ripperdocs |
+| Tier | In-Game Name | Duration | Price | Vendor Availability |
+|------|-------------|----------|-------|---------------------|
+| Common | Immunoblocker | 500s (8 min) | 2,000€$ | Always Present |
+| Uncommon | Immunoblocker — High Dosage | 1000s (16 min) | 6,000€$ | Commonly Present |
+| Rare | Military-Grade Immunoblocker | 1800s (30 min) | 20,000€$ | Uncommonly Present |
+
+Each tier has a custom inventory icon (separate inkatlas+xbm per tier).
 
 ### TweakDB Records (martinez.lua)
 
 Each tier creates:
 - **StatusEffect**: `BaseStatusEffect.MartinezSandevistan_ImmunoblockerCommon/Uncommon/Rare` — timed, tagged `Immunoblocker`, no stat packages (detection-only via `StatusEffect_CheckOnly()`)
-- **ConsumableItem**: `Items.MartinezImmunoblockerCommon/Uncommon/Rare` — `ItemType.Con_LongLasting`, inhaler icon
+- **ConsumableItem**: `Items.MartinezImmunoblockerCommon/Uncommon/Rare` — `ItemType.Con_LongLasting`, custom icon via `UIIcon.Immunoblocker_Common/Uncommon/Rare`
 - **ObjectActionEffect** + **ItemAction**: bridge records for the consume action
-- **VendorItem**: entries on 6 ripperdoc vendor `itemStock` arrays
+- **VendorItem**: entries on 5 ripperdoc `medicstore_01` vendor `itemStock` arrays (TRADE tab)
+- **Price override**: `.buyPrice` set with custom `ConstantStatModifier` (overrides inherited HealthBooster pricing)
+- **Stat cleanup**: `.statModifiers`, `.OnEquip` cleared to remove inherited HealthBooster stats; `.statModifierGroups` keeps only `Items.LongLastingConsumableDuration` for tooltip duration
 
 ### Vendors
 
-Viktor (`wat_lch_ripperdoc_01`), Kabuki (`wat_kab_ripperdoc_01`), Arroyo (`std_arr_ripperdoc_01`), Wellsprings (`pac_wwd_ripperdoc_01`), Heywood (`hey_spr_ripperdoc_01`), Japantown (`wbr_jpn_ripperdoc_01`).
+Immunoblockers appear in ripperdoc **TRADE tabs** (not CYBERWARE). Each ripperdoc NPC has two vendor records: `ripperdoc_01` feeds CYBERWARE, `medicstore_01` feeds TRADE.
+
+| Location | Vendor Record |
+|----------|---------------|
+| Viktor Vektor, Watson | `Vendors.wat_lch_medicstore_01` |
+| Cassius Ryder, Kabuki | `Vendors.wat_kab_medicstore_01` |
+| Arroyo ripperdoc | `Vendors.std_arr_medicstore_01` |
+| Heywood ripperdoc | `Vendors.hey_spr_medicstore_01` |
+| Japantown ripperdoc | `Vendors.wbr_jpn_medicstore_01` |
+
+Pacifica excluded — `pac_wwd` has no `medicstore_01` record (no TRADE tab vendor exists in-game).
+
+VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (called from `LoadGamePart1`), not during `onInit`, because CET TweakDB records created during `onInit` are not seen by native `MarketSystem.GetVendorItemsForSale()`.
 
 ### Effects While Active
 
