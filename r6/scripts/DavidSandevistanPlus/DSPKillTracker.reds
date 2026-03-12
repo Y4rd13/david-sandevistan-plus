@@ -3,11 +3,11 @@
 // costs through DSPHUDSystem (avoids creating a second ScriptableSystem).
 
 @wrapMethod(ScriptedPuppet)
-protected cb func RewardKiller(killer: wref<GameObject>, killType: gameKillType, isAnyDamageNonlethal: Bool) -> Void {
+protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, isAnyDamageNonlethal: Bool) -> Void {
     wrappedMethod(killer, killType, isAnyDamageNonlethal);
 
     // Only track actual kills by the player (not defeats/knockouts)
-    if killType == gameKillType.Defeat {
+    if Equals(killType, gameKillType.Defeat) {
         return;
     }
 
@@ -17,20 +17,14 @@ protected cb func RewardKiller(killer: wref<GameObject>, killType: gameKillType,
     }
 
     // Only track human NPCs
-    let npcRecord: ref<Character_Record> = this.GetRecord() as Character_Record;
+    let npcRecord: ref<Character_Record> = this.GetRecord();
     if !IsDefined(npcRecord) {
         return;
     }
 
-    let puppetRecord: ref<NPCPuppet_Record> = npcRecord as NPCPuppet_Record;
-    if !IsDefined(puppetRecord) {
-        // Fallback: check if it's at least a valid NPC with affiliation
-        // Some NPCs might not cast to NPCPuppet_Record but are still human
-    }
-
     // Get affiliation for faction-based cost
     let cost: Int32 = 3; // default (gang/corpo)
-    let affiliation: ref<Affiliation_Record> = npcRecord.Affiliation();
+    let affiliation: wref<Affiliation_Record> = npcRecord.Affiliation();
     if IsDefined(affiliation) {
         let affiliationType: TweakDBID = affiliation.GetID();
 

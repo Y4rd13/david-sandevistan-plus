@@ -5,7 +5,7 @@ David's final stand. Triggered when V dies at psycho level 5 and Second Heart re
 ## Trigger
 
 ```
-V at psycho level 5 → health reaches 0 (PsychoOutburst timer or combat damage)
+V at psycho level 5 → health reaches 0 (Neural Strain episode or combat damage)
   → KillV() → HeartAttack status effect → cheatedDeath = true
   → Second Heart fires (revives V)
   → RemoveDeadV() detects cheatedDeath → Last Breath initializes

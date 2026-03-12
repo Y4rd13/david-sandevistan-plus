@@ -12,14 +12,15 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 - No EdgeRunner perk gate — full runtime from day 1, like David in the anime
 - No health brake by default — David never had an auto-stop
 - Config persists across sessions via `config.json`
-- **Lore-accurate gameplay systems** — enhanced comedown, graduated recovery, non-linear drain, micro-episodes (see below)
+- **Lore-accurate gameplay systems** — neural strain, immunoblocker items, enhanced comedown, graduated recovery, non-linear drain, micro-episodes (see below)
 
 ### Custom HUD
 
 A visual HUD overlay replaces the original text-only display:
 - **Runtime bar** — color-coded green/yellow/red with time dilation percentage
 - **Status line** — activation count, contextual status (Safety Off, Comedown, Recovering)
-- **Psycho bar** — only visible when cyberpsychosis is active, with level and timer
+- **Psycho bar** — only visible when cyberpsychosis is active, with level and RX progress
+- **Strain bar** — Neural Strain level with blue/yellow/red color coding, hidden when safe
 
 ### Progressive Cyberpsychosis
 
@@ -29,13 +30,13 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 |-------|------|---------------|----------|
 | 0 | Normal | None | Full functionality |
 | 1 | Unstable | None | 12s MartinezFury episodes on overload |
-| 2 | Glitching | None | 12s MartinezFury episodes, faster timer |
+| 2 | Glitching | None | 12s MartinezFury episodes, lower strain threshold |
 | 3 | Losing It | Subtle glitch | Persistent `hacking_glitch_low` VFX |
 | 4 | On The Edge | Medium distortion | Persistent glitch + drugged VFX |
 | 5 | Cyberpsycho | Full psychosis | 4 simultaneous VFX, immunities, last stand |
 | 6 | Last Breath | All VFX removed → ramp | **Permanent death** — Second Heart revival triggers final stand |
 
-**Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Death only comes when the PsychoOutburst timer runs out.
+**Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Neural Strain episodes come fast and unpredictable at this level — death is near-inevitable.
 
 **Safety ON at Level 5:** Sandy is blocked, Kiroshi optics disabled, V must sleep or recover in a safe area.
 
@@ -79,7 +80,48 @@ When V dies at psycho level 5 and Second Heart revives them, Stage VI begins —
 
 ### Lore-Accurate Gameplay Systems
 
-Four interconnected systems that make gameplay feel like David's experience in Edgerunners. All toggleable — disable any system without side effects. For formulas, cross-system interactions, and implementation details, see **[docs/lore-systems.md](docs/lore-systems.md)**.
+Six interconnected systems that make gameplay feel like David's experience in Edgerunners. All toggleable — disable any system without side effects. For formulas, cross-system interactions, and implementation details, see **[docs/lore-systems.md](docs/lore-systems.md)**.
+
+#### Neural Strain (Episode Trigger)
+
+Replaces the old predictable countdown timer with an accumulation pool + dice roll system. Strain builds from Sandy use, kills, Safety OFF, and comedown — episodes strike unpredictably once strain crosses the threshold for the current psycho level.
+
+| Strain Source | Amount | Note |
+|---------------|--------|------|
+| Sandy activation | +5 base | +3 per overuse beyond safe limit |
+| Sandy active | +2/min | Continuous accumulation |
+| Safety OFF | +0.15/s | Constant while limiters off |
+| Kill (Sandy active) | +2 to +8 | Faction-based: civilian=8, NCPD=5, corpo=3, gang=2 |
+| Comedown | +1/5s | Recovery still stresses the system |
+
+| Drain Source | Amount | Note |
+|--------------|--------|------|
+| Safe area | -0.05/s | Only when Sandy inactive |
+| Sleep | -40 (scaled) | Scaled by hours rested |
+| Ripperdoc | -25 | Professional treatment |
+| Immunoblocker | -0.1/s | Also blocks all accumulation |
+| DF Immunosuppressant | -0.08/s | Weaker, doesn't block accumulation |
+
+When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
+
+| Level | Threshold | Guaranteed | Experience |
+|-------|-----------|------------|------------|
+| 0 | 60 | 100 | Hard to trigger |
+| 1 | 50 | 90 | Manageable with care |
+| 2 | 40 | 80 | Casual overuse is dangerous |
+| 3 | 30 | 70 | Almost any aggressive session triggers |
+| 4 | 20 | 60 | Constant danger |
+| 5 | 10 | 50 | Near-inevitable |
+
+#### Immunoblocker (Consumable Item)
+
+Doc's prescribed medication. Purchased from ripperdocs, blocks all strain accumulation and drains existing strain while active. Also suppresses micro-episodes and counts as a prescription treatment dose.
+
+| Tier | Duration | Availability |
+|------|----------|-------------|
+| Common | 500s (8 min) | Always present |
+| Uncommon | 1000s (16 min) | Commonly present |
+| Rare | 1800s (30 min) | Uncommonly present |
 
 #### Enhanced Comedown
 
@@ -196,7 +238,8 @@ Cyberpunk 2077/
 │   ├── audios.yaml
 │   └── last_breath_song.ogg
 └── r6/scripts/DavidSandevistanPlus/
-    └── DSPHUDSystem.reds
+    ├── DSPHUDSystem.reds
+    └── DSPKillTracker.reds
 ```
 
 > **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
@@ -282,8 +325,21 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
-| Safe Activations per Day | 1–20 | 3 | Activations before psycho acceleration (Doc's warning) |
-| Psycho Acceleration per Extra Use | 5–120 | 30 | Seconds subtracted from psycho timer per extra use |
+| Safe Activations per Day | 1–20 | 3 | Activations before strain acceleration (Doc's warning) |
+
+### Neural Strain (Episode Trigger)
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| Strain per Activation | 1–20 | 5 | Base strain added per Sandy activation |
+| Strain per Overuse Bonus | 1–10 | 3 | Extra strain per activation beyond safe limit |
+| Strain per Minute Active | 1–10 | 2 | Strain accumulated per minute of Sandy use |
+| Strain per Sec Safety Off | 0.01–1.0 | 0.15 | Strain per second with Safety OFF |
+| Strain per Comedown 5s | 1–10 | 1 | Strain added every 5s during comedown |
+| Strain Drain Safe Area | 0.01–0.5 | 0.05 | Strain drain per second in safe areas |
+| Strain Drain Sleep | 10–100 | 40 | Strain drained on sleep (scaled by hours) |
+| Strain Drain Ripper | 10–50 | 25 | Strain drained per ripperdoc visit |
+| Strain Drain Immunoblocker | 0.01–0.5 | 0.1 | Strain drain per second with Immunoblocker active |
+| Strain Drain DF Immuno | 0.01–0.5 | 0.08 | Strain drain per second with DF Immunosuppressant |
 
 ### Comedown (Deactivation Debuff)
 | Setting | Range | Default | Description |
@@ -333,34 +389,39 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 
 ### Daily Activation Counter
 
-Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each activation beyond the safe limit accelerates the cyberpsychosis timer. The effect stacks — the more you overuse it, the faster psychosis progresses. Counter resets when V sleeps.
+Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each activation beyond the safe limit adds bonus Neural Strain. The effect stacks — the more you overuse it, the faster psychosis progresses. Counter resets when V sleeps.
 
 ### Cyberpsychosis Flow
 
 ```
-Activate Sandy → health drains → runtime depletes
-  └─ Health critical + RT=0 → BleedingEffect()
-      └─ CyberPsychoWarnings++ (1→5)
-      └─ FrightenNPCs() → MartinezFury (12s Sandy disabled, NPCs flee)
-      └─ PsychoOutburst timer starts (5-60 min random)
+Activate Sandy → strain accumulates (+5 base, +3 per overuse)
+  ├─ Sandy active: +2/min strain
+  ├─ Safety OFF: +0.15/s strain
+  ├─ Kills during Sandy: +2 to +8 strain (faction-based)
+  └─ Comedown: +1/5s strain
 
-PsychoOutburst timer ticks down:
-  ├─ Safety OFF: -10s/tick (accelerated)
-  ├─ Sandy active: -2s/tick
-  ├─ Idle: -1s/tick
-  ├─ Safe area / Club: +5s/tick (recovery)
-  └─ Timer reaches 0 → forced episode OR death at level 5
+Strain exceeds threshold → dice roll each second:
+  ├─ chance = (strain - threshold) / 200
+  ├─ Success → EPISODE: MartinezFury + psychoLevel++ + strain resets to 0
+  └─ Strain hits guaranteed cap → forced episode (can't avoid)
 
-Death at level 5 (psycho timer OR combat):
-  └─ Second Heart revives V → Last Breath (Stage VI)
-      ├─ Peace (15s): VFX cleared, max dilation, song plays
-      ├─ Decay (~105s): VFX ramp, dilation drops, delusional messages
+Strain drain:
+  ├─ Safe areas: -0.05/s (Sandy must be off)
+  ├─ Immunoblocker: -0.1/s + blocks ALL accumulation
+  ├─ DF Immunosuppressant: -0.08/s (weaker, no block)
+  ├─ Sleep: -40 (scaled by hours)
+  └─ Ripperdoc: -25
+
+Death at level 5 + Second Heart:
+  └─ Last Breath (Stage VI)
+      ├─ Peace (20s): VFX cleared, max dilation, song plays
+      ├─ Decay (~225s): VFX ramp, dilation drops, delusional messages
       └─ Runtime = 0 → permanent death (DAVID MARTINEZ — FLATLINED)
 
 Recovery (levels 1–5) — Graduated:
-  ├─ Safe areas / clubs: gradual recovery (+5s/tick on timer)
-  ├─ Sleep: -1 psycho level max per rest + partial treatment dose
-  ├─ Visit Viktor: -1 level + treatment dose + 50% runtime recharge
+  ├─ Sleep: -1 psycho level max + drains strain + partial treatment dose
+  ├─ Visit Viktor: -1 level + drains strain + treatment dose + runtime recharge
+  ├─ Immunoblocker: blocks strain + drains strain + counts as treatment dose
   ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
   ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
   └─ HUD shows prescription progress: "RX completed/total"
@@ -384,10 +445,12 @@ David Sandevistan Plus automatically detects Dark Future's consumable status eff
 
 | Dark Future Consumable | Effect on our Cyberpsychosis System |
 |---|---|
-| **Immunosuppressant** | Pauses PsychoOutburst timer progression (recovers like a safe area). Blocks daily activation penalty from overuse. |
-| **Endotrisine** | Doubles psycho recovery rate in safe areas. Halves psycho acceleration from Sandevistan use and Safety Off. |
+| **Immunosuppressant** | Drains Neural Strain at -0.08/s (weaker than our Immunoblocker, doesn't block accumulation). Counts as partial treatment dose (60s = 0.5 dose). Suppresses micro-episodes. |
+| **Endotrisine** | Halves strain accumulation from Sandevistan use and Safety Off. |
 
 No configuration needed — if Dark Future is installed and V takes these consumables, the effects apply automatically. If Dark Future is not installed, these checks are safely skipped.
+
+Our **Immunoblocker** is stronger than DF's Immunosuppressant: it blocks ALL strain accumulation + drains at -0.1/s. Both can be active simultaneously without conflict.
 
 ## Credits
 
