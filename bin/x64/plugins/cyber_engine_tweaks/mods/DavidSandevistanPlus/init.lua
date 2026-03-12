@@ -472,23 +472,28 @@ davidsapogee = {
 			self.neuralStrain = math.max((self.neuralStrain or 0) - strainDrain, 0)
 			if newLevel > 0 then
 				local remaining = self.prescribedDoses - self.completedDoses
-				local levelNames = { "I", "II", "III", "IV", "V" }
-				self.bbs:SendWarning("PARTIAL RECOVERY — PSYCHOSIS ["..tostring(levelNames[newLevel] or newLevel).."] — "..tostring(remaining).." TREATMENTS REMAINING", 5.0)
+				local partialRecovery = {
+					"Slept it off a little... but the buzzing's still there",
+					"Head's clearer after some sleep... not clear enough",
+					"Doc said rest would help... still got "..tostring(remaining).." treatments to go",
+					"Better than yesterday... but the Sandy's still in my head",
+				}
+				self.bbs:SendWarning(partialRecovery[math.random(#partialRecovery)], 5.0)
 			else
 				self.prescribedDoses = 0
 				self.completedDoses = 0
-				self.bbs:SendMessage("FULL REST — PSYCHOSIS CLEARED", 3.0)
+				self.bbs:SendMessage("Head's clear... feels like me again", 3.0)
 			end
 			-- Reset micro-episode timer for new level
 			self:ResetMicroEpisodeTimer()
 		elseif RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
 			self.CyberPsychoWarnings = 1
 			self.neuralStrain = 0
-			self.bbs:SendWarning("PARTIAL REST — PSYCHOSIS REDUCED TO LEVEL I — FULL NIGHT REQUIRED", 5.0)
+			self.bbs:SendWarning("Crashed hard... still twitching. Need a full night", 5.0)
 		else
 			self.CyberPsychoWarnings = 0
 			if prevPsycho > 0 then
-				self.bbs:SendMessage("FULL REST — PSYCHOSIS CLEARED", 3.0)
+				self.bbs:SendMessage("Head's clear... feels like me again", 3.0)
 			end
 			self.prescribedDoses = 0
 			self.completedDoses = 0
@@ -538,7 +543,13 @@ davidsapogee = {
 		self.rechargeNotification = math.floor(self.runTime - oldRuntime)
 		self.rechargeNotificationTimer = 8
 		if self.rechargeNotification > 0 then
-			self.bbs:SendMessage("RECHARGED +"..tostring(self.rechargeNotification).."s — RUNTIME: "..tostring(math.floor(self.runTime)).."/"..tostring(self.MaxRuntime).."s", 3.0)
+			local rechargeLines = {
+				"Sandy feels charged... spine's humming again",
+				"Slept well... Sandy's ready to go",
+				"Rest did the trick... implant's back online",
+				"Woke up fresh... the Sandy's purring",
+			}
+			self.bbs:SendMessage(rechargeLines[math.random(#rechargeLines)], 3.0)
 		end
 
 		self:SaveGame('Apogee:Rested()')
@@ -573,12 +584,21 @@ davidsapogee = {
 				if self.completedDoses >= self.prescribedDoses then
 					self.prescribedDoses = 0
 					self.completedDoses = 0
-					self.bbs:SendMessage("TREATMENT COMPLETE — PSYCHOSIS CLEARED — DOC SAYS TAKE IT EASY", 5.0)
+					local completeMsgs = {
+						"\"You're clean, kid. Don't make me do this again.\"",
+						"Doc gives the all-clear... head's finally quiet",
+						"\"Treatment's done. Try not to flatline before next visit.\"",
+					}
+					self.bbs:SendMessage(completeMsgs[math.random(#completeMsgs)], 5.0)
 				else
 					local remaining = self.prescribedDoses - self.completedDoses
-					local levelNames = { "I", "II", "III", "IV", "V" }
-					local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
-					self.bbs:SendMessage("TREATMENT "..tostring(self.completedDoses).."/"..tostring(self.prescribedDoses).." — PSYCHOSIS ["..lvl.."]", 4.0)
+					local progressMsgs = {
+						"\"Getting better, but we're not done. "..tostring(remaining).." more sessions.\"",
+						"Doc adjusts the implant... some relief, but not enough yet",
+						"\"Come back for the rest. "..tostring(remaining).." treatments to go.\"",
+						"Spine calibration helps... still "..tostring(remaining).." to go",
+					}
+					self.bbs:SendMessage(progressMsgs[math.random(#progressMsgs)], 4.0)
 				end
 				-- Ripper drains strain
 				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper, 0)
@@ -612,7 +632,14 @@ davidsapogee = {
 
 		-- Block reactivation during comedown
 		if self.comedownTimer and self.comedownTimer > 0 and self.cfg.comedownBlockSandy then
-			self.bbs:SendWarning("COOLDOWN ACTIVE — "..tostring(math.floor(self.comedownTimer)).."s REMAINING", 2.0)
+			local comedownLines = {
+				"Body's not responding... need to wait it out",
+				"Not yet... still shaking from the last one",
+				"Can't... muscles won't cooperate",
+				"System's fried... give it a sec",
+				"Spine's burning... come on, work...",
+			}
+			self.bbs:SendWarning(comedownLines[math.random(#comedownLines)], 2.5)
 			self.sps:EndSandevistan()
 			return
 		end
@@ -624,14 +651,18 @@ davidsapogee = {
 		-- set initial charge level on startup!
 		self:SandevistanCharge()
 
-		-- Activation notification
+		-- Activation notification — lore-immersive, varies by psycho level
 		local dilation = self.TimeDilationActualSpeed or 85
-		local activationMsg = "SANDEVISTAN — TIME DILATION "..tostring(dilation).."%"
-		if self.CyberPsychoWarnings > 0 then
-			local levelNames = { "I", "II", "III", "IV", "V" }
-			activationMsg = activationMsg.." | PSYCHOSIS "..tostring(levelNames[self.CyberPsychoWarnings] or self.CyberPsychoWarnings)
-		end
-		self.bbs:SendMessage(activationMsg, 3.0)
+		local activationLines = {
+			[0] = { "World slows down... there it is", "Sandy's humming... let's go", "Time bends... feels good" },
+			[1] = { "Sandy kicks in... something feels off", "There's that rush... and something else", "Time slows... head's buzzing" },
+			[2] = { "World goes slow... vision glitches for a sec", "Sandy online... fingers tingling", "Dilation active... can taste metal" },
+			[3] = { "Everything stops... skull's on fire", "Sandy's screaming through the spine... let's do this", "World freezes... ears are ringing" },
+			[4] = { "Time crawls... can barely think straight", "Sandy fires... body's shaking but who cares", "Everything slows... vision's splitting" },
+			[5] = { "NOBODY SETS MY LIMITS", "CAN'T STOP WON'T STOP", "THIS IS WHAT I WAS MADE FOR" },
+		}
+		local lines = activationLines[self.CyberPsychoWarnings] or activationLines[0]
+		self.bbs:SendMessage(lines[math.random(#lines)], 3.0)
 
 		-- Second Heart penalty: V cheated death at psycho 5 — borrowed time, not instant death
 		-- (Skip during Last Breath — Sandy is auto-managed)
@@ -639,7 +670,7 @@ davidsapogee = {
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
 			self:DisableSandevistan("cheatedDeath")
-			self.bbs:SendWarning("NEURAL RELAPSE — BORROWED TIME", 4.0)
+			self.bbs:SendWarning("Heart gave out once already... can't push it again", 4.0)
 			return
 		end
 
@@ -657,16 +688,36 @@ davidsapogee = {
 				local extraUses = self.dailyActivations - effectiveSafe
 				self:AddStrain(self.cfg.strainPerOveruseBonus * extraUses)
 				local overuseMessages = {
-					[0] = "OVERUSE — DOC SAID THREE TIMES A DAY, MAX",
-					[1] = "OVERUSE — YOUR BODY IS ADAPTING TO THE SANDY",
-					[2] = "OVERUSE — DEPENDENCY INCREASING — CAN'T GO WITHOUT IT",
-					[3] = "OVERUSE — IGNORING ALL LIMITS — THIS WON'T END WELL",
-					[4] = "OVERUSE — NOBODY SETS MY LIMITS",
+					[0] = {
+						"Doc said three a day, max... this is number "..tostring(self.dailyActivations),
+						"\"Three times a day, David. I mean it.\" ...sorry, Doc",
+						"Doc's gonna kill me... activation "..tostring(self.dailyActivations).." today",
+					},
+					[1] = {
+						"Body's getting used to it... needs more each time",
+						"Can feel the Sandy calling... just one more",
+						"Doc was right about the dependency... can't help it",
+					},
+					[2] = {
+						"Can't go a day without it anymore...",
+						"Hands shake when it's off... need another hit",
+						"The Sandy's the only thing that feels real now",
+					},
+					[3] = {
+						"Past all limits... doesn't matter anymore",
+						"Doc would lose it if he saw me now... "..tostring(self.dailyActivations).." times today",
+						"Who needs limits... I feel ALIVE",
+					},
+					[4] = {
+						"NOBODY SETS MY LIMITS",
+						"More... I need MORE",
+						"Can't tell where I end and the Sandy begins",
+					},
 					[5] = nil,
 				}
-				local overuseMsg = overuseMessages[self.CyberPsychoWarnings]
-				if overuseMsg then
-					self.bbs:SendWarning(overuseMsg.." ("..tostring(self.dailyActivations).."x)", 4.0)
+				local levelMsgs = overuseMessages[self.CyberPsychoWarnings]
+				if levelMsgs then
+					self.bbs:SendWarning(levelMsgs[math.random(#levelMsgs)], 4.0)
 				end
 				if self.dev_mode then
 					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') strain='..tostring(self.neuralStrain))
@@ -715,7 +766,14 @@ davidsapogee = {
 				if self.cfg.comedownTremorAtPsycho and self.CyberPsychoWarnings >= 3 then
 					self.comedownTremor = true
 				end
-				self.bbs:SendMessage("SYSTEM COOLDOWN — "..tostring(math.floor(duration)).."s", 2.5)
+				local comedownEndLines = {
+					"World snaps back... everything aches",
+					"Sandy cuts out... legs feel like lead",
+					"Coming down... the world's too fast now",
+					"Spine's cooling off... that one cost me",
+					"Back to normal speed... body's screaming",
+				}
+				self.bbs:SendMessage(comedownEndLines[math.random(#comedownEndLines)], 2.5)
 				if self.dev_mode then
 					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s psychoMult='..(self.CyberPsychoWarnings >= 3 and tostring(self.cfg.comedownPsychoMultiplier) or "1.0"))
 				end
@@ -2010,7 +2068,7 @@ davidsapogee = {
 
 		self.sps:EndSandevistan()
 		self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun')
-		self.bbs:SendWarning("NEURAL OVERLOAD — SYSTEM SHUTDOWN", 4.0)
+		self.bbs:SendWarning("Body gives out... pushed too far today", 4.0)
 		-- Force a brief cooldown by draining some runtime
 		self.runTime = math.max(self.runTime - 30, 0)
 		self:SaveGame("ExhaustionCollapse")
@@ -2167,7 +2225,12 @@ davidsapogee = {
 				-- Low runtime warning (once per activation, not during Last Breath)
 				if not self.lastBreath and not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
 					self.lowRuntimeWarned = true
-					self.bbs:SendWarning("LOW RUNTIME: "..tostring(math.floor(self.runTime)).."s — DEACTIVATE OR RISK EPISODE", 3.0)
+					local lowRtLines = {
+						"Running on fumes... should stop soon",
+						"Sandy's draining fast... "..tostring(math.floor(self.runTime)).."s left",
+						"Can feel it giving out... not much time",
+					}
+					self.bbs:SendWarning(lowRtLines[math.random(#lowRtLines)], 3.0)
 				end
 
 				self:CalcDamage()
@@ -2473,14 +2536,33 @@ davidsapogee = {
 		self:UpdateUIText()
 		self.OutstandingBuff = 5 -- check for sandy
 		if self.cfg.enableCyberpsychosis and (self.CyberPsychoWarnings > 0) then
-			local levelNames = { "I: UNSTABLE", "II: GLITCHING", "III: LOSING IT", "IV: ON THE EDGE", "V: CYBERPSYCHO" }
-			local lvl = levelNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
-			self.bbs:SendWarning("PSYCHOSIS ACTIVE — LEVEL "..lvl, 4.0)
+			local psychoLoadMsgs = {
+				[1] = "Something's off... the Sandy's whispering even when it's off",
+				[2] = "Vision glitches when you blink... not a good sign",
+				[3] = "Head won't stop buzzing... Doc was right about the limits",
+				[4] = "Can barely tell what's real anymore... need help",
+				[5] = "The Sandy's in control now... not you",
+			}
+			local msg = psychoLoadMsgs[self.CyberPsychoWarnings]
+			if msg then self.bbs:SendWarning(msg, 4.0) end
 		end
 		if self:IsWearingApogee() then
 			local rt = math.floor(self.runTime)
-			local safetyState = self.SafetyOn and "SAFETY ON" or "SAFETY OFF"
-			self.bbs:SendMessage("SANDEVISTAN ONLINE — "..tostring(rt).."/"..tostring(self.MaxRuntime).."s — "..safetyState, 3.5)
+			local loadLines
+			if not self.SafetyOn then
+				loadLines = {
+					"Sandy's online... limiters off. Let's see what today brings",
+					"Spine hums to life... no safety net. Just the way David liked it",
+					"Sandevistan ready... running without limits",
+				}
+			else
+				loadLines = {
+					"Sandy's online... safety protocols active",
+					"Implant's humming... ready when you are",
+					"Sandevistan standing by... "..tostring(rt).."s in the tank",
+				}
+			end
+			self.bbs:SendMessage(loadLines[math.random(#loadLines)], 3.5)
 		end
 	 end)
 	,LoadGame = (function(self,GameLoadIndex)

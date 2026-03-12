@@ -175,21 +175,29 @@ Frequency: every 5–10min at level 1, every 5–15s at level 5. Suppressed duri
 
 ### On-Screen Notifications
 
-20 contextual notifications keep the player informed using in-world language:
+Contextual notifications use V's inner monologue and Doc's voice — no HUD-style readouts. Messages vary randomly and scale with psycho level:
 
-| Event | Example | Type |
+| Event | Example | Tone |
 |-------|---------|------|
-| Game load | `SANDEVISTAN ONLINE — 180/300s — SAFETY OFF` | Info |
-| Activation | `SANDEVISTAN — TIME DILATION 97.5% \| PSYCHOSIS III` | Info |
-| Overuse | `OVERUSE — 4 ACTIVATIONS TODAY (SAFE: 3) — REST RECOMMENDED` | Warning |
-| Low runtime | `LOW RUNTIME: 12s — DEACTIVATE OR RISK EPISODE` | Warning |
-| Cooldown | `SYSTEM COOLDOWN — 5s` | Info |
-| Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | Warning |
-| Psycho recovery | `RECOVERING — PSYCHOSIS LEVEL II` | Info |
-| Death | `SYSTEM FAILURE — NEURAL COLLAPSE` | Warning |
-| Last Breath | `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH` | Warning |
-| Last Breath death | `DAVID MARTINEZ — FLATLINED` | Warning |
-| Sleep | `RECHARGED +120s — RUNTIME: 180/300s` | Info |
+| Game load | `Spine hums to life... no safety net. Just the way David liked it` | Atmospheric |
+| Game load (psycho) | `Head won't stop buzzing... Doc was right about the limits` | Foreboding |
+| Activation | `Sandy's humming... let's go` / `Everything stops... skull's on fire` (lvl 3) | Escalating |
+| Overuse (lvl 0) | `"Three times a day, David. I mean it." ...sorry, Doc` | Doc's voice |
+| Overuse (lvl 3) | `Doc would lose it if he saw me now...` | David losing grip |
+| Overuse (lvl 4) | `NOBODY SETS MY LIMITS` | Full psycho |
+| Low runtime | `Running on fumes... should stop soon` | Warning |
+| Comedown start | `World snaps back... everything aches` | Physical |
+| Comedown blocked | `Body's not responding... need to wait it out` | Helpless |
+| Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | System warning |
+| Sleep recovery | `Slept it off a little... but the buzzing's still there` | Partial relief |
+| Sleep cured | `Head's clear... feels like me again` | Relief |
+| Sleep recharge | `Sandy feels charged... spine's humming again` | Fresh start |
+| Ripper treatment | `"Getting better, but we're not done. 3 more sessions."` | Doc's voice |
+| Ripper cured | `"You're clean, kid. Don't make me do this again."` | Doc's voice |
+| Exhaustion | `Body gives out... pushed too far today` | Collapse |
+| Death | `DAVID... IT'S TIME TO STOP` | Finality |
+| Last Breath | `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH` | System warning |
+| Last Breath death | `DAVID MARTINEZ — FLATLINED` | Permanent |
 
 ### Sensory Effects (Edgerunners-Accurate)
 
