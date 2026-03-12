@@ -1,3 +1,17 @@
 localization:
   onscreens:
     en-us: davidsandevistanplus\localization\en-us.json
+    es-es: davidsandevistanplus\localization\en-us.json
+    es-mx: davidsandevistanplus\localization\en-us.json
+    fr-fr: davidsandevistanplus\localization\en-us.json
+    pt-br: davidsandevistanplus\localization\en-us.json
+    de-de: davidsandevistanplus\localization\en-us.json
+    it-it: davidsandevistanplus\localization\en-us.json
+    pl-pl: davidsandevistanplus\localization\en-us.json
+    ru-ru: davidsandevistanplus\localization\en-us.json
+    jp-jp: davidsandevistanplus\localization\en-us.json
+    zh-cn: davidsandevistanplus\localization\en-us.json
+    kr-kr: davidsandevistanplus\localization\en-us.json
+    cz-cz: davidsandevistanplus\localization\en-us.json
+    zh-tw: davidsandevistanplus\localization\en-us.json
+    th-th: davidsandevistanplus\localization\en-us.json

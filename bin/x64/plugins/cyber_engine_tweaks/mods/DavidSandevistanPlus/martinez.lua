@@ -127,12 +127,11 @@ martinez.ImmunoblockerEffect_Uncommon_OAE= 'ObjectActionEffect.MartinezImmunoblo
 martinez.ImmunoblockerEffect_Rare_OAE    = 'ObjectActionEffect.MartinezImmunoblocker_Rare'
 
 martinez.ImmunoblockerVendors = {
-	'Vendors.wat_lch_ripperdoc_01',
-	'Vendors.wat_kab_ripperdoc_01',
-	'Vendors.std_arr_ripperdoc_01',
-	'Vendors.pac_wwd_ripperdoc_01',
-	'Vendors.hey_spr_ripperdoc_01',
-	'Vendors.wbr_jpn_ripperdoc_01',
+	'Vendors.wat_lch_medicstore_01',    -- Viktor Vektor, Watson (TRADE tab)
+	'Vendors.wat_kab_medicstore_01',    -- Cassius Ryder, Kabuki (TRADE tab)
+	'Vendors.std_arr_medicstore_01',    -- Arroyo ripperdoc (TRADE tab)
+	'Vendors.hey_spr_medicstore_01',    -- Heywood ripperdoc (TRADE tab)
+	'Vendors.wbr_jpn_medicstore_01',    -- Japantown ripperdoc (TRADE tab)
 }
 
 martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
@@ -1166,8 +1165,8 @@ end
 function martinez.CreateImmunoblockerItems(self)
 	local SandevistanIcon = TweakDB:GetFlat('BaseStatusEffect.SandevistanCooldown.uiData')
 
-	-- Helper: create one tier of Immunoblocker (status effect + consumable item + action + vendor)
-	local function createTier(effectName, effectSMG, effectSM1, itemName, actionName, oaeName, durationSec, quality, quantityPreset, price)
+	-- Helper: create one tier of Immunoblocker (status effect + cloned consumable item + vendor)
+	local function createTier(effectName, effectSMG, effectSM1, itemName, actionName, oaeName, durationSec, quality, quantityPreset, price, iconAtlas, iconPart, locName, locDesc)
 		-- Duration stat modifier (same pattern as timed status effects)
 		self:CreateStatModifierGroup(effectSMG, { false, false, {}, false, {effectSM1}, -1, nil })
 		self:CreateConstantStatModifier(effectSM1, { 'Additive', 'BaseStats.MaxDuration', durationSec * 1.0 })
@@ -1207,71 +1206,96 @@ function martinez.CreateImmunoblockerItems(self)
 		TweakDB:SetFlatNoUpdate(oaeName..'.range', 0.0)
 		TweakDB:Update(oaeName)
 
-		-- Item Action: consume action
-		self:CreateRecord(actionName, 'gamedataItemAction_Record')
-		TweakDB:SetFlatNoUpdate(actionName..'.startEffects', {oaeName})
-		TweakDB:SetFlatNoUpdate(actionName..'.completionEffects', {})
-		TweakDB:SetFlatNoUpdate(actionName..'.removeAfterUse', true)
-		TweakDB:Update(actionName)
+		-- Item Action: clone from Consume (gets actionName, removeAfterUse, etc.)
+		self:CloneRecord(actionName, 'ItemAction.Consume')
+		TweakDB:SetFlat(actionName..'.completionEffects', {oaeName})
 
-		-- Consumable Item
-		self:CreateRecord(itemName, 'gamedataConsumableItem_Record')
-		TweakDB:SetFlatNoUpdate(itemName..'.displayName', LocKey('DavidSandevistanPlus-Immunoblocker'))
-		TweakDB:SetFlatNoUpdate(itemName..'.localizedDescription', LocKey('DavidSandevistanPlus-Immunoblocker-Desc'))
-		TweakDB:SetFlatNoUpdate(itemName..'.quality', quality)
-		TweakDB:SetFlatNoUpdate(itemName..'.itemType', 'ItemType.Con_LongLasting')
-		TweakDB:SetFlatNoUpdate(itemName..'.itemCategory', 'ItemCategory.Consumable')
-		TweakDB:SetFlatNoUpdate(itemName..'.equipArea', 'EquipmentArea.Consumable')
-		TweakDB:SetFlatNoUpdate(itemName..'.objectActions', {actionName, 'ItemAction.Drop', 'ItemAction.Disassemble'})
-		TweakDB:SetFlatNoUpdate(itemName..'.tags', {'Consumable', 'Drug', 'HasModel', 'Inhaler'})
-		TweakDB:SetFlatNoUpdate(itemName..'.icon', 'UIIcon.ItemIcon')
-		TweakDB:SetFlatNoUpdate(itemName..'.iconPath', 'inhaler_3_health_beriteback')
-		TweakDB:SetFlatNoUpdate(itemName..'.animFeatureName', 'ItemData')
-		TweakDB:SetFlatNoUpdate(itemName..'.animName', 'ui_garment_pose')
-		TweakDB:SetFlatNoUpdate(itemName..'.canDrop', true)
-		TweakDB:SetFlatNoUpdate(itemName..'.mass', 0.5)
-		TweakDB:SetFlatNoUpdate(itemName..'.blueprint', 'Items.GenericShardBlueprint')
-		TweakDB:SetFlatNoUpdate(itemName..'.entityName', 'base_inhaler')
-		TweakDB:SetFlatNoUpdate(itemName..'.dropObject', 'base_inhaler')
-		TweakDB:SetFlatNoUpdate(itemName..'.OnLooted', {})
-		TweakDB:SetFlatNoUpdate(itemName..'.OnEquip', {})
-		TweakDB:SetFlatNoUpdate(itemName..'.OnAttach', {})
-		TweakDB:SetFlatNoUpdate(itemName..'.buyPrice', {})
-		TweakDB:SetFlatNoUpdate(itemName..'.sellPrice', {})
-		TweakDB:SetFlatNoUpdate(itemName..'.statModifiers', {})
-		TweakDB:Update(itemName)
+		-- Consumable Item: clone from HealthBooster (inherits all required item fields)
+		self:CloneRecord(itemName, 'Items.HealthBooster')
+		TweakDB:SetFlat(itemName..'.displayName', LocKey(locName))
+		TweakDB:SetFlat(itemName..'.localizedDescription', LocKey(locDesc))
+		TweakDB:SetFlat(itemName..'.quality', quality)
+		-- Custom icon per tier (UIIcon.XXX naming convention required for icon resolution)
+		local uiIconName = 'UIIcon.'..iconPart
+		self:CreateUIIcon(uiIconName, { iconAtlas, iconPart })
+		TweakDB:SetFlat(itemName..'.icon', uiIconName)
+		TweakDB:SetFlat(itemName..'.iconPath', iconPart)
+		-- Replace the cloned HealthBooster consume action with our Immunoblocker action
+		TweakDB:SetFlat(itemName..'.objectActions', {actionName, 'ItemAction.Drop', 'ItemAction.ConsumableDisassemble'})
+		TweakDB:SetFlat(itemName..'.tags', {'Consumable', 'Drug', 'Medical', 'LongLasting', 'HasModel', 'Inhaler'})
+		-- Clear inherited HealthBooster stats (-100 Injury, +10% max health)
+		-- Keep LongLastingConsumableDuration so tooltip shows duration
+		TweakDB:SetFlat(itemName..'.statModifiers', {})
+		TweakDB:SetFlat(itemName..'.statModifierGroups', {'Items.LongLastingConsumableDuration'})
+		TweakDB:SetFlat(itemName..'.OnEquip', {})
 
-		-- Add to ripperdoc vendors
-		for _, vendorRecord in ipairs(self.ImmunoblockerVendors) do
-			local vendorItemName = vendorRecord..'_'..itemName:gsub('Items%.', '')
-			self:CreateRecord(vendorItemName, 'gamedataVendorItem_Record')
-			TweakDB:SetFlatNoUpdate(vendorItemName..'.generationPrereqs', {})
-			TweakDB:SetFlatNoUpdate(vendorItemName..'.item', itemName)
-			TweakDB:SetFlatNoUpdate(vendorItemName..'.quantity', {quantityPreset})
-			TweakDB:Update(vendorItemName)
-			local stock = TweakDB:GetFlat(vendorRecord..'.itemStock')
-			if not self:SearchInventory(stock, vendorItemName) then
-				table.insert(stock, vendorItemName)
-				TweakDB:SetFlat(vendorRecord..'.itemStock', stock)
-			end
-		end
+		-- Price: override HealthBooster's inherited buyPrice chain
+		local priceSM = itemName..'_Price'
+		self:CreateConstantStatModifier(priceSM, { 'Additive', 'BaseStats.Price', price * 1.0 })
+		TweakDB:SetFlat(itemName..'.buyPrice', {priceSM})
+		TweakDB:SetFlat(itemName..'.price', {priceSM})
+
+		-- Vendor items are created at runtime in AddImmunoblockersToVendors() (called from LoadGamePart1)
 	end
 
 	createTier(
 		self.ImmunoblockerEffect_Common, self.ImmunoblockerEffect_Common_SMG, self.ImmunoblockerEffect_Common_SM1,
 		self.ImmunoblockerItem_Common, self.ImmunoblockerAction_Common, self.ImmunoblockerEffect_Common_OAE,
-		500, 'Quality.Common', 'Vendors.Always_Present', 500
+		500, 'Quality.Common', 'Vendors.Always_Present', 2000,
+		'davidsandevistanplus\\immunoblocker_common.inkatlas', 'Immunoblocker_Common',
+		'DavidSandevistanPlus-Immunoblocker', 'DavidSandevistanPlus-Immunoblocker-Desc'
 	)
 	createTier(
 		self.ImmunoblockerEffect_Uncommon, self.ImmunoblockerEffect_Uncommon_SMG, self.ImmunoblockerEffect_Uncommon_SM1,
 		self.ImmunoblockerItem_Uncommon, self.ImmunoblockerAction_Uncommon, self.ImmunoblockerEffect_Uncommon_OAE,
-		1000, 'Quality.Uncommon', 'Vendors.Commonly_Present', 1200
+		1000, 'Quality.Uncommon', 'Vendors.Commonly_Present', 6000,
+		'davidsandevistanplus\\immunoblocker_uncommon.inkatlas', 'Immunoblocker_Uncommon',
+		'DavidSandevistanPlus-Immunoblocker-High', 'DavidSandevistanPlus-Immunoblocker-High-Desc'
 	)
 	createTier(
 		self.ImmunoblockerEffect_Rare, self.ImmunoblockerEffect_Rare_SMG, self.ImmunoblockerEffect_Rare_SM1,
 		self.ImmunoblockerItem_Rare, self.ImmunoblockerAction_Rare, self.ImmunoblockerEffect_Rare_OAE,
-		1800, 'Quality.Rare', 'Vendors.Uncommonly_Present', 2500
+		1800, 'Quality.Rare', 'Vendors.Uncommonly_Present', 20000,
+		'davidsandevistanplus\\immunoblocker_rare.inkatlas', 'Immunoblocker_Rare',
+		'DavidSandevistanPlus-Immunoblocker-Mil', 'DavidSandevistanPlus-Immunoblocker-Mil-Desc'
 	)
+end
+
+-- Called at runtime (LoadGamePart1) — VendorItems created during onInit are not seen by MarketSystem
+function martinez.AddImmunoblockersToVendors(self)
+	local items = {
+		{ self.ImmunoblockerItem_Common,   'Vendors.Always_Present' },
+		{ self.ImmunoblockerItem_Uncommon, 'Vendors.Commonly_Present' },
+		{ self.ImmunoblockerItem_Rare,     'Vendors.Uncommonly_Present' },
+	}
+	local added = 0
+	for _, vendorRecord in ipairs(self.ImmunoblockerVendors) do
+		local stock = TweakDB:GetFlat(vendorRecord..'.itemStock')
+		if stock == nil then
+			print('[DSP] WARNING: vendor '..vendorRecord..' has no itemStock')
+		else
+			for _, tier in ipairs(items) do
+				local itemName, quantityPreset = tier[1], tier[2]
+				local vendorItemName = vendorRecord..'_'..itemName:gsub('Items%.', '')
+				if TweakDB:GetRecord(vendorItemName) == nil then
+					TweakDB:CreateRecord(vendorItemName, 'gamedataVendorItem_Record')
+					TweakDB:SetFlat(vendorItemName..'.item', TweakDBID.new(itemName))
+					TweakDB:SetFlat(vendorItemName..'.quantity', {TweakDBID.new(quantityPreset)})
+					print('[DSP] Created VendorItem: '..vendorItemName)
+				end
+				local found = false
+				for _, v in ipairs(stock) do
+					if tostring(v):find(itemName:gsub('Items%.', '')) then found = true; break end
+				end
+				if not found then
+					table.insert(stock, TweakDBID.new(vendorItemName))
+					added = added + 1
+				end
+			end
+			TweakDB:SetFlat(vendorRecord..'.itemStock', stock)
+		end
+	end
+	print('[DSP] AddImmunoblockersToVendors: '..added..' items added to '..#self.ImmunoblockerVendors..' vendors')
 end
 
 function martinez.GetHeadShotMultiplier(self)

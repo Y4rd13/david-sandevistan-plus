@@ -2482,6 +2482,7 @@ davidsapogee = {
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		loadApogeeConfig(self.cfg)
 		self:UpdateViksLoot()
+		self.martinez:AddImmunoblockersToVendors()
 		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingApogee()))
 		local GetRuntime = 0
 		self.TickLength = self.cfg.tickLength
