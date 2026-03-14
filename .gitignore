@@ -17,5 +17,8 @@ Desktop.ini
 *.swp
 *~
 
+# Tools
+tools/
+
 # Claude
 .claude/
