@@ -1,3 +1,17 @@
+resource:
+  scope:
+    dsp_scope.quest:
+      - cyberpunk2077.quest
+
+quest:
+  phases:
+    - path: davidsandevistanplus\quest\dsp_immunoblocker_inject.questphase
+      parent: dsp_scope.quest
+
+streaming:
+  blocks:
+    - dsp_immunoblocker\all.streamingblock
+
 localization:
   onscreens:
     en-us: davidsandevistanplus\localization\en-us.json

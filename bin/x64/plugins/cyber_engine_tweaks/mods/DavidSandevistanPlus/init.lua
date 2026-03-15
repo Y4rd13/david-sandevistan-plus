@@ -1332,6 +1332,8 @@ davidsapogee = {
 					self:CheckStrainEpisode()
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
+				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
+				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				-- Auto-injector cooldown decrement (~1/sec)
 				if self.autoInjectorCooldown > 0 then
@@ -2244,6 +2246,7 @@ registerForEvent('onUpdate', function(dt)
             davidsapogee:LoadGame()
         end
     end
+    davidsapogee:RealTimeImmunoblockerTick()
     davidsapogee:Running(dt)
     davidsapogee:UpdateTremor(dt)
     davidsapogee:UpdateFOVPulse(dt)

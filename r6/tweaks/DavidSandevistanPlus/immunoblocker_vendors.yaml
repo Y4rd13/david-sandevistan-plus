@@ -1,10 +1,11 @@
-# David Sandevistan Plus — Immunoblocker Item & Vendor Integration
-# ALL item customization in YAML — CET does NOT modify items (SetFlat corrupts TweakXL records)
-# Forward references to CET status effects are on OAE records, NOT on items
+# David Sandevistan Plus — Immunoblocker Items
 
-# ============================================================
-# Custom icons
-# ============================================================
+# Scene prop: custom syringe entity for inhaler animation (clone vanilla ripperdoc inhaler)
+Props.DspImmunoblockerProp:
+  $base: Props.q001_ripperdoc_drug_inhaler
+  entityTemplatePath: davidsandevistanplus\immunoblocker_injector.ent
+  appearanceName: immunoblocker_default
+  friendlyName: dsp_immunoblocker_prop
 
 UIIcon.Immunoblocker_Common:
   $type: gamedataUIIcon_Record
@@ -21,10 +22,7 @@ UIIcon.Immunoblocker_Rare:
   atlasResourcePath: davidsandevistanplus\immunoblocker_rare.inkatlas
   atlasPartName: Immunoblocker_Rare
 
-# ============================================================
-# Price stat modifiers
-# ============================================================
-
+# Price modifiers
 Items.MartinezImmunoblockerCommon_Price:
   $type: gamedataConstantStatModifier_Record
   modifierType: Additive
@@ -43,10 +41,7 @@ Items.MartinezImmunoblockerRare_Price:
   statType: BaseStats.Price
   value: 20000.0
 
-# ============================================================
-# ObjectActionEffect records (forward ref to CET status effects — on OAE, not item)
-# ============================================================
-
+# OAE records (forward ref to CET status effects)
 ObjectActionEffect.MartinezImmunoblocker_Common:
   $type: gamedataObjectActionEffect_Record
   statusEffect: BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common
@@ -68,10 +63,7 @@ ObjectActionEffect.MartinezImmunoblocker_Rare:
   resistanceFlag: None
   range: 0.0
 
-# ============================================================
-# ItemAction records (consume actions)
-# ============================================================
-
+# ItemAction records
 ItemAction.MartinezImmunoblockerUse_Common:
   $base: ItemAction.Consume
   completionEffects:
@@ -88,7 +80,7 @@ ItemAction.MartinezImmunoblockerUse_Rare:
     - ObjectActionEffect.MartinezImmunoblocker_Rare
 
 # ============================================================
-# Item definitions
+# Items — HealthBooster base (single-use consumable + DF inhaler animation)
 # ============================================================
 
 Items.MartinezImmunoblockerCommon:
@@ -98,28 +90,17 @@ Items.MartinezImmunoblockerCommon:
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-Desc"
   icon: UIIcon.Immunoblocker_Common
   iconPath: Immunoblocker_Common
+  buyPrice:
+    - Items.MartinezImmunoblockerCommon_Price
   objectActions:
     - ItemAction.MartinezImmunoblockerUse_Common
     - ItemAction.Drop
     - ItemAction.ConsumableDisassemble
-  tags:
-    - Preload
-    - HasModel
-    - Consumable
-    - Drug
-    - Medical
-    - LongLasting
-    - Inhaler
-  statModifiers:
-    - Items.LongLasting_inline0
-  statModifierGroups:
-    - Items.LongLastingConsumableDuration
   OnEquip: []
-  buyPrice:
-    - Items.MartinezImmunoblockerCommon_Price
-  sellPrice:
-    - Items.MartinezImmunoblockerCommon_Price
-    - Price.SellMultiplier
+  castPoint: 0.0
+  removePoint: 0.0
+  cycleDuration: 0.0
+  entityName: ""
 
 Items.MartinezImmunoblockerUncommon:
   $base: Items.HealthBooster
@@ -128,28 +109,17 @@ Items.MartinezImmunoblockerUncommon:
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-High-Desc"
   icon: UIIcon.Immunoblocker_Uncommon
   iconPath: Immunoblocker_Uncommon
+  buyPrice:
+    - Items.MartinezImmunoblockerUncommon_Price
   objectActions:
     - ItemAction.MartinezImmunoblockerUse_Uncommon
     - ItemAction.Drop
     - ItemAction.ConsumableDisassemble
-  tags:
-    - Preload
-    - HasModel
-    - Consumable
-    - Drug
-    - Medical
-    - LongLasting
-    - Inhaler
-  statModifiers:
-    - Items.LongLasting_inline0
-  statModifierGroups:
-    - Items.LongLastingConsumableDuration
   OnEquip: []
-  buyPrice:
-    - Items.MartinezImmunoblockerUncommon_Price
-  sellPrice:
-    - Items.MartinezImmunoblockerUncommon_Price
-    - Price.SellMultiplier
+  castPoint: 0.0
+  removePoint: 0.0
+  cycleDuration: 0.0
+  entityName: ""
 
 Items.MartinezImmunoblockerRare:
   $base: Items.HealthBooster
@@ -158,33 +128,19 @@ Items.MartinezImmunoblockerRare:
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-Mil-Desc"
   icon: UIIcon.Immunoblocker_Rare
   iconPath: Immunoblocker_Rare
+  buyPrice:
+    - Items.MartinezImmunoblockerRare_Price
   objectActions:
     - ItemAction.MartinezImmunoblockerUse_Rare
     - ItemAction.Drop
     - ItemAction.ConsumableDisassemble
-  tags:
-    - Preload
-    - HasModel
-    - Consumable
-    - Drug
-    - Medical
-    - LongLasting
-    - Inhaler
-  statModifiers:
-    - Items.LongLasting_inline0
-  statModifierGroups:
-    - Items.LongLastingConsumableDuration
   OnEquip: []
-  buyPrice:
-    - Items.MartinezImmunoblockerRare_Price
-  sellPrice:
-    - Items.MartinezImmunoblockerRare_Price
-    - Price.SellMultiplier
+  castPoint: 0.0
+  removePoint: 0.0
+  cycleDuration: 0.0
+  entityName: ""
 
-# ============================================================
 # Quantity presets
-# ============================================================
-
 MartinezImmunoblocker.Qty_Common:
   $type: gamedataRandomStatModifier_Record
   modifierType: Additive
@@ -227,10 +183,6 @@ MartinezImmunoblocker.Qty_Viktor_Rare:
   min: 1.0
   max: 2.0
 
-# ============================================================
-# VendorItem records
-# ============================================================
-
 MartinezImmunoblocker.VendorItem_Common:
   $type: gamedataVendorItem_Record
   item: Items.MartinezImmunoblockerCommon
@@ -251,10 +203,6 @@ MartinezImmunoblocker.VendorItem_Rare:
   generationPrereqs: []
   quantity:
     - Vendors.Always_Present
-
-# ============================================================
-# Ripperdoc vendor stock
-# ============================================================
 
 Vendors.wat_lch_medicstore_01:
   itemStock:

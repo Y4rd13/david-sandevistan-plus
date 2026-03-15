@@ -9,10 +9,10 @@ function immunoblocker.createItems(martinez)
 		martinez:CreateStatModifierGroup(effectSMG, { false, false, {}, false, {effectSM1}, -1, nil })
 		martinez:CreateConstantStatModifier(effectSM1, { 'Additive', 'BaseStats.MaxDuration', durationSec * 1.0 })
 
-		-- Inhaler intake VFX (splinter_buff — same as InhalerBuff base class)
+		-- Injector VFX (reflex_buster — same as InjectorBuff/BounceBack)
 		local vfxList = {}
 		if vfxRecord then
-			martinez:CreateStatusEffectFX(vfxRecord, { 'splinter_buff', false })
+			martinez:CreateStatusEffectFX(vfxRecord, { 'reflex_buster', false })
 			vfxList = {vfxRecord}
 		end
 
@@ -205,6 +205,8 @@ function immunoblocker.createItems(martinez)
 	-- TweakXL creates inline VendorItems and appends to itemStock at compile time
 	-- CET no longer touches vendor stock to avoid interfering with TweakXL
 	print('[DSP] CreateImmunoblockerItems: vendor stock managed by TweakXL')
+
+	-- Props.DspImmunoblockerProp — defined via TweakXL YAML ($base: Props.q001_ripperdoc_drug_inhaler)
 end
 
 function immunoblocker.createAutoInjector(martinez)
