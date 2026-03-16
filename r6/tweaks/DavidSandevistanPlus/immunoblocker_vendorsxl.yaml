@@ -1,7 +1,7 @@
 # David Sandevistan Plus — Immunoblocker Street Vendor (VendorsXL)
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
-  bossHealthBarThresholds: [-1541.4761, 1191.1448, 57.000008, 0, 0, 0.36361754, -0.93154836]
+  bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
   items:
     - Items.MartinezImmunoblockerCommon
     - Items.MartinezImmunoblockerUncommon
