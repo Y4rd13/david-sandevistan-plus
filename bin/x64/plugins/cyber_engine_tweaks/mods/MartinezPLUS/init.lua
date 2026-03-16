@@ -2,7 +2,7 @@
 -- Requires: nativeSettings, DavidSandevistanPlus
 
 local RecordName = "Items.MartinezSandevistanPlusPlus"
-local apogeeConfigFile = "../DavidSandevistanPlus/config.json"
+local dspConfigFile = "../DavidSandevistanPlus/config.json"
 
 local defaults = {
 	-- TweakDB values
@@ -17,7 +17,7 @@ local defaults = {
 	healOnKill = 3,
 	staminaOnKill = 22.0,
 
-	-- Gameplay (mirrored from DavidsApogee cfg)
+	-- Gameplay (mirrored from DSP cfg)
 	enableHealthDrain = true,
 	damageMin = 1.0,
 	damageMax = 15.0,
@@ -77,7 +77,7 @@ for k, v in pairs(defaults) do cfg[k] = v end
 
 local nativeSettings = nil
 
--- Gameplay keys that DavidsApogee reads from config.json
+-- Gameplay keys that DSP reads from config.json
 local gameplayKeys = {
 	"enableHealthDrain", "damageMin", "damageMax",
 	"enableHealthBrake", "healthBrakeDefault", "requiredHealthMin",
@@ -105,7 +105,7 @@ local gameplayKeys = {
 -- Persistence
 
 local function loadConfig()
-	local file = io.open(apogeeConfigFile, "r")
+	local file = io.open(dspConfigFile, "r")
 	if file ~= nil then
 		local ok, loaded = pcall(json.decode, file:read("*a"))
 		file:close()
@@ -122,18 +122,18 @@ local function saveConfig()
 	for k, v in pairs(cfg) do toSave[k] = v end
 	toSave.timeDilationNoPerk = string.format("%.8f", cfg.timeDilationNoPerk)
 	toSave.timeDilationWithPerk = string.format("%.8f", cfg.timeDilationWithPerk)
-	local file = io.open(apogeeConfigFile, "w")
+	local file = io.open(dspConfigFile, "w")
 	if file ~= nil then
 		file:write(json.encode(toSave))
 		file:close()
 	end
 end
 
--- Apply gameplay cfg to DavidsApogee at runtime (if global is available)
+-- Apply gameplay cfg to DSP at runtime (if global is available)
 local function applyGameplayCfg()
-	if davidsapogee and davidsapogee.cfg then
+	if dsp and dsp.cfg then
 		for _, key in ipairs(gameplayKeys) do
-			davidsapogee.cfg[key] = cfg[key]
+			dsp.cfg[key] = cfg[key]
 		end
 	end
 end

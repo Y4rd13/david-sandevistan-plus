@@ -1,5 +1,5 @@
 -- Custom entEffects --
--- Created by beckylou 2025-02-27, v2 Rewrite: 2025-03-03 --
+-- Custom entEffects for DavidSandevistanPlus --
 
 local CNameNew = function(self,theString)
 	-- find or create a CName
@@ -64,7 +64,7 @@ entEffects.Finalize = function(self,EffectsFor)
 end
 
 -- Custom worldCompiledEffectInfo --
--- Created by beckylou 2025-03-03 --
+-- Custom worldCompiledEffectInfo for DavidSandevistanPlus --
 entEffects.new_wCEI = function()
 	-- actually return a new instance every time!
 	-- Remember to call wCEI:Finished() !

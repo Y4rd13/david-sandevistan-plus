@@ -1191,7 +1191,7 @@ end
 
 function martinez.TimeDilationCalculation(Origin,Desired)
 	--[[
-	Martinez Sandevistan Time Dilation Calculator by Beckylou
+	Martinez Sandevistan Time Dilation Calculator
 	---------------------------------------------------------
 	Origin: 0-100 visual display of sandevistan
 	Desired: 0-100 the desired time dilation of the buff

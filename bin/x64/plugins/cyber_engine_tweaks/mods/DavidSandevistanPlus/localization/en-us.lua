@@ -50,7 +50,7 @@ return {
 	,Debug_SectionRunner_NoCyberdeck = 'NO CYBERDECK'
 	,Debug_SectionRunner_Mode1 = 'Aggressive' --0.5%->10%
 	,Debug_SectionRunner_Mode2 = 'Linear' --0.6% flat
-	,Debug_SectionRunner_Mode3 = 'Factory' -- Apogee
+	,Debug_SectionRunner_Mode3 = 'Factory'
 	,Debug_SectionRunner_RAM = 'MEMORY'
 	,Debug_SectionRunner_BRAKE = 'BRAKE'
 	,Debug_SectionRunner_HEALTH = 'HEALTH'

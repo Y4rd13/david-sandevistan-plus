@@ -33,7 +33,7 @@
 
 ## Project Overview
 
-Custom Cyberpunk 2077 Sandevistan mod — fork of DavidsApogee v2.25.3, fully rebranded.
+Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and full configurability.
 Two components: **DavidSandevistanPlus** (game logic) + **MartinezPLUS** (Native Settings tuner UI).
 
 ## Key Paths

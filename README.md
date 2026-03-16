@@ -1,6 +1,6 @@
 # David Sandevistan Plus
 
-Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547) with lore-accurate defaults and every gameplay parameter configurable via an in-game Settings menu.
+Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every gameplay parameter configurable via an in-game Settings menu.
 
 ## Features
 
@@ -394,7 +394,7 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 
 ## How It Works
 
-**DavidSandevistanPlus** is a fork of David's Apogee v2.25.3 with all hardcoded gameplay values extracted into a configurable `cfg` table. **MartinezPLUS** provides the Native Settings UI and writes to `DavidSandevistanPlus/config.json`. Changes to TweakDB values apply instantly; gameplay parameters update both at runtime and persist to disk.
+**DavidSandevistanPlus** has all gameplay values exposed in a configurable `cfg` table. **MartinezPLUS** provides the Native Settings UI and writes to `DavidSandevistanPlus/config.json`. Changes to TweakDB values apply instantly; gameplay parameters update both at runtime and persist to disk.
 
 ### Daily Activation Counter
 
@@ -463,8 +463,6 @@ Our **Immunoblocker** is stronger than DF's Immunosuppressant: it blocks ALL str
 
 ## Credits
 
-- **beckylou** — Creator of [David's Apogee](https://www.nexusmods.com/cyberpunk2077/mods/9547), the base this mod is forked from
-- **XxJepxX** — Creator of Tier 5 Plus (inspiration for the Native Settings approach)
 - **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
 
 ## License

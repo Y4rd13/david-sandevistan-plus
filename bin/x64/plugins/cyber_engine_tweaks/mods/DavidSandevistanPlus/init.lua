@@ -94,9 +94,9 @@ CHANGE LOG
 	EdgeRunner perk required to recharge to fully; otherwise only the last 1/3rd of the runtime is available.
 	Changed Icon to David's Sandevistan image from Edgerunners.
 	Fixed initial charge level changing straight away on activation rather than waiting for the next "tick".
-	Added debugging CET window (change davidsapogee.debug = true)
+	Added debugging CET window (change dsp.debug = true)
 2.13.3
-	Created MartinezSandevistan from scratch. It's now divorced (mostly) from the Apogee except for the icon and most of the localization texts.
+	Created MartinezSandevistan from scratch. It's now divorced (mostly) from the DSP except for the icon and most of the localization texts.
 	Since duration is infinite... in theory...
 		Changed from Reflex(Extra duration) to Cool for Headshot bonus!
 		Added 5% heal-on-kill because duration is your life.
@@ -111,9 +111,9 @@ TODO: Deconstruct Cyberpsychosis quickhack to see how it makes NPCs effected by 
       make a buff that makes gangoons, ncpd & armed civilians hostile towards V without taking any action and no wanted level.
 ]]
 
-local configFile_apogee = "config.json"
-local function loadApogeeConfig(cfg)
-	local file = io.open(configFile_apogee, "r")
+local configFile = "config.json"
+local function loadConfig(cfg)
+	local file = io.open(configFile, "r")
 	if file then
 		local ok, loaded = pcall(json.decode, file:read("*a"))
 		file:close()
@@ -125,10 +125,10 @@ local function loadApogeeConfig(cfg)
 	end
 end
 
-davidsapogee = {
+dsp = {
 	 version = '2.25.3'
 	,debug = false -- change to true to get the CET Debugging UI
-	,UseDavidsIcon = true -- change to false to get the old Apogee icon
+	,UseDavidsIcon = true -- change to false to get the old DSP icon
 	,Call_MaxTac = true -- change to false to prevent 5 star wanted level (this only happens now if you kill civilians or NPCD while cyberpsycho)
 	,ShowUIText = true -- change to false to hide the dilation/runtime/cyberpsycho text on the health bar
 	,OverrideTextSize      = nil -- change the font size of the Sandevistan Text to match your other UI mods.
@@ -305,9 +305,9 @@ davidsapogee = {
 			print('[DSP] sps:Init skipped (Codeware compat)')
 			self.GMGC:Init(self)
 			--UI:Init() is done in Load3
-			self.TimeSkip.Apogee = self -- give TimeSkip a pointer so we don't have to use callback functions!
-			self:CreateDavidsApogee()
-			print('[DSP] Init: CreateDavidsApogee() complete')
+			self.TimeSkip.DSP = self -- give TimeSkip a pointer so we don't have to use callback functions!
+			self:CreateSandevistan()
+			print('[DSP] Init: CreateSandevistan() complete')
 			if self.dev_mode then
 				if self.dev_mode.Init then self.dev_mode:Init(self) end
 				self.debug = true
@@ -347,7 +347,7 @@ davidsapogee = {
 		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
 		local immunoblockerActive = self:IsImmunoblockerActive()
 		self.hud:Update({
-			isWearing = self:IsWearingApogee() or false,
+			isWearing = self:IsWearingSandevistan() or false,
 			showUI = self.ShowUIText,
 			isRunning = self.isRunning,
 			SafetyOn = self.SafetyOn,
@@ -371,7 +371,7 @@ davidsapogee = {
 			immunoblockerActive = immunoblockerActive,
 		})
 	 end)
-	,GetApogeeIndex = (function(self)
+	,GetSandevistanIndex = (function(self)
 		local V = Game.GetPlayer()
 		if not IsDefined(V) then return nil end
 		for i=0,99 do
@@ -383,8 +383,8 @@ davidsapogee = {
 		end
 		return false
 	 end)
-	,IsWearingApogee = (function(self)
-		output = self:GetApogeeIndex()
+	,IsWearingSandevistan = (function(self)
+		output = self:GetSandevistanIndex()
 		    if output == nil   then return nil
 		elseif output == false then return false
 		end
@@ -409,7 +409,7 @@ davidsapogee = {
 		if type(source) ~= 'string' then source = '' end
 		if self.martinez == nil then return end
 
-		if (not self:IsWearingApogee()) and (not self.SafetyOn) then
+		if (not self:IsWearingSandevistan()) and (not self.SafetyOn) then
 			self.SafetyOn = true
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
 			return
@@ -454,7 +454,7 @@ davidsapogee = {
 	 end)
 	,Restart = (function(self)
 		self.runTime = self.MaxRuntime
-		self:SaveGame('Apogee:Restart()')
+		self:SaveGame('DSP:Restart()')
 	 end)
 	,Rested = (function(self,RestedHours)
 		RestedHours = math.floor(RestedHours)
@@ -550,7 +550,7 @@ davidsapogee = {
 		local effectiveMax = self:GetEffectiveMaxRuntime()
 		RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
 		if self.dev_mode then
-			print('Apogee:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
+			print('DSP:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
 		end
 		local oldRuntime = self.runTime
 		self.runTime = self.runTime + RestedRuntime + 1
@@ -567,7 +567,7 @@ davidsapogee = {
 			self.bbs:SendMessage(rechargeLines[math.random(#rechargeLines)], 3.0)
 		end
 
-		self:SaveGame('Apogee:Rested()')
+		self:SaveGame('DSP:Rested()')
 	 end)
 	,VisitedRipper = (function(self,VendorName)
 		local isRested = ""
@@ -627,7 +627,7 @@ davidsapogee = {
 			self.ViktorCooldown = 300 -- 5min cooldown
 		end
 		if self.dev_mode then
-			print('Apogee:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' prescribedDoses='..tostring(self.prescribedDoses)..' completedDoses='..tostring(self.completedDoses))
+			print('DSP:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' prescribedDoses='..tostring(self.prescribedDoses)..' completedDoses='..tostring(self.completedDoses))
 		end
 	 end)
 	,DamageCalculator = (function(self,MaxRuntime,runTime)
@@ -644,7 +644,7 @@ davidsapogee = {
 	 end)
 	,Start = (function(self)
 		if self.martinez == nil then return end
-		if not self:IsWearingApogee() then return end
+		if not self:IsWearingSandevistan() then return end
 
 		-- Block reactivation during comedown
 		if self.comedownTimer and self.comedownTimer > 0 and self.cfg.comedownBlockSandy then
@@ -764,7 +764,7 @@ davidsapogee = {
 
 		self.isRunning = false
 		if self.martinez == nil then return end
-		if not self:IsWearingApogee() then return end
+		if not self:IsWearingSandevistan() then return end
 
 		-- Comedown: apply debuff based on how long the sandy was active
 		if self.cfg.enableComedown then
@@ -808,11 +808,11 @@ davidsapogee = {
 		self:TimeDilationEffects()
 		self:OutOfRuntime(false)
 		self:UpdateUIText()
-		self:SaveGame('Apogee:End()')
+		self:SaveGame('DSP:End()')
 	 end)
 	,Safety = (function(self,SafetyOn,ForceSafe)
 		ForceSafe = (ForceSafe == true) and true or false
-		if (not SafetyOn) and (not self:IsWearingApogee()) then return end
+		if (not SafetyOn) and (not self:IsWearingSandevistan()) then return end
 		if SafetyOn and (not ForceSafe) and self.isRunning and (self.CyberPsychoWarnings > 4) then return end
 		
 		if SafetyOn then
@@ -830,7 +830,7 @@ davidsapogee = {
 		if self.martinez == nil then return end
 		if self.bbs:InGameMenu() then return end
 		if self.bbs:InBrainDance() then return end
-		if not self:IsWearingApogee() then return end
+		if not self:IsWearingSandevistan() then return end
 		if not self.VIsInControl and self.SafetyOn then return end
 		
 		if self.ToggleSafetyLastKey ~= KeyDown then
@@ -979,7 +979,7 @@ davidsapogee = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
-		elseif not self:IsWearingApogee() then
+		elseif not self:IsWearingSandevistan() then
 			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
@@ -1077,7 +1077,7 @@ davidsapogee = {
 		if NetRunnerLevel.IsEdgeRunner == nil then return end -- unknown if V is an EdgeRunner or not; so don't mess with the run time
 		local EdgeRunnerRuntimeModifier = self.sps.EdgeRunnerRuntimeModifier
 
-		if NetRunnerLevel.ApogeeReducedRuntime and self.runTime > (self.MaxRuntime * EdgeRunnerRuntimeModifier) then
+		if NetRunnerLevel.ReducedRuntime and self.runTime > (self.MaxRuntime * EdgeRunnerRuntimeModifier) then
 			self.runTime = (self.MaxRuntime * EdgeRunnerRuntimeModifier)+1
 			NeedsSave = true
 			if self.dev_mode then
@@ -1085,7 +1085,7 @@ davidsapogee = {
 			end
 		end
 		if NeedsSave and (not saving) then -- if called from SaveGame don't call SaveGame
-			self:SaveGame('Apogee:SandevistanEdgeRunnerCheck('..tostring(saving)..')')
+			self:SaveGame('DSP:SandevistanEdgeRunnerCheck('..tostring(saving)..')')
 		end
 	 end)
 	,SandevistanCharge = (function(self)
@@ -1415,7 +1415,7 @@ davidsapogee = {
 						self.LoadThreeTimer = nil
 						self:LoadGamePart3()
 						if self.dev_mode then
-							print('DavidsApogee:LoadGame() GameLoadIndex=3 Completed')
+							print('DSP:LoadGame() GameLoadIndex=3 Completed')
 						end
 					end
 				end
@@ -1424,10 +1424,10 @@ davidsapogee = {
 	 end)
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
-		loadApogeeConfig(self.cfg)
+		loadConfig(self.cfg)
 		self:UpdateViksLoot()
 		self.martinez:AddAutoInjectorToViktor()
-		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingApogee()))
+		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingSandevistan()))
 		local GetRuntime = 0
 		self.TickLength = self.cfg.tickLength
 		self.MaxRuntime, GetRuntime = self.qs:LoadRuntime()
@@ -1458,7 +1458,7 @@ davidsapogee = {
 		if self.HealthBrake == -1 then self.HealthBrake = self.cfg.healthBrakeDefault end
 		if self.CyberPsychoWarnings == -1 then self.CyberPsychoWarnings = 0 end
 		if self.dev_mode then
-			print('DavidsApogee:LoadGame() RunTime='..tostring(self.runTime)..'seconds remaining')
+			print('DSP:LoadGame() RunTime='..tostring(self.runTime)..'seconds remaining')
 		end
 	 end)
 	,LoadGamePart2 = (function(self)
@@ -1491,7 +1491,7 @@ davidsapogee = {
 			local msg = psychoLoadMsgs[self.CyberPsychoWarnings]
 			if msg then self.bbs:SendWarning(msg, 4.0) end
 		end
-		if self:IsWearingApogee() then
+		if self:IsWearingSandevistan() then
 			local rt = math.floor(self.runTime)
 			local loadLines
 			if not self.SafetyOn then
@@ -1520,19 +1520,19 @@ davidsapogee = {
 			self:LoadGamePart2()
 			self:LoadGamePart3()
 			if self.dev_mode then
-				print('DavidsApogee:LoadGame() Complete')
+				print('DSP:LoadGame() Complete')
 			end
 		elseif GameLoadIndex == 1 then -- PlayerPuppet/OnGameAttached
 			self:LoadGamePart1()
 			if self.dev_mode then
-				print('DavidsApogee:LoadGame() GameLoadIndex=1 Loading Incomplete')
+				print('DSP:LoadGame() GameLoadIndex=1 Loading Incomplete')
 			end
 		elseif GameLoadIndex == 2 then -- EquipmentSystem/OnPlayerAttach
 			-- SandevistanEdgeRunnerCheck uses game objects that aren't working through the whole loading process so
 			-- We'll do this when we know they will be available
 			self:LoadGamePart2()
 			if self.dev_mode then
-				print('DavidsApogee:LoadGame() GameLoadIndex=2 Complete')
+				print('DSP:LoadGame() GameLoadIndex=2 Complete')
 			end
 		elseif GameLoadIndex == 3 then -- healthbarWidgetGameController/OnPlayerAttach
 			--Make sure UI controllers are up and active!
@@ -1542,7 +1542,7 @@ davidsapogee = {
 	,SaveGame = (function(self,source)
 		if source == nil then source = 'unknown' end
 		if self.dev_mode then
-			print('DavidsApogee:SaveGame('..source..') Started')
+			print('DSP:SaveGame('..source..') Started')
 		end
 		self:SandevistanEdgeRunnerCheck(true) -- don't get into an infinite function overflom
 		local GetRuntime = math.floor(self.runTime)
@@ -1558,11 +1558,11 @@ davidsapogee = {
 		self.qs:SaveNeuralStrain(self.neuralStrain or 0)
 		self:UpdateUIText()
 		if self.dev_mode then
-			print('DavidsApogee:SaveGame() Completed')
+			print('DSP:SaveGame() Completed')
 		end
 	 end)
 	,TimeSkip = {
-		 Apogee = nil
+		 DSP = nil
 		,GameTimeOnReset = 0
 		,Reset = (function(self)
 			local gts = GetSingleton('gameTimeSystem'):GetGameTime()
@@ -1572,17 +1572,17 @@ davidsapogee = {
 			local gts = GetSingleton('gameTimeSystem'):GetGameTime()
 			local GameTimeNow = gts.GetSeconds(gts)
 			local GameTimeDiffInHours = (GameTimeNow - self.GameTimeOnReset) / 3600
-			self.Apogee:Rested(GameTimeDiffInHours)
+			self.DSP:Rested(GameTimeDiffInHours)
 			self:Reset()
-			self.Apogee:UpdateSandevistanChecks()
+			self.DSP:UpdateSandevistanChecks()
 		 end)
 	 }
 	--[[ GetStatPoolsSystem ]]
 	,sps = {
-		 Apogee = nil
-		,Init = (function(self,Apogee)
+		 DSP = nil
+		,Init = (function(self,DSP)
 			-- NO-OP: writing to sps during onInit crashes with Codeware RTTI
-			-- all sps methods reference global davidsapogee directly
+			-- all sps methods reference global dsp directly
 		 end)
 		,InControl = (function(self)
 			local V = Game.GetPlayer()
@@ -1592,12 +1592,12 @@ davidsapogee = {
 			if not IsDefined(SES) then return false end
 
 			local CombatZone = not SES:HasStatusEffect(VEntity,'GameplayRestriction.NoCombat')
-			davidsapogee.InDaClub = SES:HasStatusEffect(VEntity,'GameplayRestriction.InDaClub')
+			dsp.InDaClub = SES:HasStatusEffect(VEntity,'GameplayRestriction.InDaClub')
 			local NotInSceneTier = (V:GetSceneTier() == 1)
 			return NotInSceneTier and CombatZone
 		 end)
 		,HideNamePlates = (function(self)
-			local bbs = davidsapogee.bbs
+			local bbs = dsp.bbs
 			bbs:BlackBoardSet('UI_InterfaceOptions','NPCNameplatesEnabled',false)
 			bbs:BlackBoardSet('UI_InterfaceOptions','ObjectMarkersEnabled',false)
 		 end)
@@ -1606,7 +1606,7 @@ davidsapogee = {
 			local npc_nameplates = SS:GetVar('/interface/hud', 'npc_nameplates'):GetValue()
 			local object_markers = SS:GetVar('/interface/hud', 'object_markers'):GetValue()
 			
-			local bbs = davidsapogee.bbs
+			local bbs = dsp.bbs
 			bbs:BlackBoardSet('UI_InterfaceOptions','NPCNameplatesEnabled',npc_nameplates)
 			bbs:BlackBoardSet('UI_InterfaceOptions','ObjectMarkersEnabled',object_markers)
 		 end)
@@ -1737,7 +1737,7 @@ davidsapogee = {
 			local V = Game.GetPlayer()
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			if davidsapogee.isRunning then
+			if dsp.isRunning then
 				SPS:RequestSettingStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,0.1,V,false)
 			end
 		 end)
@@ -1752,24 +1752,24 @@ davidsapogee = {
 		--[[ Note to self: This function should be used everywhere to check for functionality ]]--
 		,NetRunnerLevel = (function(self)
 			local IsEdgeRunner = self:IsEdgeRunner()
-			local SafetyOn = davidsapogee.SafetyOn
+			local SafetyOn = dsp.SafetyOn
 			local IsWearingCyberDeck = self:IsWearingCyberDeck()
-			local IsWearingApogee = davidsapogee:IsWearingApogee()
-			local GameLoaded = (IsWearingApogee ~= nil) and (IsEdgeRunner~=nil)
-			local CanEdgeRunnerPerks = IsWearingApogee and IsEdgeRunner
-			local CanUnbrickSandevistan = IsWearingApogee
-			local CanBribeNCPD = IsWearingApogee and IsWearingCyberDeck
-			local ApogeeReducedRuntime = (not IsEdgeRunner)
+			local IsWearingSandevistan = dsp:IsWearingSandevistan()
+			local GameLoaded = (IsWearingSandevistan ~= nil) and (IsEdgeRunner~=nil)
+			local CanEdgeRunnerPerks = IsWearingSandevistan and IsEdgeRunner
+			local CanUnbrickSandevistan = IsWearingSandevistan
+			local CanBribeNCPD = IsWearingSandevistan and IsWearingCyberDeck
+			local ReducedRuntime = (not IsEdgeRunner)
 			local str = IsEdgeRunner and 'EdgeRunner' or 'Standard'
 
 			return {
 				 GameLoaded=GameLoaded
 				,str=str
 				,IsEdgeRunner=IsEdgeRunner
-				,IsWearingApogee=IsWearingApogee
+				,IsWearingSandevistan=IsWearingSandevistan
 				,IsWearingCyberDeck=IsWearingCyberDeck
 				,SafetyOn = SafetyOn
-				,ApogeeReducedRuntime=ApogeeReducedRuntime
+				,ReducedRuntime=ReducedRuntime
 				,Rules={
 					 CanEdgeRunnerPerks=CanEdgeRunnerPerks
 					,CanUnbrickSandevistan=CanUnbrickSandevistan
@@ -1778,7 +1778,7 @@ davidsapogee = {
 			 }
 		 end)
 		,IsEdgeRunner = (function(self)
-			if not davidsapogee.cfg.requireEdgeRunnerPerk then return true end
+			if not dsp.cfg.requireEdgeRunnerPerk then return true end
 			local V = Game.GetPlayer()
 			if V == nil or (not IsDefined(V)) then return nil end
 			local PDS = PlayerDevelopmentSystem.GetInstance(V)
@@ -2048,7 +2048,7 @@ davidsapogee = {
 			end
 		 end)
 	 }
-	,CreateDavidsApogee = (function(self)
+	,CreateSandevistan = (function(self)
 		self.martinez.UseDavidsIcon = self.UseDavidsIcon
 		self.martinez:CreateSandevistan()
 		self.martinez:CreateNew_FX_Status_Effects()
@@ -2086,135 +2086,135 @@ davidsapogee = {
 }
 
 -- Module attachments (order matters: later modules may call earlier ones)
-require('./ncpd.lua').attach(davidsapogee)
-require('./strain.lua').attach(davidsapogee)
-require('./loreEffects.lua').attach(davidsapogee)
-require('./immunoblocker_logic.lua').attach(davidsapogee)
-require('./psychosis.lua').attach(davidsapogee)
-require('./death.lua').attach(davidsapogee)
+require('./ncpd.lua').attach(dsp)
+require('./strain.lua').attach(dsp)
+require('./loreEffects.lua').attach(dsp)
+require('./immunoblocker_logic.lua').attach(dsp)
+require('./psychosis.lua').attach(dsp)
+require('./death.lua').attach(dsp)
 
 registerForEvent('onInit', function()
-	print('[DSP] onInit: starting, martinez='..tostring(davidsapogee.martinez ~= nil)..', gui='..tostring(davidsapogee.gui ~= nil))
-	davidsapogee:Init()
+	print('[DSP] onInit: starting, martinez='..tostring(dsp.martinez ~= nil)..', gui='..tostring(dsp.gui ~= nil))
+	dsp:Init()
 	
     Observe('SandevistanEvents', 'OnEnter', function(self, event)
-		if davidsapogee:IsWearingApogee() then
-			davidsapogee:Start()
+		if dsp:IsWearingSandevistan() then
+			dsp:Start()
 			return false
 		end
     end)
 	
 	Observe('SandevistanEvents', 'OnExit', function(self, event)
-		if davidsapogee:IsWearingApogee() then
-			davidsapogee:End()
+		if dsp:IsWearingSandevistan() then
+			dsp:End()
 		end
     end)
 	
 	ObserveAfter('TimeskipGameController', 'OnInitialize', function(this)
-		davidsapogee.TimeSkip:Reset()
+		dsp.TimeSkip:Reset()
 	end)
 	
 	ObserveAfter('TimeskipGameController', 'OnCloseAfterFinishing', function(this,proxy)
-		davidsapogee.TimeSkip:End()
+		dsp.TimeSkip:End()
 	end)
 	
 	ObserveAfter('PlayerPuppet', 'OnGameAttached', function(this)
 		if this:IsReplacer() then return end
 		if Game.GetSystemRequestsHandler():IsPreGame() then return end
 		
-		davidsapogee.isRunning = false
-		davidsapogee:LoadGame(1)
+		dsp.isRunning = false
+		dsp:LoadGame(1)
 	end)
 
 	ObserveAfter('PlayerPuppet', 'OnDetach', function(this)
-		davidsapogee.PlayerAttached = false
+		dsp.PlayerAttached = false
 	end)
 	
 	ObserveAfter('PlayerPuppet', 'OnEnterSafeZone', function(this)
-		davidsapogee.sps:InControl()
-		davidsapogee:SafeAreaChange(true)
+		dsp.sps:InControl()
+		dsp:SafeAreaChange(true)
 	end)
 	
 	ObserveAfter('PlayerPuppet', 'OnExitSafeZone', function(this)
-		davidsapogee.sps:InControl()
-		davidsapogee:SafeAreaChange(false)
+		dsp.sps:InControl()
+		dsp:SafeAreaChange(false)
 	end)
 	ObserveAfter('PlayerPuppet', 'OnSceneTierChange', function(this,newState)
 		-- Update VIsInControl cache and trigger Outstanding Buff
-		local VIsInControl_Previous = davidsapogee.VIsInControl
-		davidsapogee.VIsInControl = (newState==1)
-		if VIsInControl_Previous and (not davidsapogee.VIsInControl) then -- only if it goes from on to off do we care
-			if not davidsapogee.lastBreath then
-				davidsapogee.sps:EndSandevistan()
-				davidsapogee:Safety(true,true) -- turn lift limiters off
+		local VIsInControl_Previous = dsp.VIsInControl
+		dsp.VIsInControl = (newState==1)
+		if VIsInControl_Previous and (not dsp.VIsInControl) then -- only if it goes from on to off do we care
+			if not dsp.lastBreath then
+				dsp.sps:EndSandevistan()
+				dsp:Safety(true,true) -- turn lift limiters off
 			end
-			if davidsapogee.CyberPsychoWarnings == 5 then
-				davidsapogee.bbs:PlayShortEffect(davidsapogee.martinez.martinez_fx_onscreen_sick_start)
+			if dsp.CyberPsychoWarnings == 5 then
+				dsp.bbs:PlayShortEffect(dsp.martinez.martinez_fx_onscreen_sick_start)
 			end
 		end
-		if not davidsapogee.lastBreath then
-			davidsapogee:DisableSandevistan("PlayerPuppet/OnSceneTierChange")
+		if not dsp.lastBreath then
+			dsp:DisableSandevistan("PlayerPuppet/OnSceneTierChange")
 		end
 	end)
 	ObserveAfter("PhoneSystem", "OnPickupPhone",function(this, request)
-		if not davidsapogee.lastBreath then
-			davidsapogee.sps:EndSandevistan()
+		if not dsp.lastBreath then
+			dsp.sps:EndSandevistan()
 		end
 	end)
 	ObserveAfter("PhoneSystem", "OnUsePhone",function(this, request)
-		if not davidsapogee.lastBreath then
-			davidsapogee.sps:EndSandevistan()
+		if not dsp.lastBreath then
+			dsp.sps:EndSandevistan()
 		end
 	end)
 
 	ObserveAfter('PreventionSystem', 'OnHeatChanged', function(this, previousHeat)
-		davidsapogee:HeatLevelChanged(this.heatStage,previousHeat,this.heatChangeReason)
+		dsp:HeatLevelChanged(this.heatStage,previousHeat,this.heatChangeReason)
 	end)
 
 	ObserveAfter('EquipmentSystem', 'OnPlayerAttach', function(this)
-		davidsapogee:LoadGame(2)
+		dsp:LoadGame(2)
 	end)
 	
 	ObserveAfter("healthbarWidgetGameController", "OnPlayerAttach", function(this, value)
-		davidsapogee:LoadGame(3)
+		dsp:LoadGame(3)
 	end)
 
 	ObserveAfter('RipperDocGameController', 'OnArmorBarFinalizedEvent', function(this,value)
 		local VDM = this.VendorDataManager
 		if VDM == nil then return end
 		local VendorName = GetLocalizedText(VDM:GetVendorName())
-		davidsapogee:VisitedRipper(VendorName)
+		dsp:VisitedRipper(VendorName)
 	end)
 	
 	-- Combat death at psycho 5: trigger Last Breath when Second Heart revives V
 	-- OnDeath fires when V dies from any cause — if at psycho 5, mark for Last Breath
 	pcall(function()
 		Observe('PlayerPuppet', 'OnDeath', function(this)
-			if davidsapogee.CyberPsychoWarnings >= 5
-				and davidsapogee.cfg.enableCyberpsychosis
-				and not davidsapogee.VIsDead
-				and not davidsapogee.lastBreath then
-				davidsapogee.VIsDead = true
-				davidsapogee.cheatedDeath = true
-				davidsapogee.OutstandingBuff = 8
+			if dsp.CyberPsychoWarnings >= 5
+				and dsp.cfg.enableCyberpsychosis
+				and not dsp.VIsDead
+				and not dsp.lastBreath then
+				dsp.VIsDead = true
+				dsp.cheatedDeath = true
+				dsp.OutstandingBuff = 8
 			end
 		end)
 	end)
 
 	Observe('NPCPuppet', 'OnAfterDeathOrDefeat', function(npcPuppet,DefeatEvt)
 		if not IsDefined(npcPuppet) then return end
-		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,false)
+		dsp:BuffNPCPsychoGlitch(npcPuppet,false)
 		pcall(function()
 			local eid = tostring(npcPuppet:GetEntityID().hash)
-			davidsapogee.combatNPCs[eid] = nil
+			dsp.combatNPCs[eid] = nil
 		end)
 	end)
 	Observe('NPCPuppet', 'OnPreUninitialize', function(npcPuppet,DefeatEvt)
 		if not IsDefined(npcPuppet) then return end
-		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,false)
+		dsp:BuffNPCPsychoGlitch(npcPuppet,false)
 		pcall(function()
 			local eid = tostring(npcPuppet:GetEntityID().hash)
-			davidsapogee.combatNPCs[eid] = nil
+			dsp.combatNPCs[eid] = nil
 		end)
 	end)
 
@@ -2231,137 +2231,137 @@ registerForEvent('onInit', function()
 		if userData.highLevelState==gamedataNPCHighLevelState.Stealth then return end
 
 		local TurnOn = (userData.highLevelState==gamedataNPCHighLevelState.Combat)
-		davidsapogee:BuffNPCPsychoGlitch(npcPuppet,TurnOn)
+		dsp:BuffNPCPsychoGlitch(npcPuppet,TurnOn)
 		-- Track combat NPCs for TTB/Blackwall targeting
 		pcall(function()
 			local eid = tostring(npcPuppet:GetEntityID().hash)
 			if TurnOn then
-				davidsapogee.combatNPCs[eid] = npcPuppet
+				dsp.combatNPCs[eid] = npcPuppet
 			else
-				davidsapogee.combatNPCs[eid] = nil
+				dsp.combatNPCs[eid] = nil
 			end
 		end)
 	end)
 
 	Observe('gameuiPhotoModeMenuController', 'OnShow', function()
-		davidsapogee.isPhotoMode = true
+		dsp.isPhotoMode = true
 	end)
 
 	Observe('gameuiPhotoModeMenuController', 'OnHide', function()
-		davidsapogee.isPhotoMode = false
+		dsp.isPhotoMode = false
 	end)
 end)
 
 registerForEvent('onUpdate', function(dt)
     -- CET restart recovery (moved from onDraw: game API calls in onDraw crash with Codeware during Loading world)
-    if davidsapogee.gui and (not davidsapogee.LoadGameRun) and (not davidsapogee.TriedLoadGameRun) then
+    if dsp.gui and (not dsp.LoadGameRun) and (not dsp.TriedLoadGameRun) then
         local V = Game.GetPlayer()
         if V and IsDefined(V) and not Game.GetSystemRequestsHandler():IsPreGame() then
             print('[DSP] CET Restart Recovery: LoadGame()')
-            davidsapogee:LoadGame()
+            dsp:LoadGame()
         end
     end
-    davidsapogee:RealTimeImmunoblockerTick()
-    davidsapogee:Running(dt)
-    davidsapogee:UpdateTremor(dt)
-    davidsapogee:UpdateFOVPulse(dt)
-    davidsapogee:UpdateTerminalClarity(dt)
-    davidsapogee:UpdateLastBreath(dt)
+    dsp:RealTimeImmunoblockerTick()
+    dsp:Running(dt)
+    dsp:UpdateTremor(dt)
+    dsp:UpdateFOVPulse(dt)
+    dsp:UpdateTerminalClarity(dt)
+    dsp:UpdateLastBreath(dt)
     -- Last Breath delayed lore message
-    if davidsapogee.lastBreathMessage then
-        davidsapogee.lastBreathMessage.elapsed = davidsapogee.lastBreathMessage.elapsed + dt
-        if not davidsapogee.lastBreathMessage.sent and davidsapogee.lastBreathMessage.elapsed >= davidsapogee.lastBreathMessage.duration then
-            davidsapogee.lastBreathMessage.sent = true
+    if dsp.lastBreathMessage then
+        dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt
+        if not dsp.lastBreathMessage.sent and dsp.lastBreathMessage.elapsed >= dsp.lastBreathMessage.duration then
+            dsp.lastBreathMessage.sent = true
             local V = Game.GetPlayer()
             if V and IsDefined(V) then
                 pcall(function() V:SetWarningMessage("LUCY... I CAN SEE THE MOON FROM HERE") end)
             end
-            davidsapogee.lastBreathMessage = nil
+            dsp.lastBreathMessage = nil
         end
     end
 end)
 
 registerForEvent("onDraw", function()
-	if davidsapogee.gui ~= nil then
-		davidsapogee.gui:Draw()
+	if dsp.gui ~= nil then
+		dsp.gui:Draw()
 	end
 end)
 
 registerForEvent("onOverlayOpen", function()
-	if davidsapogee.gui ~= nil then
-		davidsapogee.gui:ShowWindow(true)
+	if dsp.gui ~= nil then
+		dsp.gui:ShowWindow(true)
 	end
 end)
 
 registerForEvent("onOverlayClose", function()
-	if davidsapogee.gui ~= nil then
-		davidsapogee.gui:ShowWindow(false)
+	if dsp.gui ~= nil then
+		dsp.gui:ShowWindow(false)
 	end
 end)
 
 registerInput("ToggleSandyNoSafety", 'Toggle Sandevistan Safety On/Off', function(isKeyDown)
-    davidsapogee:ToggleSafety(isKeyDown)
+    dsp:ToggleSafety(isKeyDown)
 end)
 
 registerInput("DebugPsychoUp", 'DEBUG: Psycho Level +1', function(isKeyDown)
 	if not isKeyDown then return end
-	if davidsapogee.CyberPsychoWarnings < 5 then
-		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings + 1
+	if dsp.CyberPsychoWarnings < 5 then
+		dsp.CyberPsychoWarnings = dsp.CyberPsychoWarnings + 1
 	end
-	davidsapogee:DisableSandevistan("debug")
-	davidsapogee:SaveGame("debug")
+	dsp:DisableSandevistan("debug")
+	dsp:SaveGame("debug")
 	local names = { "I", "II", "III", "IV", "V" }
-	davidsapogee.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[davidsapogee.CyberPsychoWarnings] or davidsapogee.CyberPsychoWarnings), 2.0)
-	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings).." strain="..tostring(davidsapogee.neuralStrain))
+	dsp.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[dsp.CyberPsychoWarnings] or dsp.CyberPsychoWarnings), 2.0)
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings).." strain="..tostring(dsp.neuralStrain))
 end)
 
 registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
 	if not isKeyDown then return end
-	if davidsapogee.CyberPsychoWarnings > 0 then
-		davidsapogee.CyberPsychoWarnings = davidsapogee.CyberPsychoWarnings - 1
+	if dsp.CyberPsychoWarnings > 0 then
+		dsp.CyberPsychoWarnings = dsp.CyberPsychoWarnings - 1
 	end
-	if davidsapogee.CyberPsychoWarnings == 0 then
-		davidsapogee.neuralStrain = 0
-		davidsapogee:StopHeartbeat()
-		davidsapogee.nextLaughTime = nil
+	if dsp.CyberPsychoWarnings == 0 then
+		dsp.neuralStrain = 0
+		dsp:StopHeartbeat()
+		dsp.nextLaughTime = nil
 	end
-	davidsapogee:DisableSandevistan("debug")
-	davidsapogee:SaveGame("debug")
+	dsp:DisableSandevistan("debug")
+	dsp:SaveGame("debug")
 	local names = { [0] = "CLEAR", "I", "II", "III", "IV", "V" }
-	davidsapogee.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[davidsapogee.CyberPsychoWarnings] or davidsapogee.CyberPsychoWarnings), 2.0)
-	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings))
+	dsp.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[dsp.CyberPsychoWarnings] or dsp.CyberPsychoWarnings), 2.0)
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings))
 end)
 
 registerInput("DebugPsychoReset", 'DEBUG: Reset All Psycho State', function(isKeyDown)
 	if not isKeyDown then return end
-	davidsapogee.CyberPsychoWarnings = 0
-	davidsapogee.neuralStrain = 0
-	davidsapogee.dailyActivations = 0
-	davidsapogee.nextLaughTime = nil
-	davidsapogee.nextPsychoMsgTime = nil
-	davidsapogee.tremor.intensity = 0
-	davidsapogee.cheatedDeath = false
-	if davidsapogee.lastBreath then
-		davidsapogee:StopLastBreathSong()
+	dsp.CyberPsychoWarnings = 0
+	dsp.neuralStrain = 0
+	dsp.dailyActivations = 0
+	dsp.nextLaughTime = nil
+	dsp.nextPsychoMsgTime = nil
+	dsp.tremor.intensity = 0
+	dsp.cheatedDeath = false
+	if dsp.lastBreath then
+		dsp:StopLastBreathSong()
 		pcall(function()
 			local ts = Game.GetTimeSystem()
 			ts:UnsetTimeDilation("sandevistan")
 			ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
 		end)
 	end
-	davidsapogee.lastBreath = nil
-	davidsapogee.lastBreathDeath = nil
-	davidsapogee.lastBreathMessage = nil
-	davidsapogee:RemoveAllPsychoVFX()
-	davidsapogee:StopHeartbeat()
-	davidsapogee:DisableSandevistan("debug")
-	davidsapogee:SaveGame("debug")
-	davidsapogee.bbs:SendMessage("DEBUG: ALL PSYCHO STATE RESET", 2.0)
+	dsp.lastBreath = nil
+	dsp.lastBreathDeath = nil
+	dsp.lastBreathMessage = nil
+	dsp:RemoveAllPsychoVFX()
+	dsp:StopHeartbeat()
+	dsp:DisableSandevistan("debug")
+	dsp:SaveGame("debug")
+	dsp.bbs:SendMessage("DEBUG: ALL PSYCHO STATE RESET", 2.0)
 	print("[DSP DEBUG] All psycho state reset")
 end)
 
 registerInput("DebugForceBleed", 'DEBUG: Force BleedingEffect (psycho escalation)', function(isKeyDown)
 	if not isKeyDown then return end
-	davidsapogee:BleedingEffect(true)
-	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(davidsapogee.CyberPsychoWarnings))
+	dsp:BleedingEffect(true)
+	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings))
 end)

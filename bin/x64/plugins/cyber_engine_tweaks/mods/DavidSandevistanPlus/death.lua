@@ -1,12 +1,12 @@
 local death = {}
 
-function death.attach(apogee)
+function death.attach(dsp)
 	print('[DSP] death.lua attached')
 
-	apogee.lastBreathPeaceTime = 20  -- 5s wait + 5s ramp + 10s peak, then decay
-	apogee.lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
+	dsp.lastBreathPeaceTime = 20  -- 5s wait + 5s ramp + 10s peak, then decay
+	dsp.lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
 
-	apogee.KillV = (function(self)
+	dsp.KillV = (function(self)
 		-- Terminal clarity: David snaps out of psychosis right before death (Ep 10)
 		-- Remove all VFX for a brief moment of lucidity before flatline
 		self:RemoveAllPsychoVFX()
@@ -23,7 +23,7 @@ function death.attach(apogee)
 		self.terminalClarity = { elapsed = 0, duration = 4.0 }
 	 end)
 
-	apogee.KillV_Execute = (function(self)
+	dsp.KillV_Execute = (function(self)
 		self.terminalClarity = nil
 		if self.lastBreathDeath then
 			-- Permanent death after Last Breath — no second chances
@@ -45,7 +45,7 @@ function death.attach(apogee)
 		end
 	 end)
 
-	apogee.RemoveDeadV = (function(self)
+	dsp.RemoveDeadV = (function(self)
 		local V = Game.GetPlayer()
 		if not IsDefined(V) then return end
 		self.VIsDead = false
@@ -111,18 +111,18 @@ function death.attach(apogee)
 		end
 	 end)
 
-	apogee.PlayLastBreathSong = (function(self)
+	dsp.PlayLastBreathSong = (function(self)
 		self.hud:PlaySong()
 		print('[DSP] LastBreath song: Audioware play requested')
 		return true
 	 end)
 
-	apogee.StopLastBreathSong = (function(self)
+	dsp.StopLastBreathSong = (function(self)
 		self.hud:StopSong()
 		print('[DSP] LastBreath song: Audioware stop requested')
 	 end)
 
-	apogee.UpdateLastBreath = (function(self, dt)
+	dsp.UpdateLastBreath = (function(self, dt)
 		if not self.lastBreath then return end
 
 		self.lastBreath.elapsed = self.lastBreath.elapsed + dt
@@ -455,7 +455,7 @@ function death.attach(apogee)
 		end
 	 end)
 
-	apogee.TickingTimeBomb = (function(self)
+	dsp.TickingTimeBomb = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 
@@ -503,7 +503,7 @@ function death.attach(apogee)
 		end
 	 end)
 
-	apogee.BlackwallKill = (function(self)
+	dsp.BlackwallKill = (function(self)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 

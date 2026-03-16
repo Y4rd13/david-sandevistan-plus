@@ -1,9 +1,9 @@
 local ncpd = {}
 
-function ncpd.attach(apogee)
+function ncpd.attach(dsp)
 	print('[DSP] ncpd.lua attached')
 
-	apogee.GetHeatLevel = (function(self)
+	dsp.GetHeatLevel = (function(self)
 		local SSC = Game.GetScriptableSystemsContainer()
 		if not IsDefined(SSC) then return 0 end
 		local SSCPS = SSC:Get("PreventionSystem")
@@ -11,7 +11,7 @@ function ncpd.attach(apogee)
 		return SSCPS:GetHeatStageAsInt()
 	 end)
 
-	apogee.SetHeatLevel = (function(self,HeatLevel,Reason)
+	dsp.SetHeatLevel = (function(self,HeatLevel,Reason)
 		local SSC = Game.GetScriptableSystemsContainer()
 		if not IsDefined(SSC) then return end
 		local SSCPS = SSC:Get("PreventionSystem")
@@ -19,7 +19,7 @@ function ncpd.attach(apogee)
 		SSCPS:ChangeHeatStage(HeatLevel, Reason)
 	 end)
 
-	apogee.NCPDIsWatching = (function(self,SpawnReinforcement)
+	dsp.NCPDIsWatching = (function(self,SpawnReinforcement)
 		local SSC = Game.GetScriptableSystemsContainer()
 		if not IsDefined(SSC) then return end
 		local SSCPS = SSC:Get("PreventionSystem")
@@ -30,7 +30,7 @@ function ncpd.attach(apogee)
 		SSCPS.CrimeWitnessRequestToPreventionSystem(V:GetWorldPosition())
 	 end)
 
-	apogee.HeatLevelChanged = (function(self,currentHeatLevel,previousHeatLevel,ChangeReason)
+	dsp.HeatLevelChanged = (function(self,currentHeatLevel,previousHeatLevel,ChangeReason)
 		if self.CyberPsychoWarnings == 0 then
 			if self.dev_mode then
 				print('Regular NCPD: PreventionSystem/OnHeatChanged(PreviousStage:'..tostring(previousHeatLevel.value)..'=>'..tostring(currentHeatLevel.value)..' Reason:'..tostring(ChangeReason)..')')
@@ -45,7 +45,7 @@ function ncpd.attach(apogee)
 		end
 	 end)
 
-	apogee.CALLMAXTAC = (function(self)
+	dsp.CALLMAXTAC = (function(self)
 		local MaxTacText = self.Localization.CallMaxTac
 		if self:GetHeatLevel() < 5 then
 			self:SetHeatLevel(EPreventionHeatStage.Heat_5,"CYBERPSYCHO")
@@ -55,7 +55,7 @@ function ncpd.attach(apogee)
 		end
 	 end)
 
-	apogee.BRIBE_NCPD = (function(self)
+	dsp.BRIBE_NCPD = (function(self)
 		if not self:CanBribeNCPD() then return end
 
 		local V = Game.GetPlayer()
@@ -78,7 +78,7 @@ function ncpd.attach(apogee)
 		end
 	 end)
 
-	apogee.GetCredits = (function(self)
+	dsp.GetCredits = (function(self)
 		local V = Game.GetPlayer()
 		if not IsDefined(V) then return end
 		local TS = Game.GetTransactionSystem()
@@ -86,7 +86,7 @@ function ncpd.attach(apogee)
 		return TS:GetItemQuantity(V, MarketSystem.Money())
 	 end)
 
-	apogee.CanBribeNCPD = (function(self)
+	dsp.CanBribeNCPD = (function(self)
 		local NetRunnerLevel = self.sps:NetRunnerLevel()
 		local V = Game.GetPlayer()
 		local HeatLevel = self:GetHeatLevel()

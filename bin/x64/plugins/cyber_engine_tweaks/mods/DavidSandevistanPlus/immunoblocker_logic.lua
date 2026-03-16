@@ -1,16 +1,16 @@
 local immunoblocker_logic = {}
 
-function immunoblocker_logic.attach(apogee)
+function immunoblocker_logic.attach(dsp)
 	print('[DSP] immunoblocker_logic.lua attached')
 
-	apogee.IsImmunoblockerActive = (function(self)
+	dsp.IsImmunoblockerActive = (function(self)
 		return self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Common)
 			or self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Uncommon)
 			or self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Rare)
 	 end)
 
 	-- Returns active immunoblocker tier: 0=none, 1=Common, 2=Uncommon, 3=Rare
-	apogee.GetImmunoblockerTier = (function(self)
+	dsp.GetImmunoblockerTier = (function(self)
 		if self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Rare) then return 3 end
 		if self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Uncommon) then return 2 end
 		if self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Common) then return 1 end
@@ -23,7 +23,7 @@ function immunoblocker_logic.attach(apogee)
 	--   'ineffective' = neural degradation exceeds dosage (only stat buffs + 25% strain drain)
 	--   'none'        = no immunoblocker active
 	-- Tier max levels: Common 0-1 (partial 2), Uncommon 0-2 (partial 3), Rare 0-5 (always full)
-	apogee.GetImmunoblockerEffectiveness = (function(self)
+	dsp.GetImmunoblockerEffectiveness = (function(self)
 		local tier = self:GetImmunoblockerTier()
 		if tier == 0 then return 'none' end
 		local psycho = self.CyberPsychoWarnings
@@ -34,14 +34,14 @@ function immunoblocker_logic.attach(apogee)
 		return 'ineffective'
 	 end)
 
-	apogee.immunoLastQty = nil
-	apogee.immunoAnimQueue = 0
+	dsp.immunoLastQty = nil
+	dsp.immunoAnimQueue = 0
 
 	-- Shared item name list for qty checks
 	local immunoItemNames = {
-		apogee.martinez.ImmunoblockerItem_Common,
-		apogee.martinez.ImmunoblockerItem_Uncommon,
-		apogee.martinez.ImmunoblockerItem_Rare
+		dsp.martinez.ImmunoblockerItem_Common,
+		dsp.martinez.ImmunoblockerItem_Uncommon,
+		dsp.martinez.ImmunoblockerItem_Rare
 	}
 
 	-- Helper: count total immunoblocker items in inventory
@@ -57,14 +57,14 @@ function immunoblocker_logic.attach(apogee)
 	end
 
 	-- Queue-based animation trigger: enqueues and tries to drain immediately
-	apogee.TriggerImmunoblockerAnim = (function(self)
+	dsp.TriggerImmunoblockerAnim = (function(self)
 		self.immunoAnimQueue = self.immunoAnimQueue + 1
 		print('[DSP] Immunoblocker consumed — queued (queue=' .. self.immunoAnimQueue .. ')')
 		self:ProcessImmunoblockerAnimQueue()
 	 end)
 
 	-- Drain queue: if quest fact is 0 (scene idle) and queue > 0, trigger next scene
-	apogee.ProcessImmunoblockerAnimQueue = (function(self)
+	dsp.ProcessImmunoblockerAnimQueue = (function(self)
 		if self.immunoAnimQueue <= 0 then return end
 		local QS = Game.GetQuestsSystem()
 		if not QS then return end
@@ -79,20 +79,20 @@ function immunoblocker_logic.attach(apogee)
 	-- TweakDBID may not be available at module load time — create inside pcall
 	local obsOk, obsErr = pcall(function()
 		local immunoEffectIDs = {
-			TweakDBID.new(apogee.martinez.ImmunoblockerEffect_Common),
-			TweakDBID.new(apogee.martinez.ImmunoblockerEffect_Uncommon),
-			TweakDBID.new(apogee.martinez.ImmunoblockerEffect_Rare)
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common),
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon),
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare)
 		}
 		ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
-			if not davidsapogee then return end
+			if not dsp then return end
 			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
 			if not ok or not recordID then return end
 			for _, id in ipairs(immunoEffectIDs) do
 				if recordID == id then
-					davidsapogee:TriggerImmunoblockerAnim()
+					dsp:TriggerImmunoblockerAnim()
 					-- Sync qty so real-time tick won't double-fire for this consumption
 					local qty = getImmunoblockerQty()
-					if qty then davidsapogee.immunoLastQty = qty end
+					if qty then dsp.immunoLastQty = qty end
 					return
 				end
 			end
@@ -104,7 +104,7 @@ function immunoblocker_logic.attach(apogee)
 	-- Detects qty decreases the observer missed (effect refresh = same tier used again).
 	-- Also drains animation queue when scene finishes (fact resets to 0).
 	local immunoRealTimeClock = 0
-	apogee.RealTimeImmunoblockerTick = (function(self)
+	dsp.RealTimeImmunoblockerTick = (function(self)
 		if not self.PlayerAttached then return end
 		local now = os.clock()
 		if now - immunoRealTimeClock < 0.25 then return end
@@ -123,9 +123,9 @@ function immunoblocker_logic.attach(apogee)
 	 end)
 
 	-- Legacy no-op (replaced by RealTimeImmunoblockerTick, but init.lua Phase 2 still calls it)
-	apogee.CheckImmunoblockerConsumed = (function(self) end)
+	dsp.CheckImmunoblockerConsumed = (function(self) end)
 
-	apogee.IsAutoInjectorEquipped = (function(self)
+	dsp.IsAutoInjectorEquipped = (function(self)
 		if self.autoInjectorEquipped ~= nil then return self.autoInjectorEquipped end
 		local V = Game.GetPlayer()
 		if not IsDefined(V) then self.autoInjectorEquipped = false; return false end
@@ -141,7 +141,7 @@ function immunoblocker_logic.attach(apogee)
 		return false
 	 end)
 
-	apogee.TryAutoInject = (function(self)
+	dsp.TryAutoInject = (function(self)
 		if not self:IsAutoInjectorEquipped() then return false end
 		if self:IsImmunoblockerActive() then return false end
 		if self.autoInjectorCooldown > 0 then return false end

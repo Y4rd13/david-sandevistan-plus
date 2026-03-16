@@ -1,9 +1,9 @@
 local loreEffects = {}
 
-function loreEffects.attach(apogee)
+function loreEffects.attach(dsp)
 	print('[DSP] loreEffects.lua attached')
 
-	apogee.UpdateTremor = (function(self, dt)
+	dsp.UpdateTremor = (function(self, dt)
 		if self.isPhotoMode or self.CachedInMenu or self.CachedBrainDance then
 			self.tremor.intensity = 0
 			return
@@ -48,7 +48,7 @@ function loreEffects.attach(apogee)
 		pcall(function() camera:SetLocalPosition(Vector4.new(x, y, 0, 0)) end)
 	 end)
 
-	apogee.UpdateFOVPulse = (function(self, dt)
+	dsp.UpdateFOVPulse = (function(self, dt)
 		if not self.fovPulse then return end
 
 		local V = Game.GetPlayer()
@@ -78,7 +78,7 @@ function loreEffects.attach(apogee)
 		end
 	 end)
 
-	apogee.UpdateTerminalClarity = (function(self, dt)
+	dsp.UpdateTerminalClarity = (function(self, dt)
 		if not self.terminalClarity then return end
 		self.terminalClarity.elapsed = self.terminalClarity.elapsed + dt
 		if self.terminalClarity.elapsed >= self.terminalClarity.duration then
@@ -86,7 +86,7 @@ function loreEffects.attach(apogee)
 		end
 	 end)
 
-	apogee.Heartbeat = (function(self)
+	dsp.Heartbeat = (function(self)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		-- Heartbeat at psycho 2+ (constant — David's heart races as psychosis builds)
 		local shouldBeat = self.CyberPsychoWarnings >= 2
@@ -103,7 +103,7 @@ function loreEffects.attach(apogee)
 		end
 	 end)
 
-	apogee.StopHeartbeat = (function(self)
+	dsp.StopHeartbeat = (function(self)
 		if not self.heartbeatPlaying then return end
 		self.heartbeatPlaying = false
 		local V = Game.GetPlayer()
@@ -113,14 +113,14 @@ function loreEffects.attach(apogee)
 		V:QueueEvent(evt)
 	 end)
 
-	apogee.Nosebleed = (function(self)
+	dsp.Nosebleed = (function(self)
 		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.dailyActivations <= self:getEffectiveSafeActivations() then return end
 		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 	 end)
 
-	apogee.ExhaustionCheck = (function(self)
+	dsp.ExhaustionCheck = (function(self)
 		-- Exhaustion collapse: David passes out after 8 uses in Ep 2
 		-- Trigger at 3x safe activations — forced deactivation + stagger
 		if not self.cfg.enableCyberpsychosis then return end
@@ -136,7 +136,7 @@ function loreEffects.attach(apogee)
 		self:SaveGame("ExhaustionCollapse")
 	 end)
 
-	apogee.RandomNosebleed = (function(self)
+	dsp.RandomNosebleed = (function(self)
 		-- Random nosebleed at psycho 2+ even when Sandy is off (David bled unprompted — Ep 3,5,9)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 2 then self.nextNosebleedTime = nil return end
@@ -160,7 +160,7 @@ function loreEffects.attach(apogee)
 		self.nextNosebleedTime = now + base + math.random(0, base)
 	 end)
 
-	apogee.GetEffectiveMaxRuntime = (function(self)
+	dsp.GetEffectiveMaxRuntime = (function(self)
 		if not self.cfg.enableRuntimeDegradation then return self.MaxRuntime end
 		local degraded = self.maxRuntimeDegraded or 0
 		local maxLoss = self.MaxRuntime * 0.5

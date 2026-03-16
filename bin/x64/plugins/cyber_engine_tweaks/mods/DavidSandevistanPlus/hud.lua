@@ -4,16 +4,16 @@
 
 local hud = {}
 
-hud.Apogee = nil
+hud.DSP = nil
 hud.system = nil  -- ref to DSPHUDSystem ScriptableSystem
 
 ----------------------------------------------------------------
 -- Init: acquire the redscript system and build the widget tree
 ----------------------------------------------------------------
 
-hud.Init = (function(self, Apogee, doDebug)
-	if Apogee ~= nil then
-		self.Apogee = Apogee
+hud.Init = (function(self, DSP, doDebug)
+	if DSP ~= nil then
+		self.DSP = DSP
 	end
 	local ok, err = pcall(function()
 		local container = Game.GetScriptableSystemsContainer()
@@ -120,7 +120,7 @@ end)
 
 hud.Rebuild = (function(self)
 	self.system = nil
-	self:Init(self.Apogee)
+	self:Init(self.DSP)
 end)
 
 return hud

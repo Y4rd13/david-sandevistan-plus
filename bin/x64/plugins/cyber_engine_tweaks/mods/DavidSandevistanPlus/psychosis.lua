@@ -1,6 +1,6 @@
 local psychosis = {}
 
--- Data tables (module-local, not on davidsapogee)
+-- Data tables (module-local, not on dsp)
 local psychoSafeMultiplier = { [0] = 1, [1] = 1.7, [2] = 2.3, [3] = 3, [4] = 4 }
 
 local psychoMessages_lv4 = {
@@ -89,11 +89,11 @@ local microEpisodeIntervals = {
 	[5] = { 5, 15 },      -- 5-15s
 }
 
-function psychosis.attach(apogee)
+function psychosis.attach(dsp)
 	print('[DSP] psychosis.lua attached')
 
 	-- Psycho-scaled safe activations: higher psycho = higher tolerance
-	apogee.getEffectiveSafeActivations = (function(self)
+	dsp.getEffectiveSafeActivations = (function(self)
 		local base = self.cfg.dailySafeActivations or 3
 		if not self.cfg.enableCyberpsychosis then return base end
 		if self.CyberPsychoWarnings >= 5 then return 999 end
@@ -101,7 +101,7 @@ function psychosis.attach(apogee)
 		return math.floor(base * mult)
 	 end)
 
-	apogee.BuffNPCPsychoGlitch = (function(self,npcPuppet,TurnOn)
+	dsp.BuffNPCPsychoGlitch = (function(self,npcPuppet,TurnOn)
 		if not IsDefined(npcPuppet) then return end
 
 		local theBuff = self.martinez.CyberpsychoNPCStatusEffect
@@ -118,7 +118,7 @@ function psychosis.attach(apogee)
 		end
 	 end)
 
-	apogee.BleedingEffect = (function(self, forcePsycho)
+	dsp.BleedingEffect = (function(self, forcePsycho)
 		if self.runTime > 0 and not forcePsycho then
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
@@ -140,7 +140,7 @@ function psychosis.attach(apogee)
 		end
 	 end)
 
-	apogee.FrightenNPCs = (function(self)
+	dsp.FrightenNPCs = (function(self)
 		if self.CyberPsychoWarnings < 5 then
 			self:StatusEffect_CheckAndApply(self.martinez.MartinezFury)
 		else
@@ -155,7 +155,7 @@ function psychosis.attach(apogee)
 		self.neuralStrain = 0
 	 end)
 
-	apogee.PsychoLaugh = (function(self)
+	dsp.PsychoLaugh = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 4 then
 			self.nextLaughTime = nil
@@ -181,7 +181,7 @@ function psychosis.attach(apogee)
 		end
 	 end)
 
-	apogee.PsychoMessage = (function(self)
+	dsp.PsychoMessage = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 4 and not self.lastBreath then
 			self.nextPsychoMsgTime = nil
@@ -228,13 +228,13 @@ function psychosis.attach(apogee)
 		end
 	 end)
 
-	apogee.GetPrescription = (function(self, level)
+	dsp.GetPrescription = (function(self, level)
 		local entry = prescriptionTable[level]
 		if entry then return entry[1], entry[2] end
 		return 0, 0
 	 end)
 
-	apogee.ResetMicroEpisodeTimer = (function(self)
+	dsp.ResetMicroEpisodeTimer = (function(self)
 		if not self.cfg.enableMicroEpisodes then self.microEpisodeTimer = nil return end
 		if self.CyberPsychoWarnings < 1 then self.microEpisodeTimer = nil return end
 		local interval = microEpisodeIntervals[self.CyberPsychoWarnings]
@@ -247,7 +247,7 @@ function psychosis.attach(apogee)
 		self.microEpisodeTimer = minT + math.random() * (maxT - minT)
 	 end)
 
-	apogee.FireMicroEpisode = (function(self)
+	dsp.FireMicroEpisode = (function(self)
 		-- Martinez Protocol: reactive auto-injection prevents micro-episode
 		if self:TryAutoInject() then return end
 		if self.CachedInMenu or self.CachedBrainDance then return end
@@ -292,7 +292,7 @@ function psychosis.attach(apogee)
 		elseif selected.type == "manic_laugh" then
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
 		elseif selected.type == "sandy_flash" then
-			if not self.isRunning and self:IsWearingApogee() then
+			if not self.isRunning and self:IsWearingSandevistan() then
 				self.bbs:StartSandevistan()
 				self.microEpisodeSandyFlash = dur
 			end

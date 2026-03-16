@@ -1,5 +1,5 @@
 -- Clean Game Listeners  --
--- Written by beckylou 2025-03-03 --
+-- Game event listeners for DavidSandevistanPlus --
 --[[
 1. Call :Init()
 2. Call :AddCallback() for each call back you want to add; with one or many fancy self/tag/controller function(s).
