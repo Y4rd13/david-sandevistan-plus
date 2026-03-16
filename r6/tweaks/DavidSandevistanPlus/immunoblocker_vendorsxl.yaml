@@ -1,6 +1,8 @@
 # David Sandevistan Plus — Immunoblocker Street Vendor (VendorsXL)
+# Santo Domingo punk dealer — successor to Doc's circuit
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
+  appearanceName: citizen__punk_ma_punk_ma_02
   bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
   items:
     - Items.MartinezImmunoblockerCommon
