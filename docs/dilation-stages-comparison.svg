@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" font-family="Consolas, monospace">
+  <defs>
+    <style>
+      .axis-label { font-size: 11px; fill: #b0bec5; }
+      .title { font-size: 14px; fill: #eceff1; font-weight: bold; }
+      .grid { stroke: #37474f; stroke-width: 0.5; }
+      .axis { stroke: #607d8b; stroke-width: 1.5; }
+      .legend-text { font-size: 11px; fill: #cfd8dc; }
+      .legend-exp { font-size: 10px; fill: #78909c; }
+      .value-label { font-size: 9px; }
+    </style>
+  </defs>
+  <rect width="820" height="520" rx="8" fill="#1a1a2e"/>
+  <text x="410" y="28" text-anchor="middle" class="title">Time Dilation Curves — Stages 1–5</text>
+  <line x1="65" y1="465.0" x2="640" y2="465.0" class="grid"/>
+  <text x="60" y="469.0" text-anchor="end" class="axis-label">84%</text>
+  <line x1="65" y1="405.0" x2="640" y2="405.0" class="grid"/>
+  <text x="60" y="409.0" text-anchor="end" class="axis-label">86%</text>
+  <line x1="65" y1="345.0" x2="640" y2="345.0" class="grid"/>
+  <text x="60" y="349.0" text-anchor="end" class="axis-label">88%</text>
+  <line x1="65" y1="285.0" x2="640" y2="285.0" class="grid"/>
+  <text x="60" y="289.0" text-anchor="end" class="axis-label">90%</text>
+  <line x1="65" y1="225.0" x2="640" y2="225.0" class="grid"/>
+  <text x="60" y="229.0" text-anchor="end" class="axis-label">92%</text>
+  <line x1="65" y1="165.0" x2="640" y2="165.0" class="grid"/>
+  <text x="60" y="169.0" text-anchor="end" class="axis-label">94%</text>
+  <line x1="65" y1="105.0" x2="640" y2="105.0" class="grid"/>
+  <text x="60" y="109.0" text-anchor="end" class="axis-label">96%</text>
+  <line x1="65" y1="45.0" x2="640" y2="45.0" class="grid"/>
+  <text x="60" y="49.0" text-anchor="end" class="axis-label">98%</text>
+  <line x1="65.0" y1="45" x2="65.0" y2="465" class="grid"/>
+  <text x="65.0" y="483" text-anchor="middle" class="axis-label">0</text>
+  <line x1="122.5" y1="45" x2="122.5" y2="465" class="grid"/>
+  <text x="122.5" y="483" text-anchor="middle" class="axis-label">10</text>
+  <line x1="180.0" y1="45" x2="180.0" y2="465" class="grid"/>
+  <text x="180.0" y="483" text-anchor="middle" class="axis-label">20</text>
+  <line x1="237.5" y1="45" x2="237.5" y2="465" class="grid"/>
+  <text x="237.5" y="483" text-anchor="middle" class="axis-label">30</text>
+  <line x1="295.0" y1="45" x2="295.0" y2="465" class="grid"/>
+  <text x="295.0" y="483" text-anchor="middle" class="axis-label">40</text>
+  <line x1="352.5" y1="45" x2="352.5" y2="465" class="grid"/>
+  <text x="352.5" y="483" text-anchor="middle" class="axis-label">50</text>
+  <line x1="410.0" y1="45" x2="410.0" y2="465" class="grid"/>
+  <text x="410.0" y="483" text-anchor="middle" class="axis-label">60</text>
+  <line x1="467.5" y1="45" x2="467.5" y2="465" class="grid"/>
+  <text x="467.5" y="483" text-anchor="middle" class="axis-label">70</text>
+  <line x1="525.0" y1="45" x2="525.0" y2="465" class="grid"/>
+  <text x="525.0" y="483" text-anchor="middle" class="axis-label">80</text>
+  <line x1="582.5" y1="45" x2="582.5" y2="465" class="grid"/>
+  <text x="582.5" y="483" text-anchor="middle" class="axis-label">90</text>
+  <line x1="640.0" y1="45" x2="640.0" y2="465" class="grid"/>
+  <text x="640.0" y="483" text-anchor="middle" class="axis-label">100</text>
+  <line x1="65" y1="45" x2="65" y2="465" class="axis"/>
+  <line x1="65" y1="465" x2="640" y2="465" class="axis"/>
+  <text x="352.5" y="515" text-anchor="middle" class="axis-label">Runtime %</text>
+  <text x="15" y="255.0" text-anchor="middle" class="axis-label" transform="rotate(-90, 15, 255.0)">Dilation %</text>
+  <path d="M 65.0,285.0 L 76.5,284.8 L 88.0,284.4 L 99.5,283.9 L 111.0,283.3 L 122.5,282.6 L 134.0,281.9 L 145.5,281.1 L 157.0,280.2 L 168.5,279.3 L 180.0,278.3 L 191.5,277.3 L 203.0,276.2 L 214.5,275.1 L 226.0,273.9 L 237.5,272.7 L 249.0,271.4 L 260.5,270.1 L 272.0,268.8 L 283.5,267.4 L 295.0,266.0 L 306.5,264.6 L 318.0,263.1 L 329.5,261.6 L 341.0,260.1 L 352.5,258.5 L 364.0,256.9 L 375.5,255.2 L 387.0,253.6 L 398.5,251.9 L 410.0,250.1 L 421.5,248.4 L 433.0,246.6 L 444.5,244.8 L 456.0,242.9 L 467.5,241.1 L 479.0,239.2 L 490.5,237.3 L 502.0,235.3 L 513.5,233.3 L 525.0,231.3 L 536.5,229.3 L 548.0,227.3 L 559.5,225.2 L 571.0,223.1 L 582.5,221.0 L 594.0,218.8 L 605.5,216.6 L 617.0,214.5 L 628.5,212.2 L 640.0,210.0" fill="none" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="640.0" cy="210.0" r="3.5" fill="#4fc3f7"/>
+  <path d="M 65.0,285.0 L 76.5,284.9 L 88.0,284.7 L 99.5,284.3 L 111.0,283.9 L 122.5,283.3 L 134.0,282.7 L 145.5,282.0 L 157.0,281.1 L 168.5,280.2 L 180.0,279.2 L 191.5,278.1 L 203.0,277.0 L 214.5,275.7 L 226.0,274.4 L 237.5,273.0 L 249.0,271.5 L 260.5,269.9 L 272.0,268.3 L 283.5,266.6 L 295.0,264.8 L 306.5,263.0 L 318.0,261.0 L 329.5,259.0 L 341.0,257.0 L 352.5,254.8 L 364.0,252.6 L 375.5,250.4 L 387.0,248.0 L 398.5,245.6 L 410.0,243.1 L 421.5,240.6 L 433.0,238.0 L 444.5,235.3 L 456.0,232.6 L 467.5,229.7 L 479.0,226.9 L 490.5,223.9 L 502.0,220.9 L 513.5,217.9 L 525.0,214.7 L 536.5,211.5 L 548.0,208.3 L 559.5,205.0 L 571.0,201.6 L 582.5,198.1 L 594.0,194.6 L 605.5,191.1 L 617.0,187.4 L 628.5,183.7 L 640.0,180.0" fill="none" stroke="#81c784" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="640.0" cy="180.0" r="3.5" fill="#81c784"/>
+  <path d="M 65.0,285.0 L 76.5,284.9 L 88.0,284.8 L 99.5,284.5 L 111.0,284.0 L 122.5,283.5 L 134.0,282.8 L 145.5,282.1 L 157.0,281.2 L 168.5,280.1 L 180.0,279.0 L 191.5,277.7 L 203.0,276.4 L 214.5,274.9 L 226.0,273.2 L 237.5,271.5 L 249.0,269.6 L 260.5,267.7 L 272.0,265.6 L 283.5,263.3 L 295.0,261.0 L 306.5,258.5 L 318.0,256.0 L 329.5,253.3 L 341.0,250.4 L 352.5,247.5 L 364.0,244.4 L 375.5,241.3 L 387.0,238.0 L 398.5,234.5 L 410.0,231.0 L 421.5,227.3 L 433.0,223.6 L 444.5,219.7 L 456.0,215.6 L 467.5,211.5 L 479.0,207.2 L 490.5,202.9 L 502.0,198.4 L 513.5,193.7 L 525.0,189.0 L 536.5,184.1 L 548.0,179.2 L 559.5,174.1 L 571.0,168.8 L 582.5,163.5 L 594.0,158.0 L 605.5,152.5 L 617.0,146.8 L 628.5,140.9 L 640.0,135.0" fill="none" stroke="#fff176" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="640.0" cy="135.0" r="3.5" fill="#fff176"/>
+  <path d="M 65.0,375.0 L 76.5,375.0 L 88.0,374.8 L 99.5,374.6 L 111.0,374.1 L 122.5,373.6 L 134.0,372.8 L 145.5,371.9 L 157.0,370.8 L 168.5,369.5 L 180.0,368.0 L 191.5,366.2 L 203.0,364.3 L 214.5,362.1 L 226.0,359.7 L 237.5,357.1 L 249.0,354.3 L 260.5,351.2 L 272.0,347.8 L 283.5,344.2 L 295.0,340.4 L 306.5,336.2 L 318.0,331.9 L 329.5,327.2 L 341.0,322.3 L 352.5,317.1 L 364.0,311.7 L 375.5,305.9 L 387.0,299.9 L 398.5,293.6 L 410.0,287.0 L 421.5,280.1 L 433.0,272.9 L 444.5,265.4 L 456.0,257.6 L 467.5,249.5 L 479.0,241.1 L 490.5,232.4 L 502.0,223.4 L 513.5,214.1 L 525.0,204.4 L 536.5,194.4 L 548.0,184.2 L 559.5,173.5 L 571.0,162.6 L 582.5,151.3 L 594.0,139.7 L 605.5,127.8 L 617.0,115.5 L 628.5,102.9 L 640.0,90.0" fill="none" stroke="#ffb74d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="640.0" cy="90.0" r="3.5" fill="#ffb74d"/>
+  <path d="M 65.0,435.0 L 76.5,435.0 L 88.0,435.0 L 99.5,434.9 L 111.0,434.7 L 122.5,434.4 L 134.0,434.0 L 145.5,433.5 L 157.0,432.8 L 168.5,431.9 L 180.0,430.9 L 191.5,429.6 L 203.0,428.1 L 214.5,426.4 L 226.0,424.4 L 237.5,422.1 L 249.0,419.6 L 260.5,416.7 L 272.0,413.5 L 283.5,410.0 L 295.0,406.2 L 306.5,402.0 L 318.0,397.4 L 329.5,392.4 L 341.0,387.0 L 352.5,381.2 L 364.0,374.9 L 375.5,368.2 L 387.0,361.0 L 398.5,353.4 L 410.0,345.3 L 421.5,336.7 L 433.0,327.5 L 444.5,317.8 L 456.0,307.6 L 467.5,296.9 L 479.0,285.5 L 490.5,273.6 L 502.0,261.1 L 513.5,248.0 L 525.0,234.2 L 536.5,219.9 L 548.0,204.8 L 559.5,189.2 L 571.0,172.8 L 582.5,155.8 L 594.0,138.1 L 605.5,119.7 L 617.0,100.5 L 628.5,80.6 L 640.0,60.0" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <circle cx="640.0" cy="60.0" r="3.5" fill="#ef5350"/>
+  <rect x="650" y="50" width="170" height="215" rx="4" fill="#16213e" stroke="#37474f" stroke-width="1"/>
+  <text x="735" y="69" text-anchor="middle" class="axis-label" style="fill:#eceff1; font-weight:bold;">Legend</text>
+  <line x1="657" y1="87" x2="677" y2="87" stroke="#4fc3f7" stroke-width="2.5"/>
+  <circle cx="667" cy="87" r="3" fill="#4fc3f7"/>
+  <text x="683" y="91" class="legend-text">Stage 1 — Unstable</text>
+  <text x="683" y="103" class="legend-exp">exp=1.5  92.5%→90%</text>
+  <line x1="657" y1="123" x2="677" y2="123" stroke="#81c784" stroke-width="2.5"/>
+  <circle cx="667" cy="123" r="3" fill="#81c784"/>
+  <text x="683" y="127" class="legend-text">Stage 2 — Glitching</text>
+  <text x="683" y="139" class="legend-exp">exp=1.8  93.5%→90%</text>
+  <line x1="657" y1="159" x2="677" y2="159" stroke="#fff176" stroke-width="2.5"/>
+  <circle cx="667" cy="159" r="3" fill="#fff176"/>
+  <text x="683" y="163" class="legend-text">Stage 3 — Losing It</text>
+  <text x="683" y="175" class="legend-exp">exp=2.0  95.0%→90%</text>
+  <line x1="657" y1="195" x2="677" y2="195" stroke="#ffb74d" stroke-width="2.5"/>
+  <circle cx="667" cy="195" r="3" fill="#ffb74d"/>
+  <text x="683" y="199" class="legend-text">Stage 4 — On The Edge</text>
+  <text x="683" y="211" class="legend-exp">exp=2.3  96.5%→87%</text>
+  <line x1="657" y1="231" x2="677" y2="231" stroke="#ef5350" stroke-width="2.5"/>
+  <circle cx="667" cy="231" r="3" fill="#ef5350"/>
+  <text x="683" y="235" class="legend-text">Stage 5 — Cyberpsycho</text>
+  <text x="683" y="247" class="legend-exp">exp=2.8  97.5%→85%</text>
+</svg>
