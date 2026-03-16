@@ -99,7 +99,7 @@ Replaces the old predictable countdown timer with an accumulation pool + dice ro
 | Safe area | -0.05/s | Only when Sandy inactive |
 | Sleep | -40 (scaled) | Scaled by hours rested |
 | Ripperdoc | -25 | Professional treatment |
-| Immunoblocker | -0.1/s | Also blocks all accumulation |
+| Immunoblocker | -0.08/0.18/0.35/s | Per tier (Common/Uncommon/Rare). Reduces accumulation 80% (full) or 50% (partial) |
 | DF Immunosuppressant | -0.08/s | Weaker, doesn't block accumulation |
 
 When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
@@ -115,13 +115,13 @@ When strain exceeds the threshold, a dice roll fires each second: `chance = (str
 
 #### Immunoblocker (Consumable Item)
 
-Doc's prescribed medication — *"Nine times your customary dosage."* Purchased from ripperdoc TRADE tabs, blocks all strain accumulation and drains existing strain while active. Also suppresses micro-episodes and counts as a prescription treatment dose. Each tier has a custom inventory icon and lore-accurate pricing.
+Doc's prescribed medication — *"Nine times your customary dosage."* Purchased from ripperdoc TRADE tabs, reduces strain accumulation and drains existing strain while active. Effectiveness depends on tier vs psycho level: full (80% block + full drain), partial (50% block + full drain), or ineffective (0% block + 25% drain). Also suppresses micro-episodes and counts as a prescription treatment dose. Each tier has a custom inventory icon and lore-accurate pricing.
 
-| Tier | Name | Duration | Price | Availability |
-|------|------|----------|-------|-------------|
-| Common | Immunoblocker | 500s (8 min) | 2,000€$ | Always present |
-| Uncommon | Immunoblocker — High Dosage | 1000s (16 min) | 6,000€$ | Commonly present |
-| Rare | Military-Grade Immunoblocker | 1800s (30 min) | 20,000€$ | Uncommonly present |
+| Tier | Name | Duration | Price | Drain | €$/strain | Availability |
+|------|------|----------|-------|-------|-----------|-------------|
+| Common | Immunoblocker | 180s (3 min) | 3,000€$ | 0.08/s (14.4 total) | €$208 | Always present |
+| Uncommon | Immunoblocker — High Dosage | 360s (6 min) | 12,000€$ | 0.18/s (64.8 total) | €$185 | Commonly present |
+| Rare | Military-Grade Immunoblocker | 600s (10 min) | 50,000€$ | 0.35/s (210 total) | €$238 | Uncommonly present |
 
 Available at 5 ripperdocs: Viktor (Watson), Cassius Ryder (Kabuki), Arroyo, Heywood, Japantown. Pacifica excluded (no TRADE tab vendor in-game).
 

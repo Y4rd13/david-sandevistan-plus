@@ -36,7 +36,7 @@ Actions reduce strain:
   Safe area /sec      → -0.05
   Sleep               → -40 (scaled by hours)
   Ripperdoc           → -25
-  Immunoblocker /sec  → -0.1 (blocks accumulation too)
+  Immunoblocker /sec  → -0.08/0.18/0.35 per tier (reduces accumulation 80% full, 50% partial)
   DF Immunosup. /sec  → -0.08
 
 When strain >= threshold → dice roll each second:
@@ -87,11 +87,11 @@ Doc's prescribed medication — *"Nine times your customary dosage."* A consumab
 
 ### Item Tiers
 
-| Tier | In-Game Name | Duration | Price | Vendor Availability |
-|------|-------------|----------|-------|---------------------|
-| Common | Immunoblocker | 500s (8 min) | 2,000€$ | Always Present |
-| Uncommon | Immunoblocker — High Dosage | 1000s (16 min) | 6,000€$ | Commonly Present |
-| Rare | Military-Grade Immunoblocker | 1800s (30 min) | 20,000€$ | Uncommonly Present |
+| Tier | In-Game Name | Duration | Price | Drain Rate | Vendor Availability |
+|------|-------------|----------|-------|------------|---------------------|
+| Common | Immunoblocker | 180s (3 min) | 3,000€$ | 0.08/s (14.4 total) | Always Present |
+| Uncommon | Immunoblocker — High Dosage | 360s (6 min) | 12,000€$ | 0.18/s (64.8 total) | Commonly Present |
+| Rare | Military-Grade Immunoblocker | 600s (10 min) | 50,000€$ | 0.35/s (210 total) | Uncommonly Present |
 
 Each tier has a custom inventory icon (separate inkatlas+xbm per tier).
 
@@ -123,18 +123,27 @@ VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (cal
 
 ### Effects While Active
 
-- **Blocks ALL strain accumulation** (Sandy, kills, Safety OFF, comedown)
-- **Drains strain** at -0.1/s
-- **Suppresses micro-episodes**
+- **Reduces strain accumulation**: 80% when full effectiveness, 50% when partial (not 100% — V still feels it)
+- **Drains strain** at tier-specific rates: 0.08/s (Common), 0.18/s (Uncommon), 0.35/s (Rare)
+- **Ineffective mode**: 0% accumulation reduction, only 25% of tier drain rate
+- **Suppresses micro-episodes** (full/partial only)
 - **Counts as prescription dose** (existing behavior)
+
+### Effectiveness by Psycho Level
+
+| Tier | Full | Partial | Ineffective |
+|------|------|---------|-------------|
+| Common | Lvl 0–1 | Lvl 2 | Lvl 3–5 |
+| Uncommon | Lvl 0–2 | Lvl 3 | Lvl 4–5 |
+| Rare | Lvl 0–5 | Never | Never |
 
 ### DF Immunosuppressant Comparison
 
 | | Immunoblocker | DF Immunosuppressant |
 |---|---|---|
-| Blocks accumulation | Yes | No |
-| Drain rate | -0.1/s | -0.08/s |
-| Suppresses micro-episodes | Yes | Yes |
+| Reduces accumulation | 80% (full) / 50% (partial) | No |
+| Drain rate | 0.08–0.35/s (per tier) | -0.08/s |
+| Suppresses micro-episodes | Yes (full/partial) | Yes |
 | Source | Ripperdoc shop | Dark Future mod |
 
 Both can be active simultaneously without conflict.
