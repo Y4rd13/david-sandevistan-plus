@@ -2,7 +2,9 @@
 
 Six interconnected systems that replace "gamified" timers with physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
 
-> See [cyberpsychosis-stages.svg](cyberpsychosis-stages.svg) for the complete stage progression matrix (all effects, thresholds, and values at a glance).
+### Stage Progression Matrix
+
+![Cyberpsychosis Stage Progression](cyberpsychosis-stages.svg)
 
 ## Design Philosophy
 
@@ -155,7 +157,7 @@ Timeline (~1.9s total):
 | 1600ms | `ono_v_laughs_hard` — relief/euphoria | Voiceover |
 | 1909ms | `socket OnEnd` — animation complete | System |
 
-> See [immunoblocker-animation-timeline.svg](immunoblocker-animation-timeline.svg) for visual diagram.
+![Immunoblocker Injection Timeline](immunoblocker-animation-timeline.svg)
 
 ## System 3: Enhanced Comedown
 
