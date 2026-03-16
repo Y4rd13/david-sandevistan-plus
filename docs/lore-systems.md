@@ -1,6 +1,6 @@
 # Lore-Accurate Gameplay Systems — Technical Reference
 
-Six interconnected systems that replace "gamified" timers with physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
+Six interconnected systems implementing physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
 
 ### Stage Progression Matrix
 
@@ -18,7 +18,7 @@ These systems implement that philosophy. All are toggleable via cfg flags and co
 
 ## System 1: Neural Strain (Episode Trigger)
 
-Replaces the old `PsychoOutburst` countdown timer with an accumulation pool + dice roll system. Episodes are now unpredictable and cumulative — matching David's lore deterioration.
+An accumulation pool + dice roll system. Episodes are unpredictable and cumulative — matching David's lore deterioration.
 
 ### How It Works
 
@@ -71,7 +71,7 @@ Kill strain routes through `DSPHUDSystem.AddKillStrain(cost)` → CET Lua reads 
 
 ### Design Decision: No Auto-Level-Decrease
 
-The old system decreased psycho level when timer was high (safe area recovery). This is removed. Level decreases ONLY via:
+Level decreases ONLY via:
 - Sleep (prescription system: -1 level per rest)
 - Ripperdoc (prescription system: -1 level per visit)
 
@@ -127,7 +127,7 @@ VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (cal
 - **Drains strain** at tier-specific rates: 0.08/s (Common), 0.18/s (Uncommon), 0.35/s (Rare)
 - **Ineffective mode**: 0% accumulation reduction, only 25% of tier drain rate
 - **Suppresses micro-episodes** (full/partial only)
-- **Counts as prescription dose** (existing behavior)
+- **Counts as prescription dose**
 
 ### Effectiveness by Psycho Level
 
@@ -170,7 +170,7 @@ Timeline (~1.9s total):
 
 ## System 3: Enhanced Comedown
 
-Deactivating the Sandy triggers real stat penalties instead of the previous brief `MinorBleeding` effect.
+Deactivating the Sandy triggers stat penalties, visual distortion, and blocks reactivation.
 
 ### TweakDB Record
 
@@ -248,7 +248,7 @@ Recovery is a process, not an instant cure. Each psycho level requires a specifi
 
 ### HUD Display
 
-`SetPsychoData()` now takes 4 params (timer removed — replaced by Neural Strain bar):
+`SetPsychoData()` takes 4 params:
 ```redscript
 SetPsychoData(psychoLevel, lastBreathPhase, prescribedDoses, completedDoses)
 ```
@@ -271,7 +271,7 @@ Three sub-systems that make sustained Sandevistan use increasingly costly.
 
 ### 5a: Accelerating Drain
 
-Replaces flat `runTime -= dt` with an accelerating curve:
+Drain accelerates the longer V stays in dilation:
 
 ```lua
 drainRate = 1.0
@@ -411,7 +411,7 @@ Micro-episodes are suppressed when:
 | Neural Strain triggers episodes | Dice roll above threshold → MartinezFury + psycho level++ |
 | Kills add strain (faction-based) | Redscript hook → DSPHUDSystem bridge → CET Lua |
 | Comedown adds strain | +1 every 5s — recovery still stresses the system |
-| Immunoblocker blocks + drains strain | -0.1/s drain, blocks ALL accumulation, suppresses micro-episodes |
+| Immunoblocker reduces + drains strain | -0.08/0.18/0.35/s per tier, reduces accumulation 80% (full) or 50% (partial), suppresses micro-episodes |
 | DF Immunosuppressant drains strain | -0.08/s drain (weaker, doesn't block accumulation) |
 | Comedown suppresses micro-episodes | Body is already in recovery — no stacking |
 | Session fatigue extends comedown | More runtime used → longer comedown duration |
@@ -436,7 +436,7 @@ All parameters with their cfg key names:
 | `strainDrainSafeArea` | float | 0.05 | Drain per second in safe areas |
 | `strainDrainSleep` | int | 40 | Drain on sleep (scaled by hours/8) |
 | `strainDrainRipper` | int | 25 | Drain per ripperdoc visit |
-| `strainDrainImmunoblocker` | float | 0.1 | Drain per second with Immunoblocker |
+| `strainDrainImmunoblocker` | table | {0.08, 0.18, 0.35} | Drain per second per tier: Common, Uncommon, Rare |
 | `strainDrainDFImmuno` | float | 0.08 | Drain per second with DF Immunosuppressant |
 | `strainBuildupMultiplier` | float | 1.0 | Global multiplier for all strain accumulation |
 | `strainRecoveryMultiplier` | float | 1.0 | Global multiplier for all strain drain |
@@ -514,7 +514,7 @@ All parameters with their cfg key names:
 11. Dice roll triggers episodes unpredictably above threshold
 12. Guaranteed episode at max strain (can't game the system indefinitely)
 13. Kill tracking works with faction-based costs (redscript hook)
-14. Immunoblocker purchasable at ripperdocs, blocks strain + counts as dose
+14. Immunoblocker purchasable at ripperdocs, reduces strain accumulation + counts as dose
 15. HUD strain bar visible, color-coded, hidden when strain=0
 16. Immunoblocker suppresses micro-episodes
 17. WannabeEdgerunner co-existence (multiple @wrapMethod on RewardKiller chains correctly)

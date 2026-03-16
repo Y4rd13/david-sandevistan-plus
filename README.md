@@ -16,7 +16,7 @@ Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every game
 
 ### Custom HUD
 
-A visual HUD overlay replaces the original text-only display:
+A visual HUD overlay showing real-time Sandy status:
 - **Runtime bar** — color-coded green/yellow/red with time dilation percentage
 - **Status line** — activation count, contextual status (Safety Off, Comedown, Recovering)
 - **Psycho bar** — only visible when cyberpsychosis is active, with level and RX progress
@@ -84,7 +84,7 @@ Six interconnected systems that make gameplay feel like David's experience in Ed
 
 #### Neural Strain (Episode Trigger)
 
-Replaces the old predictable countdown timer with an accumulation pool + dice roll system. Strain builds from Sandy use, kills, Safety OFF, and comedown — episodes strike unpredictably once strain crosses the threshold for the current psycho level.
+An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Safety OFF, and comedown — episodes strike unpredictably once strain crosses the threshold for the current psycho level.
 
 | Strain Source | Amount | Note |
 |---------------|--------|------|
@@ -127,7 +127,7 @@ Available at 5 ripperdocs: Viktor (Watson), Cassius Ryder (Kabuki), Arroyo, Heyw
 
 #### Enhanced Comedown
 
-Deactivating the Sandy now has real consequences — not just a brief bleed effect. V suffers stat penalties (40% slower, 70% less stamina regen, 50% less armor), visual distortion, and can't reactivate during comedown.
+Deactivating the Sandy has real consequences. V suffers stat penalties (40% slower, 70% less stamina regen, 50% less armor), visual distortion, and can't reactivate during comedown.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -416,8 +416,8 @@ Strain exceeds threshold → dice roll each second:
 
 Strain drain:
   ├─ Safe areas: -0.05/s (Sandy must be off)
-  ├─ Immunoblocker: -0.1/s + blocks ALL accumulation
-  ├─ DF Immunosuppressant: -0.08/s (weaker, no block)
+  ├─ Immunoblocker: -0.08/0.18/0.35/s per tier + reduces accumulation 80% (full) or 50% (partial)
+  ├─ DF Immunosuppressant: -0.08/s (doesn't reduce accumulation)
   ├─ Sleep: -40 (scaled by hours)
   └─ Ripperdoc: -25
 
@@ -430,7 +430,7 @@ Death at level 5 + Second Heart:
 Recovery (levels 1–5) — Graduated:
   ├─ Sleep: -1 psycho level max + drains strain + partial treatment dose
   ├─ Visit Viktor: -1 level + drains strain + treatment dose + runtime recharge
-  ├─ Immunoblocker: blocks strain + drains strain + counts as treatment dose
+  ├─ Immunoblocker: reduces strain accumulation + drains strain + counts as treatment dose
   ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
   ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
   └─ HUD shows prescription progress: "RX completed/total"
@@ -459,7 +459,7 @@ David Sandevistan Plus automatically detects Dark Future's consumable status eff
 
 No configuration needed — if Dark Future is installed and V takes these consumables, the effects apply automatically. If Dark Future is not installed, these checks are safely skipped.
 
-Our **Immunoblocker** is stronger than DF's Immunosuppressant: it blocks ALL strain accumulation + drains at -0.1/s. Both can be active simultaneously without conflict.
+Our **Immunoblocker** is stronger than DF's Immunosuppressant: it reduces strain accumulation by 80% (full) or 50% (partial) and drains at 0.08–0.35/s depending on tier. Both can be active simultaneously without conflict.
 
 ## Credits
 
