@@ -6,10 +6,10 @@ Custom Cyberpunk 2077 Sandevistan mod — a fully standalone fork of [David's Ap
 
 - **Lore-accurate defaults** — Safety OFF from the start, like David in Edgerunners
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- 41 gameplay parameters + 11 TweakDB parameters, all tunable from Settings
-- Native Settings UI tab with 15 subcategories
+- 50 in-game settings across 14 subcategories, plus underlying config parameters
+- Native Settings UI tab: "Martinez Sandy+"
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
-- No EdgeRunner perk gate — full runtime from day 1, like David in the anime
+- EdgeRunner perk gate configurable — require perk for full dilation or unlock from day 1
 - No health brake by default — David never had an auto-stop
 - Config persists across sessions via `config.json`
 - **Lore-accurate gameplay systems** — neural strain, immunoblocker items, enhanced comedown, graduated recovery, non-linear drain, micro-episodes (see below)
@@ -29,11 +29,11 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | Level | Name | Persistent VFX | Gameplay |
 |-------|------|---------------|----------|
 | 0 | Normal | None | Full functionality |
-| 1 | Unstable | None | 12s MartinezFury episodes on overload |
-| 2 | Glitching | None | 12s MartinezFury episodes, lower strain threshold |
-| 3 | Losing It | Subtle glitch | Persistent `hacking_glitch_low` VFX |
-| 4 | On The Edge | Medium distortion | Persistent glitch + drugged VFX |
-| 5 | Cyberpsycho | Full psychosis | 4 simultaneous VFX, immunities, last stand |
+| 1 | Unstable | None | Subtle tremor (0.001), micro-episodes every 5-10 min |
+| 2 | Glitching | Subtle glitch | Persistent `hacking_glitch_low`, heartbeat, tremor, random nosebleeds |
+| 3 | Losing It | Medium distortion | Persistent glitch + drugged VFX, stronger tremor |
+| 4 | On The Edge | Heavy distortion | 3-layer VFX (glitch+drugged+blackwall), 15% movement penalty, manic laughter |
+| 5 | Cyberpsycho | Full psychosis | 5 simultaneous VFX, 15% movement penalty, immunities, last stand |
 | 6 | Last Breath | All VFX removed → ramp | **Permanent death** — Second Heart revival triggers final stand |
 
 **Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Neural Strain episodes come fast and unpredictable at this level — death is near-inevitable.
@@ -207,11 +207,12 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 
 | Effect | Trigger | Lore Reference |
 |--------|---------|----------------|
-| **Camera shake** | Psycho lvl 3–5 (progressive intensity) | David's hands shake visibly from Ep 8 onward |
+| **Camera shake** | Psycho lvl 1–5 (progressive intensity 0.001→0.008) | David's hands shake from Ep 5 onward, worsening through Ep 8–10 |
 | **Manic laughter** | Random at psycho lvl 4–5 (`perk_edgerunner_player` VFX) | David laughing uncontrollably in Ep 10 |
 | **FOV pulse** | Every Sandy activation (+12° for 0.4s) | Perception shift on Sandevistan activation |
-| **Heartbeat** | Psycho lvl 3+ idle, or Sandy active with low health | Tension audio during David's deterioration |
+| **Heartbeat** | Psycho lvl 2+ idle, or Sandy active with low health | Tension audio during David's deterioration |
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
+| **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 4–8min at lvl 2, 30–60s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
 | **Exhaustion collapse** | Sandy activation at 3× safe daily limit | David passes out after 8 uses in Ep 2 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
@@ -240,6 +241,15 @@ Cyberpunk 2077/
 │   ├── DavidSandevistanPlus/
 │   │   ├── init.lua
 │   │   ├── martinez.lua
+│   │   ├── loreEffects.lua
+│   │   ├── strain.lua
+│   │   ├── psychosis.lua
+│   │   ├── death.lua
+│   │   ├── immunoblocker.lua
+│   │   ├── immunoblocker_logic.lua
+│   │   ├── gameListeners.lua
+│   │   ├── entEffects.lua
+│   │   ├── ncpd.lua
 │   │   ├── hud.lua
 │   │   └── gui.lua
 │   └── MartinezPLUS/
@@ -259,9 +269,11 @@ Cyberpunk 2077/
 Open the game menu: **Settings > Mods > Martinez Sandy+**
 
 ### Time Dilation
-- **Time Dilation Speed** — Base time scale from `0.10` (90% slowdown, default — lore-accurate ~10x speed factor) down to `0.001` (99.9%).
-  Recommended limit: **0.0065** (99.35%). Values below may cause visual glitches.
-  Safety Off and Overclock still stack on top of this value.
+| Setting | Options | Default | Description |
+|---------|---------|---------|-------------|
+| Time Dilation (No Perk) | 85%–99.5% | 95% | Time dilation without EdgeRunner perk |
+| Time Dilation (With Perk) | 85%–99.5% | 99.35% | Time dilation with EdgeRunner perk |
+| Require EdgeRunner Perk | on/off | on | Require perk for enhanced dilation (off = full access from day 1) |
 
 #### Progressive Dilation Degradation
 
@@ -282,11 +294,11 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 ### Duration & Cooldown
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Sandevistan Duration | 1–600 sec | 300 | How long the Sandy stays active |
-| Recharge Duration | 0.5–30 | 2.0 | Recharge time |
-| Cooldown Base | 0.1–10 | 0.5 | Cooldown multiplier |
+| Runtime Tank (sec) | 1–600 | 300 | Total runtime reservoir (drains at different rates) |
+| Recharge Duration | 0.5–30 | 2.0 | Base recharge time after deactivation |
+| Cooldown Base | 0.1–10 | 0.5 | Cooldown multiplier between activations |
 | Activation Cost | 0–1 | 0.0 | Stamina cost to activate (0 = free) |
-| Kill Recharge Value | 0–50 | 2.0 | Recharge gained per kill |
+| Kill Recharge Value | 0–50 | 2.0 | Runtime recharged per kill during Sandy |
 
 ### Combat Stats (while Sandy active)
 | Setting | Range | Default | Description |
@@ -305,93 +317,80 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Health Drain | on/off | on | Toggle health cost while Sandy is active |
-| Damage Min | 0.1–5.0% | 1.0 | Minimum health drain per tick |
-| Damage Max | 1.0–25.0% | 15.0 | Maximum health drain per tick |
-| Tick Length | 0.25–5.0 sec | 1.25 | Game loop tick interval |
+| Minimum Damage per Tick (%) | 0–10% | 1.0 | Health drain at full runtime |
+| Maximum Damage per Tick (%) | 0–50% | 15.0 | Health drain at zero runtime |
 
-### Health Brake
+### Health Brake (Emergency Stop)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Health Brake | on/off | off | Auto-stop Sandy on low health |
-| Brake Threshold | 10–90% | 50 | Health % to trigger brake |
-| Minimum Health | 1–50% | 15 | Absolute minimum health threshold |
+| Health Brake Threshold | 15–80% | 50 | Health % to trigger brake |
+| Minimum Required Health | 5–50% | 15 | Absolute minimum health threshold |
 
-### Safety Off
+### Safety Limiters Off
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Extra Damage | 1–20 | 5 | Extra damage per tick with safety off |
-| Drain Multiplier | 1–10 | 4 | Extra runtime drain with safety off |
-| Enable Safety Off Kill | on/off | on | Can V die from safety off |
-| Kill Threshold | 1–10% | 2 | Health % that triggers death |
+| Runtime Drain Multiplier | 0–10 | 4 | Extra runtime drain with safety off |
+| V Can Die (Safety Off) | on/off | on | Allow death with safety off |
+| Kill Threshold | 1–15% | 2 | Health % that triggers death |
 | Safety Off Time Dilation | 92.5%–99.5% | 97.5% | Time dilation boost when limiters are off |
 
-### Recharge
+### Recharge & Recovery
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Full Recharge Hours | 1–48 | 16 | In-game hours for full recharge |
 | Max Recharge Per Sleep | 1–24 | 10 | Max recharge hours per sleep |
+| Enable Runtime Degradation | on/off | on | Each session costs max runtime (1%/60s, cap 50%) |
+| Sleep Recovery (%) | 0.25–1.0 | 0.75 | % of degraded runtime recovered by sleep |
+| Ripper Full Restore | on/off | on | Ripperdoc fully restores max runtime |
 
 ### Cyberpsychosis
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
-| Safe Activations per Day | 1–20 | 3 | Activations before strain acceleration (Doc's warning) |
+| Safe Activations per Day | 1–20 | 3 | Activations before strain acceleration |
+| Enable Session Fatigue | on/off | on | Repeated activations reduce dilation effectiveness |
+| Fatigue Penalty per Overuse | 0.01–0.10 | 0.02 | Dilation loss per excess activation (2% default) |
+| Max Fatigue Penalty | 0.05–0.30 | 0.10 | Maximum dilation penalty cap (10% default) |
 
-### Neural Strain (Episode Trigger)
+### Neural Strain
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
-| Strain per Activation | 1–20 | 5 | Base strain added per Sandy activation |
-| Strain per Overuse Bonus | 1–10 | 3 | Extra strain per activation beyond safe limit |
-| Strain per Minute Active | 1–10 | 2 | Strain accumulated per minute of Sandy use |
-| Strain per Sec Safety Off | 0.01–1.0 | 0.15 | Strain per second with Safety OFF |
-| Strain per Comedown 5s | 1–10 | 1 | Strain added every 5s during comedown |
-| Strain Drain Safe Area | 0.01–0.5 | 0.05 | Strain drain per second in safe areas |
-| Strain Drain Sleep | 10–100 | 40 | Strain drained on sleep (scaled by hours) |
-| Strain Drain Ripper | 10–50 | 25 | Strain drained per ripperdoc visit |
-| Strain Drain Immunoblocker | 0.01–0.5 | 0.1 | Strain drain per second with Immunoblocker active |
-| Strain Drain DF Immuno | 0.01–0.5 | 0.08 | Strain drain per second with DF Immunosuppressant |
+| Strain Buildup Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain accumulation |
+| Strain Recovery Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain drain |
+
+> Individual strain values (per-activation, per-kill, drain rates, etc.) are preconfigured with lore-accurate defaults. Advanced users can tune them via `config.json`.
 
 ### Comedown (Deactivation Debuff)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Comedown | on/off | on | Apply debuff after deactivating Sandy |
 | Base Duration | 1–10 sec | 5.0 | Minimum comedown after short use |
-| Max Duration | 3–30 sec | 20.0 | Maximum comedown after prolonged use |
+| Max Duration | 3–20 sec | 20.0 | Maximum comedown after prolonged use |
 | Scaling Threshold | 10–300 sec | 60 | Runtime used before comedown reaches max |
 | Block Sandy During Comedown | on/off | on | Prevent reactivation during comedown |
-| Psycho Multiplier | 1.0–3.0 | 1.5 | Duration multiplier at psycho level 3+ |
-| Tremor at High Psycho | on/off | on | Camera shake during comedown at psycho 3+ |
+| Psycho Duration Multiplier | 1.0–3.0 | 1.5 | Duration multiplier at psycho level 3+ |
+| Tremor During Comedown (Psycho 3+) | on/off | on | Camera shake during comedown at psycho 3+ |
 
-### Prescription (Graduated Recovery)
+### Doc Prescription (Graduated Recovery)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Prescription | on/off | on | Require multiple treatments to cure psychosis |
 | Max Recovery Per Sleep | 1–5 | 1 | Maximum psycho levels recovered per sleep |
 | Ripper Recovery Levels | 1–3 | 1 | Psycho levels recovered per ripperdoc visit |
 
-### Non-Linear Drain
+### Non-Linear Runtime Drain
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Non-Linear Drain | on/off | on | Drain accelerates with sustained use |
 | Drain Exponent | 1.0–3.0 | 1.5 | Acceleration curve steepness |
-| Acceleration Start | 10–120 sec | 60 | Seconds before acceleration kicks in |
-| Enable Session Fatigue | on/off | on | Repeated activations reduce dilation effectiveness |
-| Fatigue Penalty | 0.01–0.05 | 0.02 | Dilation loss per excess activation (2% default) |
-| Max Fatigue Penalty | 0.05–0.20 | 0.10 | Maximum dilation penalty cap (10% default) |
-| Enable Runtime Degradation | on/off | on | Max runtime degrades with sustained use |
-| Sleep Recovery % | 0.50–1.00 | 0.75 | How much degraded max runtime sleep restores |
-| Ripper Full Restore | on/off | on | Ripperdoc fully restores max runtime |
+| Drain Acceleration Start | 10–180 sec | 60 | Seconds before acceleration kicks in |
 
-### Micro-Episodes
+### Micro-Episodes (Random Symptoms)
 | Setting | Range | Default | Description |
 |---------|-------|---------|-------------|
 | Enable Micro-Episodes | on/off | on | Random involuntary symptoms at psycho 1+ |
-| Frequency Multiplier | 0.25–4.0 | 1.0 | Scale episode frequency (0.5 = half, 2.0 = double) |
-
-### Perk Gates
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Require EdgeRunner Perk | on/off | off | Require EdgeRunner perk for full runtime (off = full access from day 1) |
+| Frequency Multiplier | 0.25–3.0 | 1.0 | Scale episode frequency (0.5 = half, 2.0 = double) |
 
 ## How It Works
 

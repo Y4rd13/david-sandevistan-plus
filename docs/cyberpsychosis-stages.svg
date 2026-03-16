@@ -1,0 +1,218 @@
+<svg width="100%" viewBox="0 0 1300 800" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>
+text{font-family:"Anthropic Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.t{fill:#faf9f5;font-size:16px;font-weight:600}
+.st{fill:#777;font-size:10.5px}
+.h{fill:#faf9f5;font-size:12px;font-weight:600}
+.hs{fill:#aaa;font-size:9.5px}
+.l{fill:#c2c0b6;font-size:11px;font-weight:500}
+.c{font-size:11px;text-anchor:middle}
+.n{fill:#555}.s{fill:#6a9a6a}.m{fill:#b0a060}.w{fill:#d0a050}
+.d{fill:#e07050}.r{fill:#e04040}.p{fill:#c060a0}
+.f{fill:#666;font-size:9.5px}
+</style>
+<linearGradient id="sev" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0%" stop-color="#3a7a3a"/>
+<stop offset="25%" stop-color="#8a8a30"/>
+<stop offset="50%" stop-color="#d07030"/>
+<stop offset="75%" stop-color="#e03030"/>
+<stop offset="100%" stop-color="#a050a0"/>
+</linearGradient>
+</defs>
+
+<!-- Background -->
+<rect width="1300" height="800" fill="#111116" rx="8"/>
+
+<!-- Title -->
+<text x="650" y="28" text-anchor="middle" class="t">Cyberpsychosis Stage Progression — David Sandevistan Plus</text>
+<text x="650" y="46" text-anchor="middle" class="st">Complete effect reference per psycho level (0–VI) — all values from live code</text>
+
+<!-- Severity gradient bar -->
+<rect x="205" y="53" width="1078" height="3" rx="1.5" fill="url(#sev)" opacity="0.7"/>
+
+<!-- Stage Headers -->
+<rect x="15" y="60" width="183" height="38" rx="5" fill="#1a1a20" stroke="#444" stroke-width="0.5"/>
+<text x="107" y="84" text-anchor="middle" class="h" style="fill:#888">Effect / System</text>
+
+<rect x="205" y="60" width="143" height="38" rx="5" fill="#1a3a1a" stroke="#3a7a3a" stroke-width="0.5"/>
+<text x="277" y="75" text-anchor="middle" class="h">Stage 0</text>
+<text x="277" y="89" text-anchor="middle" class="hs">Clean</text>
+
+<rect x="355" y="60" width="143" height="38" rx="5" fill="#2a3215" stroke="#6a8a3a" stroke-width="0.5"/>
+<text x="427" y="75" text-anchor="middle" class="h">Stage 1</text>
+<text x="427" y="89" text-anchor="middle" class="hs">Unstable</text>
+
+<rect x="505" y="60" width="143" height="38" rx="5" fill="#3a3010" stroke="#8a8a30" stroke-width="0.5"/>
+<text x="577" y="75" text-anchor="middle" class="h">Stage 2</text>
+<text x="577" y="89" text-anchor="middle" class="hs">Glitching</text>
+
+<rect x="655" y="60" width="143" height="38" rx="5" fill="#4a2510" stroke="#b07030" stroke-width="0.5"/>
+<text x="727" y="75" text-anchor="middle" class="h">Stage 3</text>
+<text x="727" y="89" text-anchor="middle" class="hs">Losing It</text>
+
+<rect x="805" y="60" width="143" height="38" rx="5" fill="#5a1a10" stroke="#d05030" stroke-width="0.5"/>
+<text x="877" y="75" text-anchor="middle" class="h">Stage 4</text>
+<text x="877" y="89" text-anchor="middle" class="hs">On The Edge</text>
+
+<rect x="955" y="60" width="143" height="38" rx="5" fill="#5a0a0a" stroke="#e03030" stroke-width="0.5"/>
+<text x="1027" y="75" text-anchor="middle" class="h">Stage 5</text>
+<text x="1027" y="89" text-anchor="middle" class="hs">Cyberpsycho</text>
+
+<rect x="1105" y="60" width="178" height="38" rx="5" fill="#3a0a2a" stroke="#a050a0" stroke-width="0.5"/>
+<text x="1195" y="75" text-anchor="middle" class="h">Stage VI</text>
+<text x="1195" y="89" text-anchor="middle" class="hs">Last Breath</text>
+
+<!-- Row Backgrounds (alternating) -->
+<rect x="15" y="102" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="150" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="198" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="246" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="294" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="342" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="390" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="438" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="486" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="534" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="582" width="1268" height="46" fill="#16161a" rx="2"/>
+<rect x="15" y="630" width="1268" height="46" fill="#1c1c22" rx="2"/>
+<rect x="15" y="678" width="1268" height="46" fill="#16161a" rx="2"/>
+
+<!-- Row Labels -->
+<text x="20" y="129" class="l">Persistent VFX</text>
+<text x="20" y="177" class="l">Tremor Intensity</text>
+<text x="20" y="225" class="l">Heartbeat</text>
+<text x="20" y="273" class="l">Random Nosebleed</text>
+<text x="20" y="321" class="l">Movement Speed</text>
+<text x="20" y="369" class="l">Manic Laugh</text>
+<text x="20" y="417" class="l">Delusional Messages</text>
+<text x="20" y="465" class="l">Micro-Episodes</text>
+<text x="20" y="513" class="l">Neural Strain (thr / guar)</text>
+<text x="20" y="561" class="l">Dilation Range (exp)</text>
+<text x="20" y="609" class="l">Sandy Behavior</text>
+<text x="20" y="657" class="l">Comedown Multiplier</text>
+<text x="20" y="705" class="l">Recovery (Rx / Ripper)</text>
+
+<!-- Row 0: Persistent VFX -->
+<text x="277" y="129" class="c n">—</text>
+<text x="427" y="129" class="c n">—</text>
+<text x="577" y="129" class="c m">Light (1 VFX)</text>
+<text x="727" y="129" class="c w">Medium (2 VFX)</text>
+<text x="877" y="129" class="c d">Heavy (3 VFX)</text>
+<text x="1027" y="129" class="c r">Full (5 VFX)</text>
+<text x="1195" y="129" class="c p">Phase-based</text>
+
+<!-- Row 1: Tremor Intensity -->
+<text x="277" y="177" class="c n">0</text>
+<text x="427" y="177" class="c s">0.001</text>
+<text x="577" y="177" class="c s">0.0015</text>
+<text x="727" y="177" class="c m">0.002</text>
+<text x="877" y="177" class="c w">0.004</text>
+<text x="1027" y="177" class="c d">0.008</text>
+<text x="1195" y="177" class="c r">0 → 0.015</text>
+
+<!-- Row 2: Heartbeat -->
+<text x="277" y="225" class="c n">No</text>
+<text x="427" y="225" class="c n">No</text>
+<text x="577" y="225" class="c m">Yes</text>
+<text x="727" y="225" class="c w">Yes</text>
+<text x="877" y="225" class="c d">Yes</text>
+<text x="1027" y="225" class="c r">Yes</text>
+<text x="1195" y="225" class="c r">Yes</text>
+
+<!-- Row 3: Random Nosebleed -->
+<text x="277" y="273" class="c n">—</text>
+<text x="427" y="273" class="c n">—</text>
+<text x="577" y="273" class="c m">4–8 min</text>
+<text x="727" y="273" class="c w">2–4 min</text>
+<text x="877" y="273" class="c d">1–2 min</text>
+<text x="1027" y="273" class="c r">30–60s</text>
+<text x="1195" y="273" class="c n">—</text>
+
+<!-- Row 4: Movement Speed -->
+<text x="277" y="321" class="c s">100%</text>
+<text x="427" y="321" class="c s">100%</text>
+<text x="577" y="321" class="c s">100%</text>
+<text x="727" y="321" class="c s">100%</text>
+<text x="877" y="321" class="c d">85%</text>
+<text x="1027" y="321" class="c d">85%</text>
+<text x="1195" y="321" class="c p">Sandy locked</text>
+
+<!-- Row 5: Manic Laugh -->
+<text x="277" y="369" class="c n">—</text>
+<text x="427" y="369" class="c n">—</text>
+<text x="577" y="369" class="c n">—</text>
+<text x="727" y="369" class="c n">—</text>
+<text x="877" y="369" class="c d">30–90s</text>
+<text x="1027" y="369" class="c r">15–45s</text>
+<text x="1195" y="369" class="c r">4–22s</text>
+
+<!-- Row 6: Delusional Messages -->
+<text x="277" y="417" class="c n">—</text>
+<text x="427" y="417" class="c n">—</text>
+<text x="577" y="417" class="c n">—</text>
+<text x="727" y="417" class="c n">—</text>
+<text x="877" y="417" class="c d">15–35s</text>
+<text x="1027" y="417" class="c r">8–18s</text>
+<text x="1195" y="417" class="c p">2–8s</text>
+
+<!-- Row 7: Micro-Episodes -->
+<text x="277" y="465" class="c n">—</text>
+<text x="427" y="465" class="c s">5–10 min</text>
+<text x="577" y="465" class="c m">2–5 min</text>
+<text x="727" y="465" class="c w">30s–2 min</text>
+<text x="877" y="465" class="c d">15–60s</text>
+<text x="1027" y="465" class="c r">5–15s</text>
+<text x="1195" y="465" class="c p">Fixed events</text>
+
+<!-- Row 8: Neural Strain -->
+<text x="277" y="513" class="c s">60 / 100</text>
+<text x="427" y="513" class="c m">50 / 90</text>
+<text x="577" y="513" class="c w">40 / 80</text>
+<text x="727" y="513" class="c d">30 / 70</text>
+<text x="877" y="513" class="c r">20 / 60</text>
+<text x="1027" y="513" class="c r">10 / 50</text>
+<text x="1195" y="513" class="c n">N/A (runtime)</text>
+
+<!-- Row 9: Dilation Range (two-line cells for exponent) -->
+<text x="277" y="561" class="c s">90% flat</text>
+<text x="427" y="555" class="c s"><tspan x="427">92.5 → 90%</tspan><tspan x="427" dy="14" class="n">(exp 1.5)</tspan></text>
+<text x="577" y="555" class="c m"><tspan x="577">93.5 → 90%</tspan><tspan x="577" dy="14" class="n">(exp 1.8)</tspan></text>
+<text x="727" y="555" class="c w"><tspan x="727">95 → 90%</tspan><tspan x="727" dy="14" class="n">(exp 2.0)</tspan></text>
+<text x="877" y="555" class="c d"><tspan x="877">96.5 → 87%</tspan><tspan x="877" dy="14" class="n">(exp 2.3)</tspan></text>
+<text x="1027" y="555" class="c r"><tspan x="1027">97.5 → 85%</tspan><tspan x="1027" dy="14" class="n">(exp 2.8)</tspan></text>
+<text x="1195" y="555" class="c p"><tspan x="1195">99.35 → 90%</tspan><tspan x="1195" dy="14" class="n">(multi-phase)</tspan></text>
+
+<!-- Row 10: Sandy Behavior -->
+<text x="277" y="609" class="c s">Full</text>
+<text x="427" y="609" class="c s">Full</text>
+<text x="577" y="609" class="c s">Full</text>
+<text x="727" y="609" class="c s">Full</text>
+<text x="877" y="609" class="c s">Full</text>
+<text x="1027" y="603" class="c r"><tspan x="1027">ON: blocked</tspan><tspan x="1027" dy="14">OFF: 5× drain</tspan></text>
+<text x="1195" y="609" class="c p">Forced ON</text>
+
+<!-- Row 11: Comedown Multiplier -->
+<text x="277" y="657" class="c s">1.0×</text>
+<text x="427" y="657" class="c s">1.0×</text>
+<text x="577" y="657" class="c s">1.0×</text>
+<text x="727" y="657" class="c w">1.5×</text>
+<text x="877" y="657" class="c w">1.5×</text>
+<text x="1027" y="657" class="c w">1.5×</text>
+<text x="1195" y="657" class="c n">N/A</text>
+
+<!-- Row 12: Recovery -->
+<text x="277" y="705" class="c n">—</text>
+<text x="427" y="705" class="c s">1 / 0</text>
+<text x="577" y="705" class="c s">2 / 0</text>
+<text x="727" y="705" class="c w">3 / 1</text>
+<text x="877" y="705" class="c d">5 / 2</text>
+<text x="1027" y="705" class="c r">7 / 3</text>
+<text x="1195" y="705" class="c p">DEATH</text>
+
+<!-- Footer Notes -->
+<text x="20" y="745" class="f">Strain: threshold / guaranteed cap | Dilation: peak → min (curve exponent) | Recovery: prescribed doses / ripper visits required</text>
+<text x="20" y="760" class="f">VFX layers — Light: hacking_glitch | Medium: + drugged | Heavy: + blackwall | Full: + braindance + onscreen_frame</text>
+<text x="20" y="775" class="f">Stage VI (Last Breath) has song-synced phases with variable effects — see docs/last-breath.md for full timeline</text>
+
+</svg>

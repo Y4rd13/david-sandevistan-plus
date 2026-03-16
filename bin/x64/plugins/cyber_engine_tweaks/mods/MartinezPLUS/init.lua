@@ -42,6 +42,8 @@ local defaults = {
 	strainDrainRipper = 25,
 	strainDrainImmunoblocker = 0.1,
 	strainDrainDFImmuno = 0.08,
+	strainBuildupMultiplier = 1.0,
+	strainRecoveryMultiplier = 1.0,
 	safetyOffTimeDilation = 975,
 	enableComedown = true,
 	comedownBaseDuration = 5.0,
@@ -86,6 +88,7 @@ local gameplayKeys = {
 	"strainPerSecSafetyOff", "strainPerKillBase", "strainPerComedown5s",
 	"strainDrainSafeArea", "strainDrainSleep", "strainDrainRipper",
 	"strainDrainImmunoblocker", "strainDrainDFImmuno",
+	"strainBuildupMultiplier", "strainRecoveryMultiplier",
 	"safetyOffTimeDilation",
 	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
 	"comedownBlockSandy", "comedownPsychoMultiplier", "comedownTremorAtPsycho",
@@ -94,6 +97,7 @@ local gameplayKeys = {
 	"enableSessionFatigue", "sessionFatiguePenalty", "maxSessionFatiguePenalty",
 	"enableRuntimeDegradation", "sleepRecoveryPercent", "ripperFullRestore",
 	"enableMicroEpisodes", "microEpisodeFrequency",
+	"requireEdgeRunnerPerk",
 	"timeDilationNoPerk", "timeDilationWithPerk",
 	"tickLength",
 }
@@ -263,6 +267,19 @@ local function initUI()
 		findDilationIndex(defaults.timeDilationWithPerk),
 		function(value)
 			cfg.timeDilationWithPerk = dilationValues[value]
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catTD,
+		"Require EdgeRunner Perk",
+		"Require the EdgeRunner perk for enhanced time dilation. (Default: ON)\n"
+			.. "When ON: Without the perk, V gets the 'No Perk' dilation value.\n"
+			.. "When OFF: V always gets the 'With Perk' value from day one.",
+		cfg.requireEdgeRunnerPerk,
+		defaults.requireEdgeRunnerPerk,
+		function(value)
+			cfg.requireEdgeRunnerPerk = value
 			applyAll()
 		end)
 
@@ -579,9 +596,9 @@ local function initUI()
 		end)
 
 	------------------------------------------------------------
-	-- RECHARGE
+	-- RECHARGE & RECOVERY
 	------------------------------------------------------------
-	nativeSettings.addSubcategory(catRC, "Recharge & Sleep")
+	nativeSettings.addSubcategory(catRC, "Recharge & Recovery")
 
 	nativeSettings.addRangeInt(
 		catRC,
@@ -606,6 +623,42 @@ local function initUI()
 		defaults.maxRechargePerSleep,
 		function(value)
 			cfg.maxRechargePerSleep = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catRC,
+		"Enable Runtime Degradation",
+		"Each Sandy session permanently costs max runtime (1%/60s). (Default: ON)\n"
+			.. "Sleep recovers a percentage. Ripperdoc can restore 100%.\n"
+			.. "Capped at 50% max runtime loss.",
+		cfg.enableRuntimeDegradation,
+		defaults.enableRuntimeDegradation,
+		function(value)
+			cfg.enableRuntimeDegradation = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catRC,
+		"Sleep Recovery (%)",
+		"Percentage of degraded max runtime recovered per sleep. (Default: 0.75 = 75%)",
+		0.25, 1.0, 0.05, "%.2f",
+		cfg.sleepRecoveryPercent,
+		defaults.sleepRecoveryPercent,
+		function(value)
+			cfg.sleepRecoveryPercent = value
+			applyAll()
+		end)
+
+	nativeSettings.addSwitch(
+		catRC,
+		"Ripper Full Restore",
+		"Ripperdoc visit restores 100% max runtime. (Default: ON)",
+		cfg.ripperFullRestore,
+		defaults.ripperFullRestore,
+		function(value)
+			cfg.ripperFullRestore = value
 			applyAll()
 		end)
 
@@ -642,132 +695,76 @@ local function initUI()
 			applyAll()
 		end)
 
+	nativeSettings.addSwitch(
+		catCP,
+		"Enable Session Fatigue",
+		"Each overuse activation makes time dilation less effective. (Default: ON)\n"
+			.. "Resets on sleep. Stacks with psycho dilation curves.\n"
+			.. "Lore: David's body adapted poorly — each use in a session was less potent.",
+		cfg.enableSessionFatigue,
+		defaults.enableSessionFatigue,
+		function(value)
+			cfg.enableSessionFatigue = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catCP,
+		"Fatigue Penalty per Overuse",
+		"Time dilation loss per overuse activation. (Default: 0.02 = 2%)\n"
+			.. "Example: 5 overuses = 10% less effective dilation.",
+		0.01, 0.10, 0.01, "%.2f",
+		cfg.sessionFatiguePenalty,
+		defaults.sessionFatiguePenalty,
+		function(value)
+			cfg.sessionFatiguePenalty = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeFloat(
+		catCP,
+		"Max Fatigue Penalty",
+		"Cap for total session fatigue penalty. (Default: 0.10 = 10%)",
+		0.05, 0.30, 0.01, "%.2f",
+		cfg.maxSessionFatiguePenalty,
+		defaults.maxSessionFatiguePenalty,
+		function(value)
+			cfg.maxSessionFatiguePenalty = value
+			applyAll()
+		end)
+
 	------------------------------------------------------------
 	-- NEURAL STRAIN
 	------------------------------------------------------------
-	nativeSettings.addSubcategory(catNS, "Neural Strain (Episode Trigger)")
+	nativeSettings.addSubcategory(catNS, "Neural Strain")
 
-	nativeSettings.addRangeInt(
+	nativeSettings.addRangeFloat(
 		catNS,
-		"Strain per Activation",
-		"Neural strain added each time the Sandevistan activates. (Default: 5)\n"
-			.. "Higher = faster strain buildup per use.",
-		1, 20, 1,
-		cfg.strainPerActivation,
-		defaults.strainPerActivation,
+		"Strain Buildup Speed",
+		"Global multiplier for ALL neural strain accumulation. (Default: 1.0)\n"
+			.. "Scales ALL sources: activations, overuse, safety off, kills, comedown.\n"
+			.. "0.5 = half as fast, 2.0 = twice as fast.\n"
+			.. "Lower = more Sandy uses before psycho episodes trigger.",
+		0.25, 3.0, 0.25, "%.2f",
+		cfg.strainBuildupMultiplier,
+		defaults.strainBuildupMultiplier,
 		function(value)
-			cfg.strainPerActivation = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catNS,
-		"Strain per Overuse Bonus",
-		"Extra strain per activation beyond the safe daily limit. (Default: 3)\n"
-			.. "Stacks: 4th use = +3, 5th = +6, 6th = +9, etc.",
-		1, 15, 1,
-		cfg.strainPerOveruseBonus,
-		defaults.strainPerOveruseBonus,
-		function(value)
-			cfg.strainPerOveruseBonus = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catNS,
-		"Strain per Minute Active",
-		"Strain added per 60 seconds of Sandy active time. (Default: 2)",
-		1, 10, 1,
-		cfg.strainPerMinuteActive,
-		defaults.strainPerMinuteActive,
-		function(value)
-			cfg.strainPerMinuteActive = value
+			cfg.strainBuildupMultiplier = value
 			applyAll()
 		end)
 
 	nativeSettings.addRangeFloat(
 		catNS,
-		"Strain per Second (Safety OFF)",
-		"Strain accumulated per second while Safety Limiters are OFF. (Default: 0.15)",
-		0.01, 1.0, 0.01, "%.2f",
-		cfg.strainPerSecSafetyOff,
-		defaults.strainPerSecSafetyOff,
+		"Strain Recovery Speed",
+		"Global multiplier for ALL neural strain recovery. (Default: 1.0)\n"
+			.. "Scales ALL drains: sleep, ripperdoc, immunoblocker, safe areas.\n"
+			.. "0.5 = half recovery speed, 2.0 = twice as fast.\n"
+			.. "Higher = faster recovery from strain buildup.",
+		0.25, 3.0, 0.25, "%.2f",
+		cfg.strainRecoveryMultiplier,
+		defaults.strainRecoveryMultiplier,
 		function(value)
-			cfg.strainPerSecSafetyOff = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catNS,
-		"Strain per Comedown (5s)",
-		"Strain added every 5 seconds during comedown. (Default: 1)",
-		0, 5, 1,
-		cfg.strainPerComedown5s,
-		defaults.strainPerComedown5s,
-		function(value)
-			cfg.strainPerComedown5s = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNS,
-		"Drain per Second (Safe Area)",
-		"Strain drained per second in safe areas/clubs. (Default: 0.05)",
-		0.01, 0.5, 0.01, "%.2f",
-		cfg.strainDrainSafeArea,
-		defaults.strainDrainSafeArea,
-		function(value)
-			cfg.strainDrainSafeArea = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catNS,
-		"Drain per Sleep",
-		"Strain drained per sleep session (scaled by hours). (Default: 40)",
-		10, 100, 5,
-		cfg.strainDrainSleep,
-		defaults.strainDrainSleep,
-		function(value)
-			cfg.strainDrainSleep = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catNS,
-		"Drain per Ripperdoc Visit",
-		"Strain drained per ripperdoc visit. (Default: 25)",
-		5, 60, 5,
-		cfg.strainDrainRipper,
-		defaults.strainDrainRipper,
-		function(value)
-			cfg.strainDrainRipper = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNS,
-		"Drain per Second (Immunoblocker)",
-		"Strain drained per second while Immunoblocker is active. (Default: 0.10)\n"
-			.. "Immunoblocker also BLOCKS all strain accumulation.",
-		0.01, 0.5, 0.01, "%.2f",
-		cfg.strainDrainImmunoblocker,
-		defaults.strainDrainImmunoblocker,
-		function(value)
-			cfg.strainDrainImmunoblocker = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNS,
-		"Drain per Second (DF Immunosuppressant)",
-		"Strain drained per second while Dark Future Immunosuppressant is active. (Default: 0.08)\n"
-			.. "Weaker than Immunoblocker — does NOT block accumulation.",
-		0.01, 0.5, 0.01, "%.2f",
-		cfg.strainDrainDFImmuno,
-		defaults.strainDrainDFImmuno,
-		function(value)
-			cfg.strainDrainDFImmuno = value
+			cfg.strainRecoveryMultiplier = value
 			applyAll()
 		end)
 
@@ -907,9 +904,9 @@ local function initUI()
 		end)
 
 	------------------------------------------------------------
-	-- NON-LINEAR DRAIN & SESSION FATIGUE
+	-- NON-LINEAR DRAIN
 	------------------------------------------------------------
-	nativeSettings.addSubcategory(catNLD, "Non-Linear Drain & Fatigue")
+	nativeSettings.addSubcategory(catNLD, "Non-Linear Runtime Drain")
 
 	nativeSettings.addSwitch(
 		catNLD,
@@ -946,79 +943,6 @@ local function initUI()
 		defaults.drainAccelStartSec,
 		function(value)
 			cfg.drainAccelStartSec = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catNLD,
-		"Enable Session Fatigue",
-		"Each overuse activation makes dilation less effective. (Default: ON)\n"
-			.. "Resets on sleep. Stacks with psycho dilation curves.",
-		cfg.enableSessionFatigue,
-		defaults.enableSessionFatigue,
-		function(value)
-			cfg.enableSessionFatigue = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNLD,
-		"Fatigue Penalty per Overuse",
-		"Time dilation loss per overuse activation. (Default: 0.02 = 2%)\n"
-			.. "Example: 5 overuses = 10% less effective dilation.",
-		0.01, 0.10, 0.01, "%.2f",
-		cfg.sessionFatiguePenalty,
-		defaults.sessionFatiguePenalty,
-		function(value)
-			cfg.sessionFatiguePenalty = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNLD,
-		"Max Fatigue Penalty",
-		"Cap for total session fatigue penalty. (Default: 0.10 = 10%)",
-		0.05, 0.30, 0.01, "%.2f",
-		cfg.maxSessionFatiguePenalty,
-		defaults.maxSessionFatiguePenalty,
-		function(value)
-			cfg.maxSessionFatiguePenalty = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catNLD,
-		"Enable Runtime Degradation",
-		"Each Sandy session costs max runtime (1%/60s). (Default: ON)\n"
-			.. "Sleep recovers 75%. Ripperdoc restores 100%.\n"
-			.. "Capped at 50% max runtime loss.",
-		cfg.enableRuntimeDegradation,
-		defaults.enableRuntimeDegradation,
-		function(value)
-			cfg.enableRuntimeDegradation = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catNLD,
-		"Sleep Recovery (%)",
-		"Percentage of degraded max runtime recovered per sleep. (Default: 0.75 = 75%)",
-		0.25, 1.0, 0.05, "%.2f",
-		cfg.sleepRecoveryPercent,
-		defaults.sleepRecoveryPercent,
-		function(value)
-			cfg.sleepRecoveryPercent = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catNLD,
-		"Ripper Full Restore",
-		"Ripperdoc visit restores 100% max runtime. (Default: ON)",
-		cfg.ripperFullRestore,
-		defaults.ripperFullRestore,
-		function(value)
-			cfg.ripperFullRestore = value
 			applyAll()
 		end)
 

@@ -11,7 +11,9 @@ function loreEffects.attach(apogee)
 
 		-- Target intensity scales with psycho level
 		local target = 0
-		if self.CyberPsychoWarnings == 3 then target = 0.002
+		if self.CyberPsychoWarnings == 1 then target = 0.001
+		elseif self.CyberPsychoWarnings == 2 then target = 0.0015
+		elseif self.CyberPsychoWarnings == 3 then target = 0.002
 		elseif self.CyberPsychoWarnings == 4 then target = 0.004
 		elseif self.CyberPsychoWarnings >= 5 then target = 0.008
 		end
@@ -86,19 +88,14 @@ function loreEffects.attach(apogee)
 
 	apogee.Heartbeat = (function(self)
 		if self.CachedInMenu or self.CachedBrainDance then return end
-		-- Heartbeat at psycho 3+ when idle, or during Sandy + low health
-		local shouldBeat = false
-		if self.CyberPsychoWarnings >= 3 and not self.isRunning then
-			shouldBeat = true
-		elseif self.isRunning and self.sps:getHealth(true) < 30 then
-			shouldBeat = true
-		end
+		-- Heartbeat at psycho 2+ (constant — David's heart races as psychosis builds)
+		local shouldBeat = self.CyberPsychoWarnings >= 2
 
 		if shouldBeat and not self.heartbeatPlaying then
 			local V = Game.GetPlayer()
 			if not V or not IsDefined(V) then return end
 			local evt = SoundPlayEvent.new()
-			evt.soundName = "q101_sc_03_heart_loop"
+			evt.soundName = "q004_sc_04a_heartbeat"
 			V:QueueEvent(evt)
 			self.heartbeatPlaying = true
 		elseif not shouldBeat and self.heartbeatPlaying then
@@ -112,7 +109,7 @@ function loreEffects.attach(apogee)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 		local evt = SoundStopEvent.new()
-		evt.soundName = "q101_sc_03_heart_loop"
+		evt.soundName = "q004_sc_04a_heartbeat"
 		V:QueueEvent(evt)
 	 end)
 
@@ -137,6 +134,30 @@ function loreEffects.attach(apogee)
 		-- Force a brief cooldown by draining some runtime
 		self.runTime = math.max(self.runTime - 30, 0)
 		self:SaveGame("ExhaustionCollapse")
+	 end)
+
+	apogee.RandomNosebleed = (function(self)
+		-- Random nosebleed at psycho 2+ even when Sandy is off (David bled unprompted — Ep 3,5,9)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 2 then self.nextNosebleedTime = nil return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.lastBreath then return end
+		local eff = self:GetImmunoblockerEffectiveness()
+		if eff == 'full' then return end
+
+		local now = os.clock()
+		if self.nextNosebleedTime == nil then
+			local intervals = { [2]=300, [3]=180, [4]=90, [5]=45 }
+			local base = intervals[self.CyberPsychoWarnings] or 180
+			self.nextNosebleedTime = now + base + math.random(0, base)
+			return
+		end
+		if now < self.nextNosebleedTime then return end
+
+		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		local intervals = { [2]=240, [3]=120, [4]=60, [5]=30 }
+		local base = intervals[self.CyberPsychoWarnings] or 120
+		self.nextNosebleedTime = now + base + math.random(0, base)
 	 end)
 
 	apogee.GetEffectiveMaxRuntime = (function(self)

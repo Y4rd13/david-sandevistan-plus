@@ -19,7 +19,8 @@ function strain.attach(apogee)
 		local eff = self:GetImmunoblockerEffectiveness()
 		if eff == 'full' or eff == 'partial' then return end  -- effective/partial: blocks strain accumulation
 		-- 'ineffective' or 'none': strain accumulates normally
-		self.neuralStrain = self.neuralStrain + amount
+		local mult = self.cfg.strainBuildupMultiplier or 1.0
+		self.neuralStrain = self.neuralStrain + (amount * mult)
 		local guaranteed = self:GetStrainGuaranteed()
 		if self.neuralStrain > guaranteed then self.neuralStrain = guaranteed end
 	 end)

@@ -38,10 +38,10 @@ function death.attach(apogee)
 			self.OutstandingBuff = 6
 		else
 			self.bbs:SendWarning("SYSTEM FAILURE — NEURAL COLLAPSE", 4.0)
-			self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
 			self.VIsDead = true
 			self.cheatedDeath = true
 			self.OutstandingBuff = 6
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.HeartAttack')
 		end
 	 end)
 

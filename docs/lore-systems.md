@@ -2,6 +2,8 @@
 
 Six interconnected systems that replace "gamified" timers with physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
 
+> See [cyberpsychosis-stages.svg](cyberpsychosis-stages.svg) for the complete stage progression matrix (all effects, thresholds, and values at a glance).
+
 ## Design Philosophy
 
 In the anime, David's deterioration was:
@@ -134,6 +136,26 @@ VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (cal
 | Source | Ripperdoc shop | Dark Future mod |
 
 Both can be active simultaneously without conflict.
+
+### Custom Injection Animation
+
+Immunoblockers use a custom syringe injection scene (`drug_inhale_01`) with timed audio, VFX, and voiceover events. The vanilla HealthBooster animation is suppressed via a redscript `ProcessItemAction` wrapper.
+
+Timeline (~1.9s total):
+
+| Time | Event | Type |
+|------|-------|------|
+| 0ms | `drug_inhale_01` animation + `lcm_mvs_canvas_fast_light` audio + `inhale_drug_exhale` VFX | Anim/Audio/VFX |
+| 10ms | Attach syringe prop → WeaponLeft slot | System |
+| 300ms | `cmn_generic_work_inject_drug` — needle enters | Audio |
+| 380ms | `ono_v_pain_short` — pain reflex | Voiceover |
+| 450ms | `reflex_buster` — vision doubling | VFX |
+| 500ms | `skif_buff` — buff flash | VFX |
+| 1550ms | `lcm_mvs_canvas_fast_light` — transition audio | Audio |
+| 1600ms | `ono_v_laughs_hard` — relief/euphoria | Voiceover |
+| 1909ms | `socket OnEnd` — animation complete | System |
+
+> See [immunoblocker-animation-timeline.svg](immunoblocker-animation-timeline.svg) for visual diagram.
 
 ## System 3: Enhanced Comedown
 
@@ -405,6 +427,8 @@ All parameters with their cfg key names:
 | `strainDrainRipper` | int | 25 | Drain per ripperdoc visit |
 | `strainDrainImmunoblocker` | float | 0.1 | Drain per second with Immunoblocker |
 | `strainDrainDFImmuno` | float | 0.08 | Drain per second with DF Immunosuppressant |
+| `strainBuildupMultiplier` | float | 1.0 | Global multiplier for all strain accumulation |
+| `strainRecoveryMultiplier` | float | 1.0 | Global multiplier for all strain drain |
 
 ### Comedown
 | Key | Type | Default | Description |
@@ -445,15 +469,24 @@ All parameters with their cfg key names:
 
 ## Implementation Files
 
-| File | Changes |
+| File | Purpose |
 |------|---------|
-| `init.lua` | All systems: `End()`, `Start()`, `Running()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `UpdateTremor()`, `displayTick`, Neural Strain accumulation/drain/dice roll, `IsImmunoblockerActive()` |
-| `martinez.lua` | `ComedownEffect` TweakDB record, Immunoblocker consumable items (3 tiers) + vendor records |
-| `hud.lua` | Passes `prescribedDoses`/`completedDoses` + strain data to redscript bridge |
-| `DSPHUDSystem.reds` | `SetPsychoData` (4 params, no timer), `SetStrainData`, strain bar, kill strain bridge |
-| `DSPKillTracker.reds` | **NEW** — `@wrapMethod(ScriptedPuppet) RewardKiller()` → faction-based strain costs |
-| `gui.lua` | PsychoOutburst progress bar → Neural Strain bar |
-| `MartinezPLUS/init.lua` | ~30 new settings across 4 subcategories (incl. Neural Strain) |
+| `init.lua` | Core game loop, all system orchestration: `Running()`, `Start()`, `End()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `displayTick` phases, VFX progression (stages 0-5), config defaults |
+| `martinez.lua` | TweakDB factory: all status effects (Fury, Comedown, VFX warnings Light/Medium/Heavy, Sluggish, Immunoblocker 3 tiers), Sandevistan item, vendor records |
+| `loreEffects.lua` | Sensory effects: `UpdateTremor()` (stages 1-5), `UpdateFOVPulse()`, `UpdateTerminalClarity()`, `Heartbeat()` (stage 2+), `Nosebleed()`, `ExhaustionCheck()`, `RandomNosebleed()` (stage 2+), `GetEffectiveMaxRuntime()` |
+| `strain.lua` | Neural Strain accumulation/drain: `AddStrain()` (with buildup multiplier), `DrainStrain()`, `GetStrainThreshold()`, `GetStrainGuaranteed()`, dice roll logic |
+| `psychosis.lua` | Cyberpsychosis episode handling: `FireMicroEpisode()`, `PsychoOutburst()`, `FrightenNPCs()`, psycho level transitions |
+| `death.lua` | Death and Last Breath: `KillV()`, `KillV_Execute()`, `UpdateLastBreath()`, song-synced timeline, combat effects (Ticking Time Bomb, Blackwall Kill) |
+| `immunoblocker.lua` | Immunoblocker TweakDB records: consumable items (3 tiers), vendor integration, custom icons |
+| `immunoblocker_logic.lua` | Immunoblocker runtime logic: `IsImmunoblockerActive()`, `GetImmunoblockerEffectiveness()`, strain blocking/draining |
+| `gameListeners.lua` | CET event listeners: `onInit`, `onUpdate`, `onDraw`, game state observers (sleep, ripperdoc, scene changes) |
+| `entEffects.lua` | Entity effects: combat VFX (Ticking Time Bomb AoE, Blackwall Kill AoE) |
+| `ncpd.lua` | NCPD bounty system interaction |
+| `hud.lua` | CET→redscript bridge: 4 setters + `RefreshHUD()` |
+| `gui.lua` | CET ImGui debug window |
+| `DSPHUDSystem.reds` | Redscript HUD: fullscreen ink canvas, runtime/psycho/strain bars, widget tree |
+| `DSPKillTracker.reds` | Redscript kill hook: `@wrapMethod(ScriptedPuppet) RewardKiller()` → faction-based strain costs |
+| `MartinezPLUS/init.lua` | Native Settings UI: 50 settings across 14 subcategories, config persistence |
 
 ## Verification Checklist
 
@@ -474,3 +507,10 @@ All parameters with their cfg key names:
 15. HUD strain bar visible, color-coded, hidden when strain=0
 16. Immunoblocker suppresses micro-episodes
 17. WannabeEdgerunner co-existence (multiple @wrapMethod on RewardKiller chains correctly)
+18. PsychoWarningEffect_Heavy (3-layer VFX) applied at stage 4
+19. PsychoSluggishEffect (85% MaxSpeed) applied at stage 4+
+20. Tremor starts at stage 1 (0.001 intensity), progressive through stage 5 (0.008)
+21. Heartbeat starts at stage 2+ (not 3+)
+22. RandomNosebleed fires independently at stage 2+, suppressed by Immunoblocker
+23. strainBuildupMultiplier scales all strain accumulation in AddStrain()
+24. strainRecoveryMultiplier scales all strain drain (sleep, ripper, immunoblocker, safe area, DF immuno)

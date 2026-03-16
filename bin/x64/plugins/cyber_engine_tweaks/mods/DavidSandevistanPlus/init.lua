@@ -171,6 +171,8 @@ davidsapogee = {
 		strainDrainRipper = 25,          -- strain drained per ripperdoc visit
 		strainDrainImmunoblocker = 0.1,  -- strain/sec drain while Immunoblocker active
 		strainDrainDFImmuno = 0.08,      -- strain/sec drain while DF Immunosuppressant active
+		strainBuildupMultiplier = 1.0,   -- global multiplier for all strain accumulation
+		strainRecoveryMultiplier = 1.0,  -- global multiplier for all strain drain
 
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
@@ -391,6 +393,8 @@ davidsapogee = {
 	,RemoveAllPsychoVFX = (function(self)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Heavy)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoSluggishEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoStatusEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoSafetyOffEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoLaughEffect)
@@ -414,24 +418,31 @@ davidsapogee = {
 		if (self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl)) then
 			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
-		elseif self.CyberPsychoWarnings <= 2 then
+		elseif self.CyberPsychoWarnings <= 1 then
 			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
-		elseif self.CyberPsychoWarnings == 3 then
+		elseif self.CyberPsychoWarnings == 2 then
 			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
 			self.sps:ResetNamePlates()
-		elseif self.CyberPsychoWarnings == 4 then
+		elseif self.CyberPsychoWarnings == 3 then
 			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+			self.sps:ResetNamePlates()
+		elseif self.CyberPsychoWarnings == 4 then
+			self:RemoveAllPsychoVFX()
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Heavy)
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings >= 5 and (not self.SafetyOn) then
 			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:HideNamePlates()
 		elseif self.CyberPsychoWarnings >= 5 then
 			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoStatusEffect)
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:HideNamePlates()
 		end
 
@@ -471,7 +482,8 @@ davidsapogee = {
 			end
 			self.CyberPsychoWarnings = newLevel
 			-- Drain strain on sleep (scaled by hours)
-			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8)
+			local recovMult = self.cfg.strainRecoveryMultiplier or 1.0
+			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult
 			self.neuralStrain = math.max((self.neuralStrain or 0) - strainDrain, 0)
 			if newLevel > 0 then
 				local remaining = self.prescribedDoses - self.completedDoses
@@ -604,7 +616,8 @@ davidsapogee = {
 					self.bbs:SendMessage(progressMsgs[math.random(#progressMsgs)], 4.0)
 				end
 				-- Ripper drains strain
-				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper, 0)
+				local ripRecovMult = self.cfg.strainRecoveryMultiplier or 1.0
+				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper * ripRecovMult, 0)
 				self:ResetMicroEpisodeTimer()
 				self:DisableSandevistan("VisitedRipper")
 			else
@@ -1302,16 +1315,17 @@ davidsapogee = {
 					end
 
 					-- Strain drain sources (always active, rate varies by effectiveness)
+					local rMult = self.cfg.strainRecoveryMultiplier or 1.0
 					if immunoblocker then
-						local drainRate = self.cfg.strainDrainImmunoblocker
+						local drainRate = self.cfg.strainDrainImmunoblocker * rMult
 						if immunoEff == 'ineffective' then drainRate = drainRate * 0.25 end
 						self.neuralStrain = math.max(self.neuralStrain - drainRate, 0)
 					end
 					if dfImmuno then
-						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainDFImmuno, 0)
+						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainDFImmuno * rMult, 0)
 					end
 					if (self.PlayerInSafeArea or self.InDaClub) and not self.isRunning then
-						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainSafeArea, 0)
+						self.neuralStrain = math.max(self.neuralStrain - self.cfg.strainDrainSafeArea * rMult, 0)
 					end
 
 					-- Immunoblocker tolerance warning (once per dose)
@@ -1369,6 +1383,7 @@ davidsapogee = {
 					end
 				end
 				self:Heartbeat()
+				self:RandomNosebleed()
 			elseif self.displayTick2 == 3 then -- 1/sec +0.75 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				self:PsychoLaugh()

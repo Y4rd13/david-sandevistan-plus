@@ -89,6 +89,14 @@ martinez.PsychoWarningEffect_Light_FX1   = 'BaseStatusEffect.MartinezSandevistan
 martinez.PsychoWarningEffect_Medium      = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium'
 martinez.PsychoWarningEffect_Medium_FX1  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX1'
 martinez.PsychoWarningEffect_Medium_FX2  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX2'
+martinez.PsychoWarningEffect_Heavy       = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy'
+martinez.PsychoWarningEffect_Heavy_FX1   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX1'
+martinez.PsychoWarningEffect_Heavy_FX2   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX2'
+martinez.PsychoWarningEffect_Heavy_FX3   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX3'
+
+martinez.PsychoSluggishEffect            = 'BaseStatusEffect.MartinezSandevistan_PsychoSluggish'
+martinez.PsychoSluggishEffect_LP         = 'BaseStatusEffect.MartinezSandevistan_PsychoSluggish_LP'
+martinez.PsychoSluggishEffect_SM1        = 'BaseStatusEffect.MartinezSandevistan_PsychoSluggish_SM1'
 
 martinez.PsychoLaughEffect              = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh'
 martinez.PsychoLaughEffect_FX1          = 'BaseStatusEffect.MartinezSandevistan_PsychoLaugh_FX1'
@@ -763,6 +771,68 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.PsychoWarningEffect_Medium_FX2,VFX_SuperHacked)
 	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX1..'.name', 'hacking_glitch_low')
 	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX2..'.name', 'status_drugged_medium')
+
+	-- PsychoWarningEffect_Heavy: heavy persistent VFX at psycho level 4
+	self:CreateStatusEffect(self.PsychoWarningEffect_Heavy,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoWarningEffect_Heavy_FX1,self.PsychoWarningEffect_Heavy_FX2,self.PsychoWarningEffect_Heavy_FX3} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX2,VFX_SuperHacked)
+	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX3,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX1..'.name', 'hacking_glitch_low')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX2..'.name', 'status_drugged_medium')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX3..'.name', 'q305_cerberus_blackwall_glitch_medium')
+
+	-- PsychoSluggishEffect: movement penalty at psycho level 4+ (David struggled to walk — Ep 7-9)
+	self:CreateStatusEffect(self.PsychoSluggishEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{} --VFX (no visual — handled by PsychoWarningEffect)
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration (infinite — removed by Lua when psycho drops)
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{self.PsychoSluggishEffect_LP} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,nil --uiData
+	})
+	self:CreateLogicPackage(self.PsychoSluggishEffect_LP, { '', {}, {}, {}, '' , false, {}, {self.PsychoSluggishEffect_SM1} })
+	self:CreateConstantStatModifier(self.PsychoSluggishEffect_SM1, { 'Multiplier', 'BaseStats.MaxSpeed', 0.85 })
 
 	-- PsychoLaughEffect: perk_edgerunner_player VFX only (the laugh), 3s, no Sandy block
 	self:CreateStatusEffect(self.PsychoLaughEffect,{

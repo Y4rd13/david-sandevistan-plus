@@ -430,18 +430,25 @@ public class DSPHUDSystem extends ScriptableSystem {
     // Audio — Last Breath song via Audioware
     // ---------------------------------------------------------------
 
+    private let m_songPlaying: Bool;
+
     public func PlayLastBreathSong() -> Void {
+        if this.m_songPlaying { return; }
         let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
         if !IsDefined(audioExt) { return; }
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        // Stop any existing instance to prevent overlapping playback
+        audioExt.Stop(n"dsp_last_breath_song", player.GetEntityID(), n"", LinearTween.Immediate(0.0));
         let settings = new AudioSettingsExt();
         settings.affectedByTimeDilation = false;
         settings.fadeIn = LinearTween.Immediate(2.0);
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
         audioExt.Play(n"dsp_last_breath_song", player.GetEntityID(), n"", scnDialogLineType.Regular, settings);
+        this.m_songPlaying = true;
     }
 
     public func StopLastBreathSong() -> Void {
+        this.m_songPlaying = false;
         let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
         if !IsDefined(audioExt) { return; }
         let fadeOut = LinearTween.Immediate(3.0);

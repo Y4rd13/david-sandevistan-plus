@@ -3,5 +3,5 @@ sfx:
   dsp_last_breath_song:
     file: last_breath_song.ogg
     settings:
-      volume: 0.8
+      volume: 0.35
       loop: false
