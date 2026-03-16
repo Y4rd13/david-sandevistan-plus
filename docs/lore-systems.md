@@ -62,7 +62,7 @@ Kill strain routes through `DSPHUDSystem.AddKillStrain(cost)` → CET Lua reads 
 
 | Stage | Threshold | Guaranteed | Experience |
 |---|---|---|---|
-| 0 | 60 | 100 | Hard to trigger — need heavy overuse |
+| 0 | 60 | 100 | Hard to trigger — highest thresholds, but overuse escalates to stage 1 |
 | 1 | 50 | 90 | Manageable with care |
 | 2 | 40 | 80 | Casual overuse is dangerous |
 | 3 | 30 | 70 | Almost any aggressive session triggers |

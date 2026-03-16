@@ -28,7 +28,7 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 
 | Level | Name | Persistent VFX | Gameplay |
 |-------|------|---------------|----------|
-| 0 | Normal | None | Full functionality |
+| 0 | Normal | None | Full functionality — heavy overuse triggers first episode |
 | 1 | Unstable | None | Subtle tremor (0.001), micro-episodes every 5-10 min |
 | 2 | Glitching | Subtle glitch | Persistent `hacking_glitch_low`, heartbeat, tremor, random nosebleeds |
 | 3 | Losing It | Medium distortion | Persistent glitch + drugged VFX, stronger tremor |
@@ -106,7 +106,7 @@ When strain exceeds the threshold, a dice roll fires each second: `chance = (str
 
 | Level | Threshold | Guaranteed | Experience |
 |-------|-----------|------------|------------|
-| 0 | 60 | 100 | Hard to trigger |
+| 0 | 60 | 100 | Hard to trigger — highest thresholds, but overuse escalates to stage 1 |
 | 1 | 50 | 90 | Manageable with care |
 | 2 | 40 | 80 | Casual overuse is dangerous |
 | 3 | 30 | 70 | Almost any aggressive session triggers |

@@ -37,7 +37,7 @@ text{font-family:"Anthropic Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 
 <rect x="205" y="60" width="143" height="38" rx="5" fill="#1a3a1a" stroke="#3a7a3a" stroke-width="0.5"/>
 <text x="277" y="75" text-anchor="middle" class="h">Stage 0</text>
-<text x="277" y="89" text-anchor="middle" class="hs">Clean</text>
+<text x="277" y="89" text-anchor="middle" class="hs">Baseline</text>
 
 <rect x="355" y="60" width="143" height="38" rx="5" fill="#2a3215" stroke="#6a8a3a" stroke-width="0.5"/>
 <text x="427" y="75" text-anchor="middle" class="h">Stage 1</text>
@@ -202,7 +202,7 @@ text{font-family:"Anthropic Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 <text x="1195" y="657" class="c n">N/A</text>
 
 <!-- Row 12: Recovery -->
-<text x="277" y="705" class="c n">—</text>
+<text x="277" y="705" class="c s">0 / 0</text>
 <text x="427" y="705" class="c s">1 / 0</text>
 <text x="577" y="705" class="c s">2 / 0</text>
 <text x="727" y="705" class="c w">3 / 1</text>

@@ -29,8 +29,8 @@ function strain.attach(dsp)
 
 	dsp.CheckStrainEpisode = (function(self)
 		-- Called once per second in displayTick. Returns true if episode fires.
+		-- Stage 0 can trigger episodes too — heavy overuse escalates organically to stage 1
 		if not self.cfg.enableCyberpsychosis then return false end
-		if self.CyberPsychoWarnings == 0 then return false end
 		if self.lastBreath then return false end
 		local threshold = self:GetStrainThreshold()
 		local guaranteed = self:GetStrainGuaranteed()
