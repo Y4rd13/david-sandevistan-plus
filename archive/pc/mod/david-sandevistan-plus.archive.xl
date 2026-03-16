@@ -11,6 +11,7 @@ quest:
 streaming:
   blocks:
     - dsp_immunoblocker\all.streamingblock
+    - dsp_ripdoc_arroyo\all.streamingblock
 
 localization:
   onscreens:
