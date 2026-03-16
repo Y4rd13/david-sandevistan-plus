@@ -129,7 +129,7 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Common, martinez.ImmunoblockerEffect_Common_SMG, martinez.ImmunoblockerEffect_Common_SM1,
 		martinez.ImmunoblockerItem_Common, martinez.ImmunoblockerAction_Common, martinez.ImmunoblockerEffect_Common_OAE,
-		300, 'Quality.Common', 'Vendors.Always_Present', 2000,
+		180, 'Quality.Common', 'Vendors.Always_Present', 3000,
 		'davidsandevistanplus\\immunoblocker_common.inkatlas', 'Immunoblocker_Common',
 		'DavidSandevistanPlus-Immunoblocker', 'DavidSandevistanPlus-Immunoblocker-Desc',
 		martinez.ImmunoblockerLP_Common, martinez.ImmunoblockerVFX_Common
@@ -137,7 +137,7 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Uncommon, martinez.ImmunoblockerEffect_Uncommon_SMG, martinez.ImmunoblockerEffect_Uncommon_SM1,
 		martinez.ImmunoblockerItem_Uncommon, martinez.ImmunoblockerAction_Uncommon, martinez.ImmunoblockerEffect_Uncommon_OAE,
-		900, 'Quality.Uncommon', 'Vendors.Commonly_Present', 6000,
+		360, 'Quality.Uncommon', 'Vendors.Commonly_Present', 12000,
 		'davidsandevistanplus\\immunoblocker_uncommon.inkatlas', 'Immunoblocker_Uncommon',
 		'DavidSandevistanPlus-Immunoblocker-High', 'DavidSandevistanPlus-Immunoblocker-High-Desc',
 		martinez.ImmunoblockerLP_Uncommon, martinez.ImmunoblockerVFX_Uncommon
@@ -145,7 +145,7 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Rare, martinez.ImmunoblockerEffect_Rare_SMG, martinez.ImmunoblockerEffect_Rare_SM1,
 		martinez.ImmunoblockerItem_Rare, martinez.ImmunoblockerAction_Rare, martinez.ImmunoblockerEffect_Rare_OAE,
-		1800, 'Quality.Rare', 'Vendors.Uncommonly_Present', 20000,
+		600, 'Quality.Rare', 'Vendors.Uncommonly_Present', 50000,
 		'davidsandevistanplus\\immunoblocker_rare.inkatlas', 'Immunoblocker_Rare',
 		'DavidSandevistanPlus-Immunoblocker-Mil', 'DavidSandevistanPlus-Immunoblocker-Mil-Desc',
 		martinez.ImmunoblockerLP_Rare, martinez.ImmunoblockerVFX_Rare

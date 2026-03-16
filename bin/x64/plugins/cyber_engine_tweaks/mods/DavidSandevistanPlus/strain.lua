@@ -17,10 +17,12 @@ function strain.attach(dsp)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
-		if eff == 'full' or eff == 'partial' then return end  -- effective/partial: blocks strain accumulation
-		-- 'ineffective' or 'none': strain accumulates normally
+		-- Immunoblocker reduces strain accumulation: full=80%, partial=50%, ineffective/none=0%
+		local immunoReduction = { full = 0.8, partial = 0.5 }
+		local reduction = immunoReduction[eff] or 0
+		local effective = amount * (1 - reduction)
 		local mult = self.cfg.strainBuildupMultiplier or 1.0
-		self.neuralStrain = self.neuralStrain + (amount * mult)
+		self.neuralStrain = self.neuralStrain + (effective * mult)
 		local guaranteed = self:GetStrainGuaranteed()
 		if self.neuralStrain > guaranteed then self.neuralStrain = guaranteed end
 	 end)

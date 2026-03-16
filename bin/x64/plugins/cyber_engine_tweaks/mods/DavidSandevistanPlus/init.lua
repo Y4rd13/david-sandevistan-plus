@@ -169,7 +169,7 @@ dsp = {
 		strainDrainSafeArea = 0.05,      -- strain/sec drain in safe areas
 		strainDrainSleep = 40,           -- strain drained per sleep (scaled by hours)
 		strainDrainRipper = 25,          -- strain drained per ripperdoc visit
-		strainDrainImmunoblocker = 0.1,  -- strain/sec drain while Immunoblocker active
+		strainDrainImmunoblocker = { 0.08, 0.18, 0.35 },  -- strain/sec drain per tier: Common, Uncommon, Rare
 		strainDrainDFImmuno = 0.08,      -- strain/sec drain while DF Immunosuppressant active
 		strainBuildupMultiplier = 1.0,   -- global multiplier for all strain accumulation
 		strainRecoveryMultiplier = 1.0,  -- global multiplier for all strain drain
@@ -1314,10 +1314,12 @@ dsp = {
 						end
 					end
 
-					-- Strain drain sources (always active, rate varies by effectiveness)
+					-- Strain drain sources (rate varies by tier and effectiveness)
 					local rMult = self.cfg.strainRecoveryMultiplier or 1.0
 					if immunoblocker then
-						local drainRate = self.cfg.strainDrainImmunoblocker * rMult
+						local tier = self:GetImmunoblockerTier()
+						local drainRates = self.cfg.strainDrainImmunoblocker
+						local drainRate = (drainRates[tier] or drainRates[1]) * rMult
 						if immunoEff == 'ineffective' then drainRate = drainRate * 0.25 end
 						self.neuralStrain = math.max(self.neuralStrain - drainRate, 0)
 					end
