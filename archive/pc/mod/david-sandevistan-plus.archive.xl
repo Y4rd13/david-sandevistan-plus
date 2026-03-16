@@ -12,6 +12,60 @@ streaming:
   blocks:
     - dsp_immunoblocker\all.streamingblock
     - dsp_ripdoc_arroyo\all.streamingblock
+  sectors:
+    - path: base\worlds\03_night_city\_compiled\default\interior_-34_-40_0_0.streamingsector
+      expectedNodes: 394
+      nodeDeletions:
+        - index: 174
+          type: worldInstancedDestructibleMeshNode
+          debugName: military_case_l
+          resource: base\environment\decoration\containers\cases\military_case\military_case_l.mesh
+          position: { x: -1073.4475097656, y: -1279.6141357422, z: 11.785011291504 }
+          orientation: { i: 0, j: 0, k: -0.72036069631577, r: 0.69359964132309 }
+        - index: 179
+          type: worldInstancedDestructibleMeshNode
+          debugName: cardboard_box_01_i
+          resource: base\environment\decoration\containers\packaging\cardboard_box\cardboard_box_01_i.mesh
+          position: { x: -1072.8752441406, y: -1280.1848144531, z: 12.342414855957 }
+          orientation: { i: -0.023611251264811, j: -0.014503989368677, k: 0.68124079704285, r: 0.73153477907181 }
+        - index: 182
+          type: worldInstancedDestructibleMeshNode
+          debugName: cardboard_box_01_h_004
+          resource: base\environment\decoration\containers\packaging\cardboard_box\cardboard_box_01_h.mesh
+          position: { x: -1072.8607177734, y: -1279.6387939453, z: 12.366134643555 }
+          orientation: { i: -0.0022930414415896, j: -0.027336146682501, k: -0.03660137578845, r: 0.99895340204239 }
+    - path: base\worlds\03_night_city\_compiled\default\interior_-17_-20_0_1.streamingsector
+      expectedNodes: 108
+      nodeDeletions:
+        - index: 55
+          type: worldEntityNode
+          debugName: "{single_door}"
+          nodeRef: "$/03_night_city/#c_santo_domingo/arroyo/arroyo_service_points_prefab7FWGGRY/std_arr_ripdoc_01_prefabEVNMDOI/std_arr_ripdoc_01_env_prefab5BAYKYI/deco_prefabXZJLODY/int_prefabTQM66FI/decorative_single_door_prefabISWEQ7I/{single_door}_prefabPPPD5FQ"
+          resource: base\gameplay\devices\doors\final\single_door_decorative.ent
+          position: { x: -1071.9514160156, y: -1279.5112304688, z: 11.456887245178 }
+          orientation: { i: 0, j: 0, k: -0.30070582032204, r: 0.95371693372726 }
+        - index: 51
+          type: worldInstancedDestructibleMeshNode
+          debugName: trolley_b
+          resource: base\environment\decoration\industrial\trolley\trolley\trolley_b.mesh
+          position: { x: -1073.4792480469, y: -1279.8471679688, z: 11.456878662109 }
+          orientation: { i: 3.2741805794378e-11, j: -2.3609236093902e-11, k: 0.66331732273102, r: 0.74833834171295 }
+        - index: 52
+          type: worldInstancedDestructibleMeshNode
+          debugName: military_case_f
+          resource: base\environment\decoration\containers\cases\military_case\military_case_f.mesh
+          position: { x: -1073.8090820313, y: -1280.134765625, z: 12.432945251465 }
+          orientation: { i: -0.0043909973464906, j: 0.010496446862817, k: 0.69859302043915, r: 0.71542882919312 }
+    - path: base\worlds\03_night_city\_compiled\default\interior_-9_-10_0_2.streamingsector
+      expectedNodes: 27
+      nodeDeletions:
+        - index: 4
+          type: worldEntityProxyMeshNode
+          debugName: ""
+          nodeRef: "$/03_night_city/#c_santo_domingo/arroyo/arroyo_service_points_prefab7FWGGRY/std_arr_ripdoc_01_prefabEVNMDOI/std_arr_ripdoc_01_env_prefab5BAYKYI/deco_prefabXZJLODY/int_prefabTQM66FI/decorative_single_door_prefabISWEQ7I/{single_door}_prefabPPPD5FQ/_entityProxyMesh"
+          resource: base\gameplay\devices\doors\single_door\appearances\decorative\_proxyhelper\entropy_k_mproxy.mesh
+          position: { x: -1071.9514160156, y: -1279.5112304688, z: 11.456887245178 }
+          orientation: { i: 0, j: 0, k: -0.30070582032204, r: 0.95371693372726 }
 
 localization:
   onscreens:
