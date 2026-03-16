@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 350" font-family="Consolas, monospace">
+  <defs><style>
+    .al { font-size: 11px; fill: #b0bec5; }
+    .tl { font-size: 14px; fill: #eceff1; font-weight: bold; }
+    .fl { font-size: 8px; fill: #b0bec5; }
+    .sec { font-size: 8px; fill: #78909c; }
+  </style></defs>
+  <rect width="900" height="350" rx="8" fill="#1a1a2e"/>
+  <text x="450" y="28" text-anchor="middle" class="tl">Last Breath — V's Laugh + Psycho Messages</text>
+  <line x1="75" y1="295.0" x2="880" y2="295.0" stroke="#37474f" stroke-width="0.5"/>
+  <text x="70" y="299.0" text-anchor="end" class="al">NONE</text>
+  <line x1="75" y1="223.6" x2="880" y2="223.6" stroke="#37474f" stroke-width="0.5"/>
+  <text x="70" y="227.6" text-anchor="end" class="al">SLOW</text>
+  <line x1="75" y1="152.1" x2="880" y2="152.1" stroke="#37474f" stroke-width="0.5"/>
+  <text x="70" y="156.1" text-anchor="end" class="al">MED</text>
+  <line x1="75" y1="80.7" x2="880" y2="80.7" stroke="#37474f" stroke-width="0.5"/>
+  <text x="70" y="84.7" text-anchor="end" class="al">RAPID</text>
+  <line x1="75.0" y1="45" x2="75.0" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="75.0" y="311" text-anchor="middle" class="al">0s</text>
+  <line x1="261.8" y1="45" x2="261.8" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="261.8" y="311" text-anchor="middle" class="al">58s</text>
+  <line x1="384.1" y1="45" x2="384.1" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="384.1" y="311" text-anchor="middle" class="al">96s</text>
+  <line x1="480.7" y1="45" x2="480.7" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="480.7" y="311" text-anchor="middle" class="al">126s</text>
+  <line x1="554.8" y1="45" x2="554.8" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="554.8" y="311" text-anchor="middle" class="al">149s</text>
+  <line x1="625.6" y1="45" x2="625.6" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="625.6" y="311" text-anchor="middle" class="al">171s</text>
+  <line x1="677.1" y1="45" x2="677.1" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="677.1" y="311" text-anchor="middle" class="al">187s</text>
+  <line x1="728.7" y1="45" x2="728.7" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="728.7" y="311" text-anchor="middle" class="al">203s</text>
+  <line x1="786.6" y1="45" x2="786.6" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="786.6" y="311" text-anchor="middle" class="al">221s</text>
+  <line x1="863.9" y1="45" x2="863.9" y2="295" stroke="#37474f" stroke-width="0.5"/>
+  <text x="863.9" y="311" text-anchor="middle" class="al">245s</text>
+  <line x1="75" y1="45" x2="75" y2="295" stroke="#607d8b" stroke-width="1.5"/>
+  <line x1="75" y1="295" x2="880" y2="295" stroke="#607d8b" stroke-width="1.5"/>
+  <text x="477" y="342" text-anchor="middle" class="al">Mod Time (seconds)</text>
+  <rect x="261.8" y="187.9" width="122.4" height="107.1" fill="#4fc3f7" opacity="0.15" rx="2"/>
+  <rect x="261.8" y="187.9" width="122.4" height="107.1" fill="none" stroke="#4fc3f7" stroke-width="1" rx="2" stroke-dasharray="4,2"/>
+  <text x="322.9" y="202.9" text-anchor="middle" class="fl" style="fill:#4fc3f7">Laugh 12-22s</text>
+  <rect x="480.7" y="187.9" width="74.1" height="107.1" fill="#4fc3f7" opacity="0.15" rx="2"/>
+  <rect x="480.7" y="187.9" width="74.1" height="107.1" fill="none" stroke="#4fc3f7" stroke-width="1" rx="2" stroke-dasharray="4,2"/>
+  <text x="517.8" y="202.9" text-anchor="middle" class="fl" style="fill:#4fc3f7">Laugh 10-20s</text>
+  <rect x="677.1" y="137.9" width="51.5" height="157.1" fill="#4fc3f7" opacity="0.15" rx="2"/>
+  <rect x="677.1" y="137.9" width="51.5" height="157.1" fill="none" stroke="#4fc3f7" stroke-width="1" rx="2" stroke-dasharray="4,2"/>
+  <text x="702.9" y="152.9" text-anchor="middle" class="fl" style="fill:#4fc3f7">Laugh 4-8s</text>
+  <rect x="728.7" y="116.4" width="58.0" height="178.6" fill="#4fc3f7" opacity="0.15" rx="2"/>
+  <rect x="728.7" y="116.4" width="58.0" height="178.6" fill="none" stroke="#4fc3f7" stroke-width="1" rx="2" stroke-dasharray="4,2"/>
+  <text x="757.6" y="131.4" text-anchor="middle" class="fl" style="fill:#4fc3f7">Laugh 6-12s</text>
+  <rect x="261.8" y="152.1" width="122.4" height="142.9" fill="#ce93d8" opacity="0.2" rx="2"/>
+  <rect x="261.8" y="152.1" width="122.4" height="142.9" fill="none" stroke="#ce93d8" stroke-width="1.5" rx="2"/>
+  <text x="322.9" y="180.1" text-anchor="middle" class="fl" style="fill:#ce93d8">Msg 4-8s</text>
+  <rect x="480.7" y="152.1" width="74.1" height="142.9" fill="#ce93d8" opacity="0.2" rx="2"/>
+  <rect x="480.7" y="152.1" width="74.1" height="142.9" fill="none" stroke="#ce93d8" stroke-width="1.5" rx="2"/>
+  <text x="517.8" y="180.1" text-anchor="middle" class="fl" style="fill:#ce93d8">Msg 5-10s</text>
+  <rect x="677.1" y="95.0" width="51.5" height="200.0" fill="#ce93d8" opacity="0.2" rx="2"/>
+  <rect x="677.1" y="95.0" width="51.5" height="200.0" fill="none" stroke="#ce93d8" stroke-width="1.5" rx="2"/>
+  <text x="702.9" y="123.0" text-anchor="middle" class="fl" style="fill:#ce93d8">Msg 2-4s</text>
+  <rect x="728.7" y="80.7" width="58.0" height="214.3" fill="#ce93d8" opacity="0.2" rx="2"/>
+  <rect x="728.7" y="80.7" width="58.0" height="214.3" fill="none" stroke="#ce93d8" stroke-width="1.5" rx="2"/>
+  <text x="757.6" y="108.7" text-anchor="middle" class="fl" style="fill:#ce93d8">Msg 2-5s</text>
+  <rect x="384.1" y="45" width="96.6" height="250" fill="#4fc3f7" opacity="0.05"/>
+  <text x="432.4" y="60" text-anchor="middle" class="fl" style="fill:#4fc3f7;">MUTED</text>
+  <rect x="625.6" y="45" width="51.5" height="250" fill="#ce93d8" opacity="0.08"/>
+  <text x="651.4" y="60" text-anchor="middle" class="fl" style="fill:#ce93d8;">MUTED</text>
+  <text x="261.8" y="325" text-anchor="middle" class="sec" style="fill:#fff176">CH1</text>
+  <text x="384.1" y="325" text-anchor="middle" class="sec" style="fill:#4fc3f7">V2</text>
+  <text x="480.7" y="325" text-anchor="middle" class="sec" style="fill:#81c784">PC2</text>
+  <text x="554.8" y="325" text-anchor="middle" class="sec" style="fill:#ffb74d">CH2</text>
+  <text x="625.6" y="325" text-anchor="middle" class="sec" style="fill:#ce93d8">BRG</text>
+  <text x="677.1" y="325" text-anchor="middle" class="sec" style="fill:#81c784">PC3</text>
+  <text x="728.7" y="325" text-anchor="middle" class="sec" style="fill:#ef5350">FIN</text>
+  <text x="786.6" y="325" text-anchor="middle" class="sec" style="fill:#546e7a">OUT</text>
+</svg>

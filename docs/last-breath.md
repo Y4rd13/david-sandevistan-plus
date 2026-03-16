@@ -24,22 +24,7 @@ V at psycho level 5 → health reaches 0 (Neural Strain episode or combat damage
 
 ### Song Structure
 
-```
-TIME     SECTION          ENERGY  CHARACTER
-──────── ──────────────── ──────  ──────────────────────────────────────
-0:00-07  Intro            1/10   Soft synth pad, shimmering, ethereal
-0:07-52  Verse 1          3/10   Vocals enter soft, light beat at 0:15
-0:52-1:15 Pre-Chorus 1    5/10   Energy builds, synths thicken, bass rises
-1:15-1:53 Chorus 1        7/10   Full beat drops, heavy synth wall
-1:53-2:23 Verse 2         4/10   Strips back, residual energy, raw vocals
-2:23-2:46 Pre-Chorus 2    6/10   Rebuilds, higher floor than PC1
-2:46-3:08 Chorus 2        8/10   Full production, slightly shorter
-3:08-3:24 Bridge          5/10   ★ Production shifts — naked vulnerability
-                                  "Oh oh oh, I don't know why I'm no-one"
-3:24-3:40 Pre-Chorus 3    6→8    Final build, most emotional weight
-3:40-3:58 Final Chorus    9/10   ★★★ CLIMAX — loudest, most layered
-3:58-4:07 Outro           9→1    Rapid fadeout to silence
-```
+![Song Structure](svg/last-breath-song-structure.svg)
 
 ## Complete Timeline
 
@@ -211,173 +196,35 @@ TIME    TIME
 
 ### Time Dilation
 
-```
-Dilation %
-100│          ┌──────────┐
-   │         ╱            ╲
- 99│        ╱              ╲
-   │       ╱                ╲╲
- 98│      ╱                   ╲╲
-   │     ╱                      ╲╲
- 97│    ╱                         ╲╲
-   │   ╱                            ╲╲╲
- 96│  ╱                                ╲╲╲
-   │ ╱                                    ╲╲╲╲
- 95│╱                                         ╲╲╲╲
-   │                                               ╲╲╲╲╲╲
- 93│                                                      ╲╲╲╲╲
-   │                                                            ╲╲╲╲╲╲
- 91│                                                                   ╲╲╲
- 90├─────┬─────────────────────────────────────────────────────────────────╲──►
-   0    5    20        58       96  126  149  171  187  203  221    245
-   wait ramp │         CH1      V2  PC2  CH2  BRG  PC3  FIN  OUT   DEATH
-        ↑    decay                            ↑         ↑
-      sandy  starts                        clarity    climax
-      ON                                 (dilation    (still
-                                          still       ~85%)
-                                          degrading)
+![Time Dilation](svg/last-breath-dilation.svg)
 
-Formula: timeScale = 0.10 + (0.0065 - 0.10) * rtRatio^2.5
-Runtime drains 1:1 (no Safety Off multiplier during Last Breath)
-```
+Formula: `timeScale = 0.10 + (0.0065 - 0.10) * rtRatio^2.5` — Runtime drains 1:1 (no Safety Off multiplier during Last Breath)
 
 ### Tremor Intensity
 
-```
-Intensity
-0.015│                                              ████████████████
-     │                                             █                █
-0.012│                                          ╱██                  █
-     │                                        ╱█                      █
-0.010│                                  ██████                         █
-     │                                 █                                █
-0.008│                                █                                  █
-     │                               █                                    █
-0.006│           ████████████████████          ██                           █
-     │          █                              █                            █
-0.005│         █                         █████                               █
-     │        █                         █                                     █
-0.003│    ████         ████████████████                                        █
-     │   █            █                                                        █
-0.000├───┼────────────┼──┼──────────────┼────┼──┼──┼────┼──┼────────┼──────────┼►
-     0  35           58 96           126   149 171 187  203 221    231       245
-     │  VFX          CH1 V2          PC2   CH2 BRG PC3  FIN OUT    fade      │
-     │  start        ↑   CALM        ↑     ↑   ↑   ↑    ↑  ↑      done    DEATH
-     │               │               │     │   │   build │  fading
-     │            0.006            0.005  0.010 │  0.006  │
-     │                                         0  →0.012 0.015
-     │                                    CLARITY
-```
+![Tremor Intensity](svg/last-breath-tremor.svg)
 
 ### Combat Effects (TTB + Blackwall)
 
-```
-Frequency
-HIGH │                                              ████████████████████
-     │                                             █  TTB: 4-8s        █
-     │                                            █   BW:  6-10s       █
-     │                                           █                      █
-MED  │           ████████████████████       █████                        █
-     │          █  TTB: 15-25s      █      █ TTB: 10-18s                 █
-     │         █   BW:  25-40s       █    █  BW:  12-20s                  █
-     │        █                       █  █                                 █
-LOW  │       █                         ██                                   █
-     │      █                                                                █
-     │                                                                        █
-NONE ├──────┼─────────────────────────┼──┼──────┼──┼────┼──┼──────────────────┼►
-     0     58                        96 126    149 171  187 203              221
-     │     CH1                       V2 PC2   CH2 BRG  PC3 FINAL            OUT
-     │     FIRST                    CALM↑      ↑   ↑    ↑  PEAK              │
-     │     TTB+BW                       │   DUAL  NONE  │  BURST           STOP
-     │                                  │   TTB+BW      │  TTB+BW
-     │                              resumes          (no combat)
-     │
- FORCED EVENTS:
-   +58s  → TTB + BW (Chorus 1 drop)
-   +149s → TTB + BW (Chorus 2 drop)
-   +203s → TTB + BW (Final Chorus peak burst)
-```
+![Combat Effects](svg/last-breath-combat.svg)
+
+Forced events: +58s (Chorus 1 drop), +149s (Chorus 2 drop), +203s (Final Chorus peak burst) — all trigger simultaneous TTB + Blackwall.
 
 ### V's Laugh + Psycho Messages
 
-```
-Frequency
-RAPID│                                            ████████████████████
-     │                                           █ Msg: 2-5s          █
-     │                                          █  Laugh: 6-12s       █
-MED  │           ████████████████████      █████                       █
-     │          █ Msg: 4-8s          █    █ Msg: 5-10s                  █
-     │         █  Laugh: 12-22s       █  █  Laugh: 10-20s               █
-SLOW │        █                        ██                                █
-     │       █                                                            █
-     │                                                                     █
-NONE ├──────┼─────────────────────────┼──┼──────┼──┼────┼──┼──────────────┼──►
-     0     58                        96 126    149 171  187 203          221
-     │     CH1                       V2 PC2   CH2 BRG  PC3 FINAL        OUT
-     │     START                    MUTED ↑    ↑  MUTED ↑  PEAK        STOP
-     │                                    │    │    ↑    │
-     │                              resume│    │  "..." fast
-     │                                    │    │         "NO... NOT YET..."
-     │                                    │  (same)
-     │
- MESSAGES (examples):
-   Stage 6 pool: Lucy, the Moon, confused identity, fragmented thoughts
-   "Lucy... are you there?"
-   "I can see the moon from here"
-   "Who... who am I?"
-   "Just a little further... almost there"
-```
+![V's Laugh + Psycho Messages](svg/last-breath-laughs.svg)
+
+Message pool (Stage 6): Lucy, the Moon, confused identity, fragmented thoughts — *"Lucy... are you there?"*, *"I can see the moon from here"*, *"Who... who am I?"*, *"Just a little further... almost there"*
 
 ### VFX (CyberpsychoSafetyOffEffect)
 
-```
-VFX State
-  ON │       ████████████████████████████████████████          ████████████████████
-     │      █                                        █       █                    █
-     │     █                                          █     █                      █
- OFF ├─────┼──────────────────────────────────────────┼─────┼──────────────────────┼►
-     0    35                                        171   187                    245
-     │    VFX                                       BRG   PC3                  DEATH
-     │    START                                    REMOVE REAPPLY             REMOVE
-     │    (Pre-Chorus 1)                          (clarity)                   (death)
-     │
-     │    Applied: CyberpsychoSafetyOffEffect
-     │    Contains: glitch + braindance + drugged + blackwall VFX
-```
+![VFX State](svg/last-breath-vfx.svg)
+
+Applied effect contains: glitch + braindance + drugged + blackwall VFX.
 
 ## Song ↔ Mod Emotional Arc
 
-```
-SONG ENERGY vs MOD INTENSITY (overlaid)
-
-                                 FINAL CHORUS
-                                    ★★★
-                        CHORUS 2     │
-                           ★         │
-           CHORUS 1        │   BRIDGE│
-              ★            │    ★★   │
- SONG:   ╱╲  │  ╱╲        │ ╱╲ │ ╱╲ │ ╱╲
-      ╱╲╱  ╲╱╲╱  ╲╱╲╱╲╱╲╱╲╱  ╲╱  ╲╱╲╱  ╲╱╲╱
-     ─────────────────────────────────────────────►
-
-                                   PEAK BURST
-                        DUAL        ★★★
-           FIRST TTB   TTB+BW       │
-              ★          ★    CLARITY│
- MOD:    ╱╲  │  ╱╲      │  ╱╲  │ ╱╲ │ ╱╲
-      ╱╲╱  ╲╱╲╱  ╲╱╲╱╲╱╲╱  ╲╱  ╲╱╲╱╲╱  ╲╱╲╱
-     ─────────────────────────────────────────────►
-     0  35  58  96 126 149 171 187 203 221 245
-
-     SYNC POINTS:
-     ├ 58s  — Chorus 1 beat drop  = First TTB + Blackwall
-     ├ 96s  — Verse 2 calm        = Effects pause
-     ├ 149s — Chorus 2            = Dual TTB + Blackwall
-     ├ 171s — Bridge vulnerability = Moment of clarity (all removed)
-     ├ 187s — Pre-Chorus 3 build  = VFX return, fast messages
-     ├ 203s — Final Chorus climax = PEAK BURST (max everything)
-     └ 221s — Outro fadeout       = Effects stop, tremor fades
-```
+![Song Energy vs Mod Intensity](svg/last-breath-sync.svg)
 
 ## Configuration
 

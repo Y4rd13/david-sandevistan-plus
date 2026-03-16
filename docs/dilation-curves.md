@@ -37,7 +37,7 @@ timeScale = minTS + (maxTS - minTS) * rtRatio^exp
 
 All five runtime-based stages overlaid for comparison. Higher psycho stages produce steeper curves — the peak dilation is more extreme but fades faster.
 
-![Time Dilation Curves — Stages 1-5](dilation-stages-comparison.svg)
+![Time Dilation Curves — Stages 1-5](svg/dilation-stages-comparison.svg)
 
 ## Stage 6 — Last Breath (Multi-Phase)
 
@@ -45,7 +45,7 @@ Last Breath uses a time-based curve (elapsed seconds), not runtime ratio. This r
 
 ### Phase Timeline
 
-![Last Breath — Phase Timeline](dilation-last-breath-timeline.svg)
+![Last Breath — Phase Timeline](svg/dilation-last-breath-timeline.svg)
 
 ### Phase Details
 
@@ -70,7 +70,7 @@ The `(1 - progress)^2.5` creates the exponential decay: dilation drops quickly f
 
 ### Dilation Milestones During Decay
 
-![Last Breath — Decay Phase Detail](dilation-decay-phase.svg)
+![Last Breath — Decay Phase Detail](svg/dilation-decay-phase.svg)
 
 ## Lore Context
 

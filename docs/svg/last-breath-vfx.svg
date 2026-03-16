@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" font-family="Consolas, monospace">
+  <defs><style>
+    .al { font-size: 11px; fill: #b0bec5; }
+    .tl { font-size: 14px; fill: #eceff1; font-weight: bold; }
+    .vl { font-size: 9px; fill: #b0bec5; }
+    .sec { font-size: 8px; fill: #78909c; }
+  </style></defs>
+  <rect width="900" height="220" rx="8" fill="#1a1a2e"/>
+  <text x="450" y="28" text-anchor="middle" class="tl">Last Breath — VFX State (CyberpsychoSafetyOffEffect)</text>
+  <line x1="65" y1="45" x2="880" y2="45" stroke="#37474f" stroke-width="0.5"/>
+  <text x="60" y="49" text-anchor="end" class="al">ON</text>
+  <line x1="65" y1="129.0" x2="880" y2="129.0" stroke="#37474f" stroke-width="0.5"/>
+  <text x="60" y="133.0" text-anchor="end" class="al">OFF</text>
+  <line x1="65.0" y1="45" x2="65.0" y2="165" stroke="#37474f" stroke-width="0.5"/>
+  <text x="65.0" y="181" text-anchor="middle" class="al">0s</text>
+  <line x1="179.1" y1="45" x2="179.1" y2="165" stroke="#37474f" stroke-width="0.5"/>
+  <text x="179.1" y="181" text-anchor="middle" class="al">35s</text>
+  <line x1="622.5" y1="45" x2="622.5" y2="165" stroke="#37474f" stroke-width="0.5"/>
+  <text x="622.5" y="181" text-anchor="middle" class="al">171s</text>
+  <line x1="674.6" y1="45" x2="674.6" y2="165" stroke="#37474f" stroke-width="0.5"/>
+  <text x="674.6" y="181" text-anchor="middle" class="al">187s</text>
+  <line x1="863.7" y1="45" x2="863.7" y2="165" stroke="#37474f" stroke-width="0.5"/>
+  <text x="863.7" y="181" text-anchor="middle" class="al">245s</text>
+  <line x1="65" y1="45" x2="65" y2="165" stroke="#607d8b" stroke-width="1.5"/>
+  <line x1="65" y1="165" x2="880" y2="165" stroke="#607d8b" stroke-width="1.5"/>
+  <text x="472" y="212" text-anchor="middle" class="al">Mod Time (seconds)</text>
+  <rect x="65.0" y="124.0" width="114.1" height="10" fill="#546e7a" rx="2"/>
+  <rect x="179.1" y="40" width="443.4" height="10" fill="#ef5350" opacity="0.8" rx="2"/>
+  <rect x="179.1" y="50" width="443.4" height="79.0" fill="#ef5350" opacity="0.1"/>
+  <rect x="622.5" y="124.0" width="52.2" height="10" fill="#ce93d8" rx="2"/>
+  <rect x="622.5" y="45" width="52.2" height="120" fill="#ce93d8" opacity="0.06"/>
+  <rect x="674.6" y="40" width="189.1" height="10" fill="#ef5350" opacity="0.8" rx="2"/>
+  <rect x="674.6" y="50" width="189.1" height="79.0" fill="#ef5350" opacity="0.1"/>
+  <path d="M 65.0,129.0 L 179.1,129.0 L 179.1,45.0 L 622.5,45.0 L 622.5,129.0 L 674.6,129.0 L 674.6,45.0 L 863.7,45.0" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="179.1" y="33" text-anchor="middle" class="vl" style="fill:#ef5350;">APPLIED</text>
+  <text x="648.5" y="149.0" text-anchor="middle" class="vl" style="fill:#ce93d8;">CLARITY</text>
+  <text x="674.6" y="33" text-anchor="middle" class="vl" style="fill:#ef5350;">REAPPLIED</text>
+</svg>
