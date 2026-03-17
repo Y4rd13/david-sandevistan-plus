@@ -135,12 +135,6 @@ martinez.ImmunoblockerAction_Rare        = 'ItemAction.MartinezImmunoblockerUse_
 martinez.ImmunoblockerEffect_Common_OAE  = 'ObjectActionEffect.MartinezImmunoblocker_Common'
 martinez.ImmunoblockerEffect_Uncommon_OAE= 'ObjectActionEffect.MartinezImmunoblocker_Uncommon'
 martinez.ImmunoblockerEffect_Rare_OAE    = 'ObjectActionEffect.MartinezImmunoblocker_Rare'
-martinez.ImmunoblockerQty_Common         = 'MartinezImmunoblocker.Qty_Common'
-martinez.ImmunoblockerQty_Uncommon       = 'MartinezImmunoblocker.Qty_Uncommon'
-martinez.ImmunoblockerQty_Rare           = 'MartinezImmunoblocker.Qty_Rare'
-martinez.ImmunoblockerQty_Viktor_Common  = 'MartinezImmunoblocker.Qty_Viktor_Common'
-martinez.ImmunoblockerQty_Viktor_Uncommon= 'MartinezImmunoblocker.Qty_Viktor_Uncommon'
-martinez.ImmunoblockerQty_Viktor_Rare    = 'MartinezImmunoblocker.Qty_Viktor_Rare'
 martinez.ImmunoblockerLP_Common          = 'MartinezImmunoblocker.LP_Common'
 martinez.ImmunoblockerLP_Uncommon        = 'MartinezImmunoblocker.LP_Uncommon'
 martinez.ImmunoblockerLP_Rare            = 'MartinezImmunoblocker.LP_Rare'
@@ -1276,7 +1270,7 @@ function martinez.AddAutoInjectorToViktor(self)
 end
 
 function martinez.AddImmunoblockersToVendors(self)
-	immunoblocker.addImmunoblockersToVendors(self)
+	-- No-op: vendor stock managed exclusively by VendorsXL
 end
 
 function martinez.GetHeadShotMultiplier(self)

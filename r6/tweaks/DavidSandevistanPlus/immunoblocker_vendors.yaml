@@ -1,4 +1,5 @@
 # David Sandevistan Plus — Immunoblocker Items
+# Sold exclusively through VendorsXL street vendor (immunoblocker_vendorsxl.yaml)
 
 # Scene prop: custom syringe entity for inhaler animation (clone vanilla ripperdoc inhaler)
 Props.DspImmunoblockerProp:
@@ -22,24 +23,24 @@ UIIcon.Immunoblocker_Rare:
   atlasResourcePath: davidsandevistanplus\immunoblocker_rare.inkatlas
   atlasPartName: Immunoblocker_Rare
 
-# Price modifiers
+# Price modifiers (updated at runtime from config via UpdateImmunoblockerPrices)
 Items.MartinezImmunoblockerCommon_Price:
-  $type: gamedataConstantStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Price
-  value: 2000.0
-
-Items.MartinezImmunoblockerUncommon_Price:
   $type: gamedataConstantStatModifier_Record
   modifierType: Additive
   statType: BaseStats.Price
   value: 6000.0
 
+Items.MartinezImmunoblockerUncommon_Price:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Price
+  value: 24000.0
+
 Items.MartinezImmunoblockerRare_Price:
   $type: gamedataConstantStatModifier_Record
   modifierType: Additive
   statType: BaseStats.Price
-  value: 20000.0
+  value: 100000.0
 
 # OAE records (forward ref to CET status effects)
 ObjectActionEffect.MartinezImmunoblocker_Common:
@@ -80,12 +81,13 @@ ItemAction.MartinezImmunoblockerUse_Rare:
     - ObjectActionEffect.MartinezImmunoblocker_Rare
 
 # ============================================================
-# Items — HealthBooster base (single-use consumable + DF inhaler animation)
+# Items — HealthBooster base (single-use consumable)
+# Quality: Rare / Epic / Legendary (blue / purple / gold)
 # ============================================================
 
 Items.MartinezImmunoblockerCommon:
   $base: Items.HealthBooster
-  quality: Quality.Common
+  quality: Quality.Rare
   displayName: l"DavidSandevistanPlus-Immunoblocker"
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-Desc"
   icon: UIIcon.Immunoblocker_Common
@@ -104,7 +106,7 @@ Items.MartinezImmunoblockerCommon:
 
 Items.MartinezImmunoblockerUncommon:
   $base: Items.HealthBooster
-  quality: Quality.Uncommon
+  quality: Quality.Epic
   displayName: l"DavidSandevistanPlus-Immunoblocker-High"
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-High-Desc"
   icon: UIIcon.Immunoblocker_Uncommon
@@ -123,7 +125,7 @@ Items.MartinezImmunoblockerUncommon:
 
 Items.MartinezImmunoblockerRare:
   $base: Items.HealthBooster
-  quality: Quality.Rare
+  quality: Quality.Legendary
   displayName: l"DavidSandevistanPlus-Immunoblocker-Mil"
   localizedDescription: l"DavidSandevistanPlus-Immunoblocker-Mil-Desc"
   icon: UIIcon.Immunoblocker_Rare
@@ -139,103 +141,3 @@ Items.MartinezImmunoblockerRare:
   removePoint: 0.0
   cycleDuration: 0.0
   entityName: ""
-
-# Quantity presets
-MartinezImmunoblocker.Qty_Common:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 3.0
-  max: 6.0
-
-MartinezImmunoblocker.Qty_Uncommon:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 1.0
-  max: 3.0
-
-MartinezImmunoblocker.Qty_Rare:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 0.3
-  max: 1.3
-
-MartinezImmunoblocker.Qty_Viktor_Common:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 5.0
-  max: 10.0
-
-MartinezImmunoblocker.Qty_Viktor_Uncommon:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 2.0
-  max: 5.0
-
-MartinezImmunoblocker.Qty_Viktor_Rare:
-  $type: gamedataRandomStatModifier_Record
-  modifierType: Additive
-  statType: BaseStats.Quantity
-  min: 1.0
-  max: 2.0
-
-MartinezImmunoblocker.VendorItem_Common:
-  $type: gamedataVendorItem_Record
-  item: Items.MartinezImmunoblockerCommon
-  generationPrereqs: []
-  quantity:
-    - Vendors.Always_Present
-
-MartinezImmunoblocker.VendorItem_Uncommon:
-  $type: gamedataVendorItem_Record
-  item: Items.MartinezImmunoblockerUncommon
-  generationPrereqs: []
-  quantity:
-    - Vendors.Always_Present
-
-MartinezImmunoblocker.VendorItem_Rare:
-  $type: gamedataVendorItem_Record
-  item: Items.MartinezImmunoblockerRare
-  generationPrereqs: []
-  quantity:
-    - Vendors.Always_Present
-
-Vendors.wat_lch_medicstore_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare
-
-Vendors.wat_kab_medicstore_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare
-
-Vendors.std_arr_medicstore_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare
-
-Vendors.hey_spr_medicstore_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare
-
-Vendors.wbr_jpn_medicstore_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare
-
-Vendors.pac_wwd_ripperdoc_01:
-  itemStock:
-    - !append-once MartinezImmunoblocker.VendorItem_Common
-    - !append-once MartinezImmunoblocker.VendorItem_Uncommon
-    - !append-once MartinezImmunoblocker.VendorItem_Rare

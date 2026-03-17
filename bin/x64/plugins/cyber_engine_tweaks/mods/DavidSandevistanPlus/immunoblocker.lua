@@ -129,7 +129,7 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Common, martinez.ImmunoblockerEffect_Common_SMG, martinez.ImmunoblockerEffect_Common_SM1,
 		martinez.ImmunoblockerItem_Common, martinez.ImmunoblockerAction_Common, martinez.ImmunoblockerEffect_Common_OAE,
-		180, 'Quality.Common', 'Vendors.Always_Present', 6000,
+		180, 'Quality.Rare', 'Vendors.Always_Present', 6000,
 		'davidsandevistanplus\\immunoblocker_common.inkatlas', 'Immunoblocker_Common',
 		'DavidSandevistanPlus-Immunoblocker', 'DavidSandevistanPlus-Immunoblocker-Desc',
 		martinez.ImmunoblockerLP_Common, martinez.ImmunoblockerVFX_Common
@@ -137,7 +137,7 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Uncommon, martinez.ImmunoblockerEffect_Uncommon_SMG, martinez.ImmunoblockerEffect_Uncommon_SM1,
 		martinez.ImmunoblockerItem_Uncommon, martinez.ImmunoblockerAction_Uncommon, martinez.ImmunoblockerEffect_Uncommon_OAE,
-		360, 'Quality.Uncommon', 'Vendors.Commonly_Present', 24000,
+		360, 'Quality.Epic', 'Vendors.Always_Present', 24000,
 		'davidsandevistanplus\\immunoblocker_uncommon.inkatlas', 'Immunoblocker_Uncommon',
 		'DavidSandevistanPlus-Immunoblocker-High', 'DavidSandevistanPlus-Immunoblocker-High-Desc',
 		martinez.ImmunoblockerLP_Uncommon, martinez.ImmunoblockerVFX_Uncommon
@@ -145,66 +145,14 @@ function immunoblocker.createItems(martinez)
 	createTier(
 		martinez.ImmunoblockerEffect_Rare, martinez.ImmunoblockerEffect_Rare_SMG, martinez.ImmunoblockerEffect_Rare_SM1,
 		martinez.ImmunoblockerItem_Rare, martinez.ImmunoblockerAction_Rare, martinez.ImmunoblockerEffect_Rare_OAE,
-		600, 'Quality.Rare', 'Vendors.Uncommonly_Present', 100000,
+		600, 'Quality.Legendary', 'Vendors.Always_Present', 100000,
 		'davidsandevistanplus\\immunoblocker_rare.inkatlas', 'Immunoblocker_Rare',
 		'DavidSandevistanPlus-Immunoblocker-Mil', 'DavidSandevistanPlus-Immunoblocker-Mil-Desc',
 		martinez.ImmunoblockerLP_Rare, martinez.ImmunoblockerVFX_Rare
 	)
 
-	-- Custom vendor quantity records (RandomStatModifier with BaseStats.Quantity)
-	-- Common: 3-6 units guaranteed (standard prescription, always in stock)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Common, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Common..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Common..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Common..'.min', 3.0)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Common..'.max', 6.0)
-	TweakDB:Update(martinez.ImmunoblockerQty_Common)
-
-	-- Uncommon: 1-3 units (high dosage, limited supply)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Uncommon, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Uncommon..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Uncommon..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Uncommon..'.min', 1.0)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Uncommon..'.max', 3.0)
-	TweakDB:Update(martinez.ImmunoblockerQty_Uncommon)
-
-	-- Rare: 0-1 units (~30% chance of no stock — military contraband, very scarce)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Rare, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Rare..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Rare..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Rare..'.min', 0.3)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Rare..'.max', 1.3)
-	TweakDB:Update(martinez.ImmunoblockerQty_Rare)
-
-	-- Viktor Vektor: Doc's personal stock — higher quantities (he's David's ripperdoc)
-	-- Viktor Common: 5-10 units (always well-stocked for his patient)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Viktor_Common, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Common..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Common..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Common..'.min', 5.0)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Common..'.max', 10.0)
-	TweakDB:Update(martinez.ImmunoblockerQty_Viktor_Common)
-
-	-- Viktor Uncommon: 2-5 units (keeps a personal reserve of the strong stuff)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Viktor_Uncommon, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Uncommon..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Uncommon..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Uncommon..'.min', 2.0)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Uncommon..'.max', 5.0)
-	TweakDB:Update(martinez.ImmunoblockerQty_Viktor_Uncommon)
-
-	-- Viktor Rare: 1-2 units guaranteed (Doc has contacts — always has at least one)
-	martinez:CreateRecord(martinez.ImmunoblockerQty_Viktor_Rare, 'gamedataRandomStatModifier_Record')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Rare..'.modifierType', 'Additive')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Rare..'.statType', 'BaseStats.Quantity')
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Rare..'.min', 1.0)
-	TweakDB:SetFlatNoUpdate(martinez.ImmunoblockerQty_Viktor_Rare..'.max', 2.0)
-	TweakDB:Update(martinez.ImmunoblockerQty_Viktor_Rare)
-
-	-- Vendor integration is handled by TweakXL (immunoblocker_vendors.yaml)
-	-- TweakXL creates inline VendorItems and appends to itemStock at compile time
-	-- CET no longer touches vendor stock to avoid interfering with TweakXL
-	print('[DSP] CreateImmunoblockerItems: vendor stock managed by TweakXL')
+	-- Vendor stock managed by VendorsXL (immunoblocker_vendorsxl.yaml)
+	print('[DSP] CreateImmunoblockerItems: vendor stock managed by VendorsXL')
 
 	-- Props.DspImmunoblockerProp — defined via TweakXL YAML ($base: Props.q001_ripperdoc_drug_inhaler)
 end
@@ -330,54 +278,5 @@ function immunoblocker.addAutoInjectorToViktor(martinez)
 	end
 end
 
--- Called at runtime (LoadGamePart1) — CET fallback for existing saves
--- TweakXL YAML handles new saves; this handles saves where vendor stock is already cached
--- TRADE tab reads from medicstore_01, Pacifica has no medicstore so falls back to ripperdoc_01
-function immunoblocker.addImmunoblockersToVendors(martinez)
-	local items = {
-		martinez.ImmunoblockerItem_Common,
-		martinez.ImmunoblockerItem_Uncommon,
-		martinez.ImmunoblockerItem_Rare
-	}
-	local vendors = {
-		-- medicstore_01 = TRADE tab (consumables) — this is what the vendor UI reads
-		'Vendors.wat_lch_medicstore_01',
-		'Vendors.wat_kab_medicstore_01',
-		'Vendors.std_arr_medicstore_01',
-		'Vendors.hey_spr_medicstore_01',
-		'Vendors.wbr_jpn_medicstore_01',
-		-- Pacifica has no medicstore, only ripperdoc
-		'Vendors.pac_wwd_ripperdoc_01',
-	}
-	local totalAdded = 0
-	for _, vendorRecord in ipairs(vendors) do
-		local stock = TweakDB:GetFlat(vendorRecord..'.itemStock')
-		if stock then
-			local vendorAdded = 0
-			for _, itemName in ipairs(items) do
-				local viName = vendorRecord..'_'..itemName:gsub('%.', '_')
-				local alreadyInStock = false
-				for _, v in ipairs(stock) do
-					if tostring(v):find(itemName:gsub('%.', '')) then alreadyInStock = true; break end
-				end
-				if not alreadyInStock then
-					if TweakDB:GetRecord(viName) == nil then
-						TweakDB:CreateRecord(viName, 'gamedataVendorItem_Record')
-						TweakDB:SetFlat(viName..'.item', itemName)
-						TweakDB:SetFlat(viName..'.quantity', {'Vendors.Always_Present'})
-						TweakDB:SetFlat(viName..'.generationPrereqs', {})
-					end
-					table.insert(stock, viName)
-					vendorAdded = vendorAdded + 1
-				end
-			end
-			if vendorAdded > 0 then
-				TweakDB:SetFlat(vendorRecord..'.itemStock', stock)
-				totalAdded = totalAdded + vendorAdded
-			end
-		end
-	end
-	print('[DSP] AddImmunoblockersToVendors: injected '..totalAdded..' vendor items (CET fallback)')
-end
 
 return immunoblocker
