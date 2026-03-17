@@ -178,9 +178,9 @@ dsp = {
 		strainRecoveryMultiplier = 1.0,  -- global multiplier for all strain drain
 
 		-- Immunoblocker prices (applied to TweakDB at game load)
-		immunoblockerPriceCommon = 3000,
-		immunoblockerPriceUncommon = 12000,
-		immunoblockerPriceRare = 50000,
+		immunoblockerPriceCommon = 6000,
+		immunoblockerPriceUncommon = 24000,
+		immunoblockerPriceRare = 100000,
 
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
