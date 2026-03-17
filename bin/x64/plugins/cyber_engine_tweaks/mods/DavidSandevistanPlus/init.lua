@@ -1272,8 +1272,8 @@ dsp = {
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 
-				-- Neural Strain tick (1/sec)
-				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0 and not self.lastBreath then
+				-- Neural Strain tick (1/sec) — runs at all stages including 0
+				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 0 and not self.lastBreath then
 					local immunoblocker = self:IsImmunoblockerActive()
 					local immunoEff = immunoblocker and self:GetImmunoblockerEffectiveness() or 'none'
 					local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
