@@ -2,6 +2,9 @@ resource:
   scope:
     dsp_scope.quest:
       - cyberpunk2077.quest
+  patch:
+    dsp_ripdoc_arroyo\custom_devices.devices:
+      - base\worlds\03_night_city\_compiled\default\03_night_city.devices
 
 quest:
   phases:
