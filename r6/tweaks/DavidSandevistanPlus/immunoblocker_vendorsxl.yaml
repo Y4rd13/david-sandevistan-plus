@@ -1,9 +1,20 @@
-# David Sandevistan Plus — Immunoblocker Street Vendor (VendorsXL)
-# Santo Domingo punk dealer — successor to Doc's circuit
+# David Sandevistan Plus — Immunoblocker Street Vendors (VendorsXL)
+
+# Vendor 1: Santo Domingo punk dealer — Arroyo ripperdoc area
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
   appearanceName: citizen__punk_ma_punk_ma_02
   bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
+  items:
+    - Items.MartinezImmunoblockerCommon
+    - Items.MartinezImmunoblockerUncommon
+    - Items.MartinezImmunoblockerRare
+
+# Vendor 2: Poor street dealer — Badlands/outskirts
+Character.dsp_immuno_v20:
+  $base: Character.vendorsxl_base
+  appearanceName: citizen__poor_ma_poor_ma_05
+  bossHealthBarThresholds: [-993.0806, 1491.2028, 28.3275, 0, 0, 0.70319991, 0.71099219]
   items:
     - Items.MartinezImmunoblockerCommon
     - Items.MartinezImmunoblockerUncommon
