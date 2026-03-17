@@ -1,6 +1,6 @@
 // DSPKillTracker.reds — Kill tracking for Neural Strain system
-// Wraps ScriptedPuppet.RewardKiller() to detect kills and route strain
-// costs through DSPHUDSystem (avoids creating a second ScriptableSystem).
+// Wraps ScriptedPuppet.RewardKiller() to detect kills and route faction
+// categories through DSPHUDSystem. CET Lua applies configurable costs.
 
 @wrapMethod(ScriptedPuppet)
 protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, isAnyDamageNonlethal: Bool) -> Void {
@@ -22,24 +22,24 @@ protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, is
         return;
     }
 
-    // Get affiliation for faction-based cost
-    let cost: Int32 = 3; // default (gang/corpo)
+    // Determine faction category: 0=gang, 1=corpo, 2=ncpd, 3=civilian
+    let factionId: Int32 = 1; // default: corpo
     let affiliation: wref<Affiliation_Record> = npcRecord.Affiliation();
     if IsDefined(affiliation) {
         let affiliationType: TweakDBID = affiliation.GetID();
 
-        // Civilian kills: highest cost (David never wanted to hurt civilians)
+        // Civilian kills (highest strain — David never wanted to hurt civilians)
         if affiliationType == t"Factions.Civilian" || affiliationType == t"Factions.Unaffiliated" {
-            cost = 8;
-        // NCPD kills: high cost (killing cops accelerates psychosis)
+            factionId = 3;
+        // NCPD / NetWatch kills
         } else if affiliationType == t"Factions.NCPD" || affiliationType == t"Factions.NetWatch" {
-            cost = 5;
+            factionId = 2;
         // Corporate security
         } else if affiliationType == t"Factions.Arasaka" || affiliationType == t"Factions.Militech" || affiliationType == t"Factions.KangTao" {
-            cost = 3;
-        // Gang members: lowest cost (normal enemies)
+            factionId = 1;
+        // Gang members (lowest strain — normal enemies)
         } else if affiliationType == t"Factions.Maelstrom" || affiliationType == t"Factions.TygerClaws" || affiliationType == t"Factions.Valentinos" || affiliationType == t"Factions.SixthStreet" || affiliationType == t"Factions.VoodooBoys" || affiliationType == t"Factions.Animals" || affiliationType == t"Factions.Scavengers" || affiliationType == t"Factions.Wraiths" || affiliationType == t"Factions.Aldecaldos" || affiliationType == t"Factions.BarghestArmy" {
-            cost = 2;
+            factionId = 0;
         }
     }
 
@@ -47,6 +47,6 @@ protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, is
     let gi: GameInstance = player.GetGame();
     let dspHUD: ref<DSPHUDSystem> = DSPHUDSystem.GetInstance(gi);
     if IsDefined(dspHUD) {
-        dspHUD.AddKillStrain(cost);
+        dspHUD.AddKillByFaction(factionId);
     }
 }

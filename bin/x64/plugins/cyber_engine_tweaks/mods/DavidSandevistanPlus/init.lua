@@ -164,7 +164,10 @@ dsp = {
 		strainPerOveruseBonus = 3,       -- extra strain per activation beyond safe limit
 		strainPerMinuteActive = 2,       -- strain per 60s of Sandy active time
 		strainPerSecSafetyOff = 0.15,    -- strain/sec while Safety OFF
-		strainPerKillBase = 3,           -- base kill strain (overridden by faction cost from redscript)
+		strainPerKillGang = 2,           -- kill strain: gang members (lowest)
+		strainPerKillCorpo = 3,          -- kill strain: corporate security
+		strainPerKillNCPD = 5,           -- kill strain: NCPD / NetWatch
+		strainPerKillCivilian = 8,       -- kill strain: civilians / unaffiliated (highest)
 		strainPerComedown5s = 1,         -- strain per 5s of comedown
 		strainDrainSafeArea = 0.05,      -- strain/sec drain in safe areas
 		strainDrainSleep = 40,           -- strain drained per sleep (scaled by hours)
@@ -173,6 +176,11 @@ dsp = {
 		strainDrainDFImmuno = 0.08,      -- strain/sec drain while DF Immunosuppressant active
 		strainBuildupMultiplier = 1.0,   -- global multiplier for all strain accumulation
 		strainRecoveryMultiplier = 1.0,  -- global multiplier for all strain drain
+
+		-- Immunoblocker prices (applied to TweakDB at game load)
+		immunoblockerPriceCommon = 3000,
+		immunoblockerPriceUncommon = 12000,
+		immunoblockerPriceRare = 50000,
 
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
@@ -1304,13 +1312,23 @@ dsp = {
 						else
 							self.strainActiveAccum = 0
 						end
-						-- Kill strain from redscript bridge
-						local killStrain = 0
+						-- Kill strain from redscript bridge (packed: gang + corpo*256 + ncpd*65536 + civilian*16777216)
+						local killData = 0
 						pcall(function()
-							killStrain = self.hud.system:GetAndClearKillStrain()
+							killData = self.hud.system:GetAndClearKillData()
 						end)
-						if killStrain > 0 then
-							self:AddStrain(killStrain)
+						if killData > 0 then
+							local gang = killData % 256
+							local corpo = math.floor(killData / 256) % 256
+							local ncpd = math.floor(killData / 65536) % 256
+							local civilian = math.floor(killData / 16777216) % 256
+							local killStrain = gang * self.cfg.strainPerKillGang
+								+ corpo * self.cfg.strainPerKillCorpo
+								+ ncpd * self.cfg.strainPerKillNCPD
+								+ civilian * self.cfg.strainPerKillCivilian
+							if killStrain > 0 then
+								self:AddStrain(killStrain)
+							end
 						end
 					end
 
@@ -1427,6 +1445,7 @@ dsp = {
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		loadConfig(self.cfg)
+		self:UpdateImmunoblockerPrices()
 		self:UpdateViksLoot()
 		self.martinez:AddAutoInjectorToViktor()
 		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingSandevistan()))
@@ -2092,6 +2111,22 @@ require('./ncpd.lua').attach(dsp)
 require('./strain.lua').attach(dsp)
 require('./loreEffects.lua').attach(dsp)
 require('./immunoblocker_logic.lua').attach(dsp)
+
+-- Update immunoblocker TweakDB prices from config (called at LoadGamePart1)
+dsp.UpdateImmunoblockerPrices = (function(self)
+	local prices = {
+		{ self.martinez.ImmunoblockerItem_Common  .. '_Price', self.cfg.immunoblockerPriceCommon },
+		{ self.martinez.ImmunoblockerItem_Uncommon .. '_Price', self.cfg.immunoblockerPriceUncommon },
+		{ self.martinez.ImmunoblockerItem_Rare    .. '_Price', self.cfg.immunoblockerPriceRare },
+	}
+	for _, p in ipairs(prices) do
+		pcall(function()
+			TweakDB:SetFlat(p[1] .. '.value', p[2] * 1.0)
+			TweakDB:Update(p[1])
+		end)
+	end
+	print('[DSP] Immunoblocker prices updated: ' .. self.cfg.immunoblockerPriceCommon .. '/' .. self.cfg.immunoblockerPriceUncommon .. '/' .. self.cfg.immunoblockerPriceRare)
+ end)
 require('./psychosis.lua').attach(dsp)
 require('./death.lua').attach(dsp)
 

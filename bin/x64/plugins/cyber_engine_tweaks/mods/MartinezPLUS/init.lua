@@ -35,12 +35,18 @@ local defaults = {
 	strainPerOveruseBonus = 3,
 	strainPerMinuteActive = 2,
 	strainPerSecSafetyOff = 0.15,
-	strainPerKillBase = 3,
+	strainPerKillGang = 2,
+	strainPerKillCorpo = 3,
+	strainPerKillNCPD = 5,
+	strainPerKillCivilian = 8,
 	strainPerComedown5s = 1,
 	strainDrainSafeArea = 0.05,
 	strainDrainSleep = 40,
 	strainDrainRipper = 25,
 	strainDrainImmunoblocker = 0.1,
+	immunoblockerPriceCommon = 3000,
+	immunoblockerPriceUncommon = 12000,
+	immunoblockerPriceRare = 50000,
 	strainDrainDFImmuno = 0.08,
 	strainBuildupMultiplier = 1.0,
 	strainRecoveryMultiplier = 1.0,
@@ -85,9 +91,11 @@ local gameplayKeys = {
 	"fullRechargeHours", "maxRechargePerSleep", "enableCyberpsychosis",
 	"dailySafeActivations",
 	"strainPerActivation", "strainPerOveruseBonus", "strainPerMinuteActive",
-	"strainPerSecSafetyOff", "strainPerKillBase", "strainPerComedown5s",
+	"strainPerSecSafetyOff", "strainPerKillGang", "strainPerKillCorpo",
+	"strainPerKillNCPD", "strainPerKillCivilian", "strainPerComedown5s",
 	"strainDrainSafeArea", "strainDrainSleep", "strainDrainRipper",
 	"strainDrainImmunoblocker", "strainDrainDFImmuno",
+	"immunoblockerPriceCommon", "immunoblockerPriceUncommon", "immunoblockerPriceRare",
 	"strainBuildupMultiplier", "strainRecoveryMultiplier",
 	"safetyOffTimeDilation",
 	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
@@ -194,12 +202,14 @@ local function initUI()
 	local catRX = tab .. "/Prescription"
 	local catNLD = tab .. "/NonLinearDrain"
 	local catME = tab .. "/MicroEpisodes"
+	local catKS = tab .. "/KillStrain"
+	local catIB = tab .. "/Immunoblocker"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catNS, catCD, catRX, catNLD, catME}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catNS, catKS, catIB, catCD, catRX, catNLD, catME}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -765,6 +775,111 @@ local function initUI()
 		defaults.strainRecoveryMultiplier,
 		function(value)
 			cfg.strainRecoveryMultiplier = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- KILL STRAIN (per faction)
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catKS, "Kill Strain (Per Faction)")
+
+	nativeSettings.addRangeInt(
+		catKS,
+		"Gang Members",
+		"Neural strain per gang member killed during Sandy. (Default: 2)\n"
+			.. "Lowest cost — David fought gangers regularly.",
+		0, 20, 1,
+		cfg.strainPerKillGang,
+		defaults.strainPerKillGang,
+		function(value)
+			cfg.strainPerKillGang = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catKS,
+		"Corporate Security",
+		"Neural strain per corpo security killed during Sandy. (Default: 3)\n"
+			.. "Arasaka, Militech, KangTao operatives.",
+		0, 20, 1,
+		cfg.strainPerKillCorpo,
+		defaults.strainPerKillCorpo,
+		function(value)
+			cfg.strainPerKillCorpo = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catKS,
+		"NCPD / NetWatch",
+		"Neural strain per NCPD or NetWatch agent killed during Sandy. (Default: 5)\n"
+			.. "Killing law enforcement accelerates psychosis.",
+		0, 20, 1,
+		cfg.strainPerKillNCPD,
+		defaults.strainPerKillNCPD,
+		function(value)
+			cfg.strainPerKillNCPD = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catKS,
+		"Civilians",
+		"Neural strain per civilian killed during Sandy. (Default: 8)\n"
+			.. "Highest cost — David never wanted to hurt innocents.\n"
+			.. "Includes unaffiliated NPCs.",
+		0, 20, 1,
+		cfg.strainPerKillCivilian,
+		defaults.strainPerKillCivilian,
+		function(value)
+			cfg.strainPerKillCivilian = value
+			applyAll()
+		end)
+
+	------------------------------------------------------------
+	-- IMMUNOBLOCKER
+	------------------------------------------------------------
+	nativeSettings.addSubcategory(catIB, "Immunoblocker Prices")
+
+	nativeSettings.addRangeInt(
+		catIB,
+		"Common Price",
+		"Price for Immunoblocker (Common tier). (Default: 3000)\n"
+			.. "Duration: 3 min, drain: 0.08/s.\n"
+			.. "Requires game restart to update vendor prices.",
+		500, 20000, 500,
+		cfg.immunoblockerPriceCommon,
+		defaults.immunoblockerPriceCommon,
+		function(value)
+			cfg.immunoblockerPriceCommon = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catIB,
+		"Uncommon Price",
+		"Price for Immunoblocker — High Dosage (Uncommon tier). (Default: 12000)\n"
+			.. "Duration: 6 min, drain: 0.18/s.\n"
+			.. "Requires game restart to update vendor prices.",
+		1000, 50000, 1000,
+		cfg.immunoblockerPriceUncommon,
+		defaults.immunoblockerPriceUncommon,
+		function(value)
+			cfg.immunoblockerPriceUncommon = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catIB,
+		"Rare Price",
+		"Price for Military-Grade Immunoblocker (Rare tier). (Default: 50000)\n"
+			.. "Duration: 10 min, drain: 0.35/s.\n"
+			.. "Requires game restart to update vendor prices.",
+		5000, 200000, 5000,
+		cfg.immunoblockerPriceRare,
+		defaults.immunoblockerPriceRare,
+		function(value)
+			cfg.immunoblockerPriceRare = value
 			applyAll()
 		end)
 

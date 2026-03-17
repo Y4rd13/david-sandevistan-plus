@@ -72,7 +72,11 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_immunoblockerActive: Bool;
 
     // Kill strain bridge (written by DSPKillTracker, read by CET Lua)
-    private let m_pendingKillStrain: Int32;
+    // 4 faction counters packed into one Int32: gang|corpo|ncpd|civilian (8 bits each)
+    private let m_pendingKillsGang: Int32;
+    private let m_pendingKillsCorpo: Int32;
+    private let m_pendingKillsNCPD: Int32;
+    private let m_pendingKillsCivilian: Int32;
 
     // ---------------------------------------------------------------
     // ScriptableSystem lifecycle
@@ -80,7 +84,10 @@ public class DSPHUDSystem extends ScriptableSystem {
     private func OnAttach() -> Void {
         this.m_initialized = false;
         this.m_pulseTimer = 0.0;
-        this.m_pendingKillStrain = 0;
+        this.m_pendingKillsGang = 0;
+        this.m_pendingKillsCorpo = 0;
+        this.m_pendingKillsNCPD = 0;
+        this.m_pendingKillsCivilian = 0;
     }
 
     private func OnDetach() -> Void {
@@ -96,15 +103,28 @@ public class DSPHUDSystem extends ScriptableSystem {
 
     // ---------------------------------------------------------------
     // Kill strain bridge (called by DSPKillTracker.reds)
+    // Faction categories: 0=gang, 1=corpo, 2=ncpd, 3=civilian
     // ---------------------------------------------------------------
-    public func AddKillStrain(cost: Int32) -> Void {
-        this.m_pendingKillStrain += cost;
+    public func AddKillByFaction(factionId: Int32) -> Void {
+        switch factionId {
+            case 0: this.m_pendingKillsGang += 1; break;
+            case 1: this.m_pendingKillsCorpo += 1; break;
+            case 2: this.m_pendingKillsNCPD += 1; break;
+            case 3: this.m_pendingKillsCivilian += 1; break;
+        }
     }
 
-    public func GetAndClearKillStrain() -> Int32 {
-        let val: Int32 = this.m_pendingKillStrain;
-        this.m_pendingKillStrain = 0;
-        return val;
+    // Returns packed Int32: gang + corpo*256 + ncpd*65536 + civilian*16777216
+    public func GetAndClearKillData() -> Int32 {
+        let packed: Int32 = this.m_pendingKillsGang
+            + (this.m_pendingKillsCorpo * 256)
+            + (this.m_pendingKillsNCPD * 65536)
+            + (this.m_pendingKillsCivilian * 16777216);
+        this.m_pendingKillsGang = 0;
+        this.m_pendingKillsCorpo = 0;
+        this.m_pendingKillsNCPD = 0;
+        this.m_pendingKillsCivilian = 0;
+        return packed;
     }
 
     // ---------------------------------------------------------------
