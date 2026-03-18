@@ -168,7 +168,7 @@ DspVendor.Qty_Rare:
   min: 1.0
   max: 2.0
 
-# Badlands kid — limited supply, no Military-Grade
+# Kabuki kid — limited supply, no Military-Grade
 DspVendor.Qty_Kid_Common:
   $type: gamedataRandomStatModifier_Record
   modifierType: Additive
@@ -209,7 +209,7 @@ DspVendor.VendorItem_Rare:
   quantity:
     - DspVendor.Qty_Rare
 
-# Badlands kid stock
+# Kabuki kid stock
 DspVendor.VendorItem_Kid_Common:
   $type: gamedataVendorItem_Record
   item: Items.MartinezImmunoblockerCommon
@@ -236,7 +236,7 @@ Vendors.DspArroyoDealer:
     - DspVendor.VendorItem_Uncommon
     - DspVendor.VendorItem_Rare
 
-Vendors.DspBadlandsKid:
+Vendors.DspKabukiKid:
   $type: gamedataVendor_Record
   vendorType: VendorType.Junk
   itemStock:
@@ -253,8 +253,8 @@ Character.DspArroyoDealer:
   appearanceName: citizen__punk_ma_punk_ma_02
   vendorID: Vendors.DspArroyoDealer
 
-# Badlands street kid — limited supply, no Military-Grade
-Character.DspBadlandsKid:
+# Kabuki street kid — limited supply, no Military-Grade
+Character.DspKabukiKid:
   $base: Character.vendorsxl_base
   appearanceName: citizen__children_mc_poor_boy_05
-  vendorID: Vendors.DspBadlandsKid
+  vendorID: Vendors.DspKabukiKid
