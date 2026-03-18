@@ -257,4 +257,5 @@ Character.DspArroyoDealer:
 Character.DspKabukiKid:
   $base: Character.vendorsxl_base
   entityTemplatePath: ep1\characters\entities\citizen\citizen__ep1_children_mc.ent
+  appearanceName: citizen__children_mc_average_boy_04
   vendorID: Vendors.DspKabukiKid
