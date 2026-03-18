@@ -15,6 +15,7 @@ streaming:
   blocks:
     - dsp_immunoblocker\all.streamingblock
     - dsp_ripdoc_arroyo\all.streamingblock
+    - dps_dealer_kabuki\all.streamingblock
   sectors:
     - path: base\worlds\03_night_city\_compiled\default\interior_-34_-40_0_0.streamingsector
       expectedNodes: 394
