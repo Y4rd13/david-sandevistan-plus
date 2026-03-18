@@ -1,6 +1,6 @@
-# David Sandevistan Plus — Immunoblocker Street Vendors (VendorsXL)
+# David Sandevistan Plus — Immunoblocker Street Vendor (VendorsXL)
 
-# Vendor 1: Santo Domingo punk dealer — Arroyo ripperdoc area
+# Arroyo punk dealer — main supplier near ripperdoc
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
   appearanceName: citizen__punk_ma_punk_ma_02
@@ -9,12 +9,3 @@ Character.dsp_immuno_v19:
     - Items.MartinezImmunoblockerCommon
     - Items.MartinezImmunoblockerUncommon
     - Items.MartinezImmunoblockerRare
-
-# Vendor 2: Street kid dealer — Kabuki outskirts (no Military-Grade)
-Character.dsp_immuno_v20:
-  $base: Character.vendorsxl_base
-  appearanceName: citizen__children_mc_poor_boy_05
-  bossHealthBarThresholds: [-993.0806, 1491.2028, 28.3275, 0, 0, 0.70319991, 0.71099219]
-  items:
-    - Items.MartinezImmunoblockerCommon
-    - Items.MartinezImmunoblockerUncommon
