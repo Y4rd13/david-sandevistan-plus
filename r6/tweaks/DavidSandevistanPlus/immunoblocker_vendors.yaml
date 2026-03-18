@@ -141,3 +141,130 @@ Items.MartinezImmunoblockerRare:
   removePoint: 0.0
   cycleDuration: 0.0
   entityName: ""
+
+# ============================================================
+# Vendor quantity modifiers
+# ============================================================
+
+# Arroyo dealer — main supplier, well-stocked
+DspVendor.Qty_Common:
+  $type: gamedataRandomStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Quantity
+  min: 5.0
+  max: 10.0
+
+DspVendor.Qty_Uncommon:
+  $type: gamedataRandomStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Quantity
+  min: 2.0
+  max: 5.0
+
+DspVendor.Qty_Rare:
+  $type: gamedataRandomStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Quantity
+  min: 1.0
+  max: 2.0
+
+# Badlands kid — limited supply, no Military-Grade
+DspVendor.Qty_Kid_Common:
+  $type: gamedataRandomStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Quantity
+  min: 3.0
+  max: 6.0
+
+DspVendor.Qty_Kid_Uncommon:
+  $type: gamedataRandomStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Quantity
+  min: 1.0
+  max: 3.0
+
+# ============================================================
+# VendorItem records (item + quantity per vendor)
+# ============================================================
+
+# Arroyo dealer stock
+DspVendor.VendorItem_Common:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezImmunoblockerCommon
+  generationPrereqs: []
+  quantity:
+    - DspVendor.Qty_Common
+
+DspVendor.VendorItem_Uncommon:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezImmunoblockerUncommon
+  generationPrereqs: []
+  quantity:
+    - DspVendor.Qty_Uncommon
+
+DspVendor.VendorItem_Rare:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezImmunoblockerRare
+  generationPrereqs: []
+  quantity:
+    - DspVendor.Qty_Rare
+
+# Badlands kid stock
+DspVendor.VendorItem_Kid_Common:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezImmunoblockerCommon
+  generationPrereqs: []
+  quantity:
+    - DspVendor.Qty_Kid_Common
+
+DspVendor.VendorItem_Kid_Uncommon:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezImmunoblockerUncommon
+  generationPrereqs: []
+  quantity:
+    - DspVendor.Qty_Kid_Uncommon
+
+# ============================================================
+# Vendor records (itemStock)
+# ============================================================
+
+Vendors.DspArroyoDealer:
+  $type: gamedataVendor_Record
+  vendorType: VendorType.Junk
+  itemStock:
+    - DspVendor.VendorItem_Common
+    - DspVendor.VendorItem_Uncommon
+    - DspVendor.VendorItem_Rare
+
+Vendors.DspBadlandsKid:
+  $type: gamedataVendor_Record
+  vendorType: VendorType.Junk
+  itemStock:
+    - DspVendor.VendorItem_Kid_Common
+    - DspVendor.VendorItem_Kid_Uncommon
+
+# ============================================================
+# Character records (NPC + vendor binding)
+# ============================================================
+
+# Arroyo punk dealer — main supplier near ripperdoc
+Character.DspArroyoDealer:
+  $base: Character.otr_service_vendor_ma
+  entityTemplatePath: base\characters\entities\service\service__vendor_ma.ent
+  appearanceName: citizen__punk_ma_punk_ma_02
+  vendorID: Vendors.DspArroyoDealer
+  affiliation: Factions.Civilian
+  baseAttitudeGroup: friendly
+  savable: false
+  isBumpable: false
+
+# Badlands street kid — limited supply, no Military-Grade
+Character.DspBadlandsKid:
+  $base: Character.otr_service_vendor_ma
+  entityTemplatePath: base\characters\entities\service\service__vendor_ma.ent
+  appearanceName: citizen__children_mc_poor_boy_05
+  vendorID: Vendors.DspBadlandsKid
+  affiliation: Factions.Civilian
+  baseAttitudeGroup: friendly
+  savable: false
+  isBumpable: false
