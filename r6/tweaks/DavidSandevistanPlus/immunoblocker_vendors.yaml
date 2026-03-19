@@ -243,19 +243,3 @@ Vendors.DspKabukiKid:
     - DspVendor.VendorItem_Kid_Common
     - DspVendor.VendorItem_Kid_Uncommon
 
-# ============================================================
-# Character records (NPC + vendor binding)
-# ============================================================
-
-# Arroyo punk dealer — main supplier near ripperdoc
-Character.DspArroyoDealer:
-  $base: Character.vendorsxl_base
-  appearanceName: citizen__punk_ma_punk_ma_02
-  vendorID: Vendors.DspArroyoDealer
-
-# Kabuki street kid — limited supply, no Military-Grade
-Character.DspKabukiKid:
-  $base: Character.vendorsxl_base
-  entityTemplatePath: ep1\characters\entities\citizen\citizen__ep1_children_mc.ent
-  appearanceName: citizen__children_mc_average_boy_04
-  vendorID: Vendors.DspKabukiKid
