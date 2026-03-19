@@ -1,6 +1,6 @@
-# David Sandevistan Plus — Immunoblocker Street Vendor (VendorsXL)
+# David Sandevistan Plus — Immunoblocker Street Vendors (VendorsXL)
 
-# Arroyo punk dealer — main supplier near ripperdoc
+# Arroyo punk dealer — main supplier near ripperdoc (all 3 tiers)
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
   appearanceName: citizen__punk_ma_punk_ma_02
@@ -9,3 +9,16 @@ Character.dsp_immuno_v19:
     - Items.MartinezImmunoblockerCommon
     - Items.MartinezImmunoblockerUncommon
     - Items.MartinezImmunoblockerRare
+
+# Kabuki street kid — limited supply, no Military-Grade
+Character.dsp_immuno_v20:
+  $base: Character.vendorsxl_base
+  entityTemplatePath: ep1\characters\entities\citizen\citizen__ep1_children_mc.ent
+  appearanceName: citizen__children_mc_average_boy_04
+  holocallInitializerPath: base\workspots\common\ground\child__sit_ground_gun__play__01.workspot
+  displayName: DavidSandevistanPlus-KabukiDealer
+  forcedTBHZOffset: 6
+  bossHealthBarThresholds: [-992.1683, 1485.6912, 25.8703, 0, 0, 0.31648938, 0.94859605]
+  items:
+    - Items.MartinezImmunoblockerCommon
+    - Items.MartinezImmunoblockerUncommon
