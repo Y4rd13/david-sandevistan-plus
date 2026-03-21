@@ -338,7 +338,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         // =============================================================
         // ROW: Strain bar (visible when strain > 0)
         // =============================================================
-        let showStrain: Bool = this.m_neuralStrain > 0 && this.m_psychoLevel > 0 && this.m_lastBreathPhase == 0;
+        let showStrain: Bool = this.m_neuralStrain > 0 && this.m_lastBreathPhase == 0;
         if showStrain {
             let strainF: Float = Cast<Float>(this.m_neuralStrain) / 10.0;
             let guaranteedF: Float = Cast<Float>(this.m_strainGuaranteed) / 10.0;
