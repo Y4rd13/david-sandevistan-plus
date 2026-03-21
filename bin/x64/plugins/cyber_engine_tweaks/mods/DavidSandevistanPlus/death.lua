@@ -532,12 +532,10 @@ function death.attach(dsp)
 					local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
 					if dist <= 25.0 then
 						local npcEID = npc:GetEntityID()
-						-- NetwatcherGeneral: glitch/hacked VFX (digital corruption)
-						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.NetwatcherGeneral')
-						-- SystemCollapse: quickhack kill with dramatic animation
-						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.SystemCollapse')
-						-- ForceKill as backup (ensures death even if SystemCollapse doesn't kill)
-						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.ForceKill')
+						-- Blackwall corruption kill (Phantom Liberty VFX)
+						SEE:ApplyStatusEffect(npcEID, 'BaseStatusEffect.HauntedBlackwallForceKill')
+						-- Blackwall quickhack visual effect
+						SEE:ApplyStatusEffect(npcEID, 'QuickHack.BlackWallHack')
 						killCount = killCount + 1
 					end
 				end
