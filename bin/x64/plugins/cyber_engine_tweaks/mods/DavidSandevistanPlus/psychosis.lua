@@ -133,6 +133,7 @@ function psychosis.attach(dsp)
 				}
 				local entry = psychoMessages[self.CyberPsychoWarnings]
 				if entry then self.bbs:SendWarning(entry.msg, entry.dur) end
+				self:SyncSafetyWithStage()
 				self:FrightenNPCs()
 			end
 			self:DisableSandevistan("BleedingEffect()")

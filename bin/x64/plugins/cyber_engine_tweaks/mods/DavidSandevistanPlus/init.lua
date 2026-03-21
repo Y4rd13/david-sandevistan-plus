@@ -509,9 +509,11 @@ dsp = {
 			end
 			-- Reset micro-episode timer for new level
 			self:ResetMicroEpisodeTimer()
+			self:SyncSafetyWithStage()
 		elseif RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
 			self.CyberPsychoWarnings = 1
 			self.neuralStrain = 0
+			self:SyncSafetyWithStage()
 			self.bbs:SendWarning("Crashed hard... still twitching. Need a full night", 5.0)
 		else
 			self.CyberPsychoWarnings = 0
@@ -594,6 +596,7 @@ dsp = {
 				local recoveryLevels = self.cfg.ripperRecoveryLevels or 1
 				local prevLevel = self.CyberPsychoWarnings
 				self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - recoveryLevels, 0)
+				self:SyncSafetyWithStage()
 				-- Grant runtime recharge (50% max)
 				local oldRuntime = self.runTime
 				local effectiveMax = self:GetEffectiveMaxRuntime()
@@ -821,32 +824,39 @@ dsp = {
 	,Safety = (function(self,SafetyOn,ForceSafe)
 		ForceSafe = (ForceSafe == true) and true or false
 		if (not SafetyOn) and (not self:IsWearingSandevistan()) then return end
-		if SafetyOn and (not ForceSafe) and self.isRunning and (self.CyberPsychoWarnings > 4) then return end
-		
+		-- Safety OFF is automatic at stage 5 — cannot be forced ON
+		if SafetyOn and (not ForceSafe) and self.CyberPsychoWarnings >= 5 then return end
+		-- Safety ON is automatic at stages 0-4 — cannot be forced OFF
+		if (not SafetyOn) and (not ForceSafe) and self.CyberPsychoWarnings < 5 then return end
+
 		if SafetyOn then
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
 			self.SafetyOn = true
-		elseif not self:IsFury() then -- and self.VIsInControl 
+		elseif not self:IsFury() then
 			self:StatusEffect_CheckAndApply(self.martinez.SafetiesOffStatusEffect)
 			self.SafetyOn = false
 		end
 		self:TimeDilationEffects()
 		self:DisableSandevistan("Safety()")
 	 end)
-	,ToggleSafetyLastKey = false
-	,ToggleSafety = (function(self,KeyDown)
-		if self.martinez == nil then return end
-		if self.bbs:InGameMenu() then return end
-		if self.bbs:InBrainDance() then return end
-		if not self:IsWearingSandevistan() then return end
-		if not self.VIsInControl and self.SafetyOn then return end
-		
-		if self.ToggleSafetyLastKey ~= KeyDown then
-			self.ToggleSafetyLastKey = KeyDown
-			if KeyDown then
-				self:Safety(not self.SafetyOn)
+	-- Sync Safety state with psycho level (called on level change, game load)
+	,SyncSafetyWithStage = (function(self)
+		if self.CyberPsychoWarnings >= 5 then
+			if self.SafetyOn then
+				self:Safety(false, true)  -- Force Safety OFF at stage 5
+			end
+		else
+			if not self.SafetyOn then
+				self:Safety(true, true)  -- Force Safety ON at stages 0-4
 			end
 		end
+	 end)
+	,ToggleSafetyLastKey = false
+	,ToggleSafety = (function(self,KeyDown)
+		-- Safety ON/OFF is automatic based on psycho stage, not a manual toggle
+		-- Stage 5+: Safety OFF (limiters fail — David can't stop)
+		-- Stages 0-4: Safety ON (limiters active)
+		-- Keybind kept for backwards compatibility but does nothing
 	 end)
 	,OutOfRuntime = (function(self,BleedingOn)
 		if BleedingOn then
@@ -1483,7 +1493,7 @@ dsp = {
 		end
 	 end)
 	,LoadGamePart2 = (function(self)
-		self:Safety(false)
+		self:SyncSafetyWithStage()
 		self:TimeDilationEffects()
 		self:SandevistanEdgeRunnerCheck()
 		self.LoadGameRun = true

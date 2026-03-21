@@ -194,7 +194,8 @@ local function initUI()
 	local catOK = tab .. "/OnKill"
 	local catHD = tab .. "/HealthDrain"
 	local catHB = tab .. "/HealthBrake"
-	local catSO = tab .. "/SafetyOff"
+	-- Safety ON/OFF is automatic (stage 5+ = OFF), no UI toggle needed
+	-- local catSO = tab .. "/SafetyOff"
 	local catRC = tab .. "/Recharge"
 	local catCP = tab .. "/Cyberpsychosis"
 	local catNS = tab .. "/NeuralStrain"
@@ -209,7 +210,7 @@ local function initUI()
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catSO, catRC, catCP, catNS, catKS, catIB, catCD, catRX, catNLD, catME}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catCD, catRX, catNLD, catME}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -527,83 +528,8 @@ local function initUI()
 			applyAll()
 		end)
 
-	------------------------------------------------------------
-	-- SAFETY OFF
-	------------------------------------------------------------
-	nativeSettings.addSubcategory(catSO, "Safety Limiters Off")
-
-	nativeSettings.addRangeInt(
-		catSO,
-		"Runtime Drain Multiplier",
-		"Extra runtime ticks consumed per cycle with Safety OFF. (Default: 4)\n"
-			.. "Total drain = 1 + this value. Default 4 means 6.25s/tick total.\n"
-			.. "Set to 0 for same drain rate as Safety ON.",
-		0, 10, 1,
-		cfg.safetyOffDrainMultiplier,
-		defaults.safetyOffDrainMultiplier,
-		function(value)
-			cfg.safetyOffDrainMultiplier = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catSO,
-		"V Can Die (Safety Off)",
-		"Allow V to die when Safety is OFF and health is fully depleted. (Default: ON)\n"
-			.. "When OFF, V survives but the Sandy still deactivates.",
-		cfg.enableSafetyOffKill,
-		defaults.enableSafetyOffKill,
-		function(value)
-			cfg.enableSafetyOffKill = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catSO,
-		"Kill Threshold (%)",
-		"Health percentage at which V dies with Safety OFF. (Default: 2)\n"
-			.. "Only applies when 'V Can Die' is enabled.",
-		1, 15, 1,
-		cfg.safetyOffKillThreshold,
-		defaults.safetyOffKillThreshold,
-		function(value)
-			cfg.safetyOffKillThreshold = value
-			applyAll()
-		end)
-
-	local timeDilationOptions = {
-		{ label = "92.5%", value = 925 },
-		{ label = "95%",   value = 950 },
-		{ label = "97.5% (Default)", value = 975 },
-		{ label = "99%",   value = 990 },
-		{ label = "99.5%", value = 1000 },
-	}
-	local tdLabels = {}
-	local tdValues = {}
-	local tdDefault = 3
-	for i, opt in ipairs(timeDilationOptions) do
-		tdLabels[i] = opt.label
-		tdValues[i] = opt.value
-		if opt.value == cfg.safetyOffTimeDilation then tdDefault = i end
-	end
-	local tdDefaultIdx = 3
-	for i, opt in ipairs(timeDilationOptions) do
-		if opt.value == defaults.safetyOffTimeDilation then tdDefaultIdx = i break end
-	end
-
-	nativeSettings.addSelectorString(
-		catSO,
-		"Safety Off Time Dilation",
-		"Time dilation when Safety Limiters are OFF. (Default: 97.5%)\n"
-			.. "Higher = slower time = more power. David ran without limiters for the speed boost.\n"
-			.. "This replaces the default perk-based time dilation while Safety is OFF.",
-		tdLabels,
-		tdDefault,
-		tdDefaultIdx,
-		function(value)
-			cfg.safetyOffTimeDilation = tdValues[value]
-			applyAll()
-		end)
+	-- Safety ON/OFF is automatic: stages 0-4 = ON, stage 5+ = OFF
+	-- No UI section — core mechanic, not a user setting
 
 	------------------------------------------------------------
 	-- RECHARGE & RECOVERY
