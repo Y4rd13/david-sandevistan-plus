@@ -628,7 +628,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         stIcon.SetHAlign(inkEHorizontalAlign.Left);
         stIcon.SetVAlign(inkEVerticalAlign.Top);
         stIcon.SetAtlasResource(r"base\\gameplay\\gui\\common\\icons\\quickhacks_icons.inkatlas");
-        stIcon.SetTexturePart(n"ShortCircuit");
+        stIcon.SetTexturePart(n"BrainMelt");
         stIcon.SetTintColor(this.Color(0.25, 0.60, 1.0, 1.0));
         stIcon.SetVisible(false);
         stIcon.Reparent(slot);
