@@ -896,8 +896,12 @@ dsp = {
 	 end)
 	-- Psycho-scaled time dilation curve: timeScale at full RT (maxTS) → timeScale at 0 RT (minTS)
 	-- Lower timeScale = higher dilation = faster Sandy
+	-- Stage 0: 90% fixed (no curve) — Sandy works but not at full potential
+	-- Stages 1-5: peak dilation increases (body adapts) but degrades faster (body breaks)
+	-- Stage 6: 99.35% (Last Breath) — perfection → death
 	,psychoDilationCurve = {
 		-- { maxTS, minTS, exp } — see docs/dilation-curves.md
+		[0] = { maxTS = 0.10,  minTS = 0.10,  exp = 1.0 },  -- 90% fixed (no degradation)
 		[1] = { maxTS = 0.075, minTS = 0.10,  exp = 1.5 },  -- 92.5% → 90%  (subtle)
 		[2] = { maxTS = 0.065, minTS = 0.10,  exp = 1.8 },  -- 93.5% → 90%  (slight accel)
 		[3] = { maxTS = 0.05,  minTS = 0.10,  exp = 2.0 },  -- 95%   → 90%  (quadratic)
@@ -944,7 +948,8 @@ dsp = {
 		local StatusText = 'Default'
 		local outtaTime = (self.runTime < 1)
 
-		-- Psycho-scaled dilation: higher psycho = more dilation, scales with runtime
+		-- Psycho-scaled dilation: stage determines max dilation, runtime degrades it
+		-- Stage 0: capped at 90% regardless of perk. Higher stages unlock more dilation.
 		local psychoCurve = self.cfg.enableCyberpsychosis and self.psychoDilationCurve[self.CyberPsychoWarnings]
 		if psychoCurve then
 			local maxRT = self.MaxRuntime
@@ -953,10 +958,11 @@ dsp = {
 			if rtRatio < 0 then rtRatio = 0 end
 			if rtRatio > 1 then rtRatio = 1 end
 			local psychoTS = psychoCurve.minTS + (psychoCurve.maxTS - psychoCurve.minTS) * (rtRatio ^ psychoCurve.exp)
-			if psychoTS < timeScale then
+			-- Psycho curve acts as a cap: cannot go faster than the stage allows
+			if psychoTS > timeScale then
 				timeScale = psychoTS
-				StatusText = "Psycho "..tostring(self.CyberPsychoWarnings)
 			end
+			StatusText = "Stage "..tostring(self.CyberPsychoWarnings)
 		end
 
 		-- Session fatigue: each overuse activation makes dilation less effective
