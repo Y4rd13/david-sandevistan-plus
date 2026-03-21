@@ -51,11 +51,17 @@ function strain.attach(dsp)
 
 	dsp.TriggerStrainEpisode = (function(self)
 		-- Fire a psycho episode: escalate level, MartinezFury, reset strain
-		self.runTime = 0
-		self.sps:EndSandevistan()
-		if self.CyberPsychoWarnings >= 5 and self.cfg.enableSafetyOffKill then
-			self:KillV()
+		-- Stage 5 Safety OFF: Sandy stays active — David doesn't stop in Ep 10
+		if self.CyberPsychoWarnings >= 5 and not self.SafetyOn then
+			-- Sandy stays ON, no runtime drain — episode happens mid-dilation
+			self:FrightenNPCs()
+			if self.cfg.enableSafetyOffKill then
+				self:KillV()
+			end
 		else
+			-- Stages 0-4 (or stage 5 Safety ON): Sandy shuts down
+			self.runTime = 0
+			self.sps:EndSandevistan()
 			self:Safety(true,true)
 			self:BleedingEffect()
 		end
