@@ -310,6 +310,248 @@ function psychosis.attach(dsp)
 			print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings))
 		end
 	 end)
+
+	-- ============================================================
+	-- HALLUCINATIONS: Phantom NPC spawning (Stage 3-5)
+	-- ============================================================
+
+	-- NPC records for phantom spawns (generic crowd types)
+	local phantomRecords = {
+		'Character.otr_service_vendor_ma',
+		'Character.otr_service_vendor_wa',
+		'Character.Grilled_Food',
+		'Character.Chinese_Food_Woman',
+	}
+
+	local hallucinationMessages = {
+		[3] = { "Did someone just...?", "Thought I saw...", "Shadows moving... just my eyes" },
+		[4] = { "They're watching me...", "Who's there?!", "Can't trust what I see anymore" },
+		[5] = { "THEY'RE EVERYWHERE", "GET OUT OF MY HEAD", "Lucy...? No... not real" },
+	}
+
+	dsp.phantomNPCs = {}  -- { entityID, despawnTime }
+	dsp.nextHallucinationTime = nil
+
+	dsp.UpdateHallucinations = (function(self, dt)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 3 then self.nextHallucinationTime = nil return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.lastBreath then return end
+		local eff = self:GetImmunoblockerEffectiveness()
+		if eff == 'full' or eff == 'partial' then return end
+
+		local now = os.clock()
+
+		-- Despawn expired phantoms
+		local newList = {}
+		for _, phantom in ipairs(self.phantomNPCs) do
+			if now >= phantom.despawnTime then
+				pcall(function()
+					local ent = Game.FindEntityByID(phantom.entityID)
+					if ent and IsDefined(ent) then
+						exEntitySpawner.Despawn(ent)
+					end
+				end)
+				-- Brief VFX on V when ghost vanishes
+				pcall(function()
+					self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+				end)
+			else
+				table.insert(newList, phantom)
+			end
+		end
+		self.phantomNPCs = newList
+
+		-- Schedule next hallucination
+		if self.nextHallucinationTime == nil then
+			local intervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
+			local range = intervals[self.CyberPsychoWarnings] or {180, 300}
+			self.nextHallucinationTime = now + range[1] + math.random() * (range[2] - range[1])
+			return
+		end
+		if now < self.nextHallucinationTime then return end
+
+		-- Spawn phantom NPC
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+
+		local vPos = V:GetWorldPosition()
+		local vFwd = V:GetWorldForward()
+
+		-- Spawn 5-15m in front of V with slight offset
+		local dist = 5 + math.random() * 10
+		local angleOffset = (math.random() - 0.5) * 2.0  -- ±1 radian lateral offset
+		local spawnX = vPos.x + vFwd.x * dist + vFwd.y * angleOffset * 3
+		local spawnY = vPos.y + vFwd.y * dist - vFwd.x * angleOffset * 3
+		local spawnZ = vPos.z
+
+		local record = phantomRecords[math.random(#phantomRecords)]
+		local ok, entityID = pcall(function()
+			local transform = Game.GetPlayer():GetWorldTransform()
+			local pos = WorldPosition.new()
+			WorldPosition.SetVector4(pos, Vector4.new(spawnX, spawnY, spawnZ, 1.0))
+			WorldTransform.SetWorldPosition(transform, pos)
+			return exEntitySpawner.SpawnRecord(record, transform)
+		end)
+
+		if ok and entityID then
+			-- Despawn timer: stage-dependent
+			local despawnDelays = { [3] = {3, 5}, [4] = {5, 8}, [5] = {2, 4} }
+			local delay = despawnDelays[self.CyberPsychoWarnings] or {3, 5}
+			local despawnTime = now + delay[1] + math.random() * (delay[2] - delay[1])
+			table.insert(self.phantomNPCs, { entityID = entityID, despawnTime = despawnTime })
+
+			-- Apply ghost VFX to spawned NPC (delayed slightly for entity init)
+			-- The VFX will be applied in the next despawn check cycle when entity is available
+
+			-- Audio hallucination on V
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_shortcircuit"
+				V:QueueEvent(evt)
+			end)
+
+			-- Message
+			local msgs = hallucinationMessages[self.CyberPsychoWarnings] or hallucinationMessages[3]
+			self.bbs:SendWarning(msgs[math.random(#msgs)], 3.0)
+
+			print('[DSP] Hallucination: spawned phantom '..record..' at stage '..tostring(self.CyberPsychoWarnings))
+		end
+
+		-- Reset timer
+		local intervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
+		local range = intervals[self.CyberPsychoWarnings] or {180, 300}
+		self.nextHallucinationTime = now + range[1] + math.random() * (range[2] - range[1])
+	 end)
+
+	-- Cleanup all phantoms (called on game load, death, etc.)
+	dsp.DespawnAllPhantoms = (function(self)
+		for _, phantom in ipairs(self.phantomNPCs) do
+			pcall(function()
+				local ent = Game.FindEntityByID(phantom.entityID)
+				if ent and IsDefined(ent) then
+					exEntitySpawner.Despawn(ent)
+				end
+			end)
+		end
+		self.phantomNPCs = {}
+		self.nextHallucinationTime = nil
+	 end)
+
+	-- ============================================================
+	-- AUTO-ATTACK: Involuntary attack on nearby NPC (Stage 4-5)
+	-- ============================================================
+
+	local autoAttackMessages = {
+		[4] = {
+			"What did I just do...",
+			"I didn't mean to... my hand moved on its own",
+			"No... that wasn't me",
+		},
+		[5] = {
+			"THEY WERE LOOKING AT ME",
+			"Had to... had to do it",
+			"More... need more",
+		},
+	}
+
+	dsp.nextAutoAttackTime = nil
+	dsp.autoAttackCooldown = 0
+
+	dsp.CheckAutoAttack = (function(self)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 4 then self.nextAutoAttackTime = nil return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.lastBreath then return end
+		if not self.isRunning then return end  -- only during Sandy use
+
+		local now = os.clock()
+		if self.autoAttackCooldown > now then return end
+
+		-- Chance per check: 15% at stage 4, 35% at stage 5
+		local chance = self.CyberPsychoWarnings >= 5 and 0.35 or 0.15
+		if math.random() > chance then return end
+
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+
+		-- Find NPC in front of V
+		local target = nil
+		pcall(function()
+			target = Game.GetTargetingSystem():GetLookAtObject(V, false, false)
+		end)
+		if not target or not IsDefined(target) then return end
+		local isNPC = false
+		pcall(function() isNPC = target:IsNPC() end)
+		if not isNPC then return end
+
+		-- Check distance
+		local tPos = target:GetWorldPosition()
+		local vPos = V:GetWorldPosition()
+		local dx = vPos.x - tPos.x
+		local dy = vPos.y - tPos.y
+		local dist = math.sqrt(dx*dx + dy*dy)
+		if dist > 15 then return end
+
+		-- Red outline on target (2s)
+		pcall(function()
+			local evt = OutlineRequestEvent.new()
+			local data = OutlineData.new()
+			data.outlineType = EOutlineType.RED
+			data.outlineOpacity = 1.0
+			evt.outlineRequest = OutlineRequest.CreateRequest(CName.new('cyberpsychosis'), data)
+			evt.outlineDuration = 2.0
+			target:QueueEvent(evt)
+		end)
+
+		-- Force shoot/attack
+		pcall(function()
+			local bb = V:GetPlayerStateMachineBlackboard()
+			bb:SetBool(Game.GetAllBlackboardDefs().PlayerStateMachine.QuestForceShoot, true)
+		end)
+
+		-- Stop shooting after 0.4s (managed in onUpdate)
+		self.autoAttackStopTime = now + 0.4
+
+		-- VFX on V
+		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+
+		-- Make target hostile toward V
+		pcall(function()
+			local npcAtt = target:GetAttitudeAgent()
+			local playerAtt = V:GetAttitudeAgent()
+			npcAtt:SetAttitudeTowards(playerAtt, EAIAttitude.AIA_Hostile)
+		end)
+
+		-- Camera shake
+		self.tremor.intensity = math.max(self.tremor.intensity, 0.008)
+
+		-- Message
+		local msgs = autoAttackMessages[self.CyberPsychoWarnings] or autoAttackMessages[4]
+		self.bbs:SendWarning(msgs[math.random(#msgs)], 3.0)
+
+		-- Cooldown 30s
+		self.autoAttackCooldown = now + 30
+
+		-- Broadcast gunshot stimulus (NPCs flee, NCPD reacts)
+		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 30.0)
+
+		print('[DSP] Auto-attack: fired at NPC, stage '..tostring(self.CyberPsychoWarnings))
+	 end)
+
+	-- Stop forced shooting (called from onUpdate)
+	dsp.UpdateAutoAttack = (function(self)
+		if self.autoAttackStopTime and os.clock() >= self.autoAttackStopTime then
+			pcall(function()
+				local V = Game.GetPlayer()
+				if V and IsDefined(V) then
+					local bb = V:GetPlayerStateMachineBlackboard()
+					bb:SetBool(Game.GetAllBlackboardDefs().PlayerStateMachine.QuestForceShoot, false)
+				end
+			end)
+			self.autoAttackStopTime = nil
+		end
+	 end)
 end
 
 return psychosis

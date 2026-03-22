@@ -1401,6 +1401,8 @@ dsp = {
 				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
 				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
+				-- Auto-attack check (stage 4-5, during Sandy)
+				self:CheckAutoAttack()
 				-- Auto-injector cooldown decrement (~1/sec)
 				if self.autoInjectorCooldown > 0 then
 					self.autoInjectorCooldown = self.autoInjectorCooldown - 1
@@ -1496,6 +1498,8 @@ dsp = {
 		self.lastBreathMessage = nil
 		self.nextTimeBombTime = nil
 		self.combatNPCs = {}
+		self:DespawnAllPhantoms()
+		self.blackoutState = nil
 		self.HealthBrake = self.qs:LoadOverClockBrake()
 		self.CyberPsychoWarnings = self.qs:LoadCyberPsycho()
 		self.dailyActivations = self.qs:LoadDailyActivations()
@@ -2380,6 +2384,8 @@ registerForEvent('onUpdate', function(dt)
     dsp:UpdateTerminalClarity(dt)
     dsp:UpdateLastBreath(dt)
     dsp:UpdateBlackout(dt)
+    dsp:UpdateHallucinations(dt)
+    dsp:UpdateAutoAttack()
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt
