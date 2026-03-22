@@ -21,6 +21,15 @@ function loreEffects.attach(dsp)
 		if self.dailyActivations > self:getEffectiveSafeActivations() * 2 then
 			target = math.max(target, 0.002)
 		end
+		-- Low runtime adds tremor (body exhaustion)
+		if self.isRunning then
+			local rtPct = self:GetRuntimePercent()
+			if rtPct < 10 then
+				target = math.max(target, 0.006)
+			elseif rtPct < 30 then
+				target = math.max(target, 0.003)
+			end
+		end
 		-- Comedown tremor at psycho 3+
 		if self.comedownTremor then
 			target = math.max(target, 0.003)
@@ -114,10 +123,16 @@ function loreEffects.attach(dsp)
 	 end)
 
 	dsp.Nosebleed = (function(self)
-		-- Nosebleed VFX after overuse (David bleeds from the nose in Ep 2,3,5,9)
+		-- Nosebleed VFX after overuse or low runtime (David bleeds in Ep 2,3,5,9)
 		if not self.cfg.enableCyberpsychosis then return end
-		if self.dailyActivations <= self:getEffectiveSafeActivations() then return end
-		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		local trigger = false
+		-- Overuse: activations beyond safe limit
+		if self.dailyActivations > self:getEffectiveSafeActivations() then trigger = true end
+		-- Low runtime: activating Sandy when body is exhausted
+		if self:GetRuntimePercent() < 30 then trigger = true end
+		if trigger then
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		end
 	 end)
 
 	dsp.ExhaustionCheck = (function(self)
@@ -160,12 +175,29 @@ function loreEffects.attach(dsp)
 		self.nextNosebleedTime = now + base + math.random(0, base)
 	 end)
 
+	-- Stage-based max runtime multiplier: higher psychosis = body endures less
+	local stageRuntimeMult = { [0]=1.0, [1]=0.9, [2]=0.8, [3]=0.65, [4]=0.5, [5]=0.35 }
+
 	dsp.GetEffectiveMaxRuntime = (function(self)
-		if not self.cfg.enableRuntimeDegradation then return self.MaxRuntime end
-		local degraded = self.maxRuntimeDegraded or 0
-		local maxLoss = self.MaxRuntime * 0.5
-		if degraded > maxLoss then degraded = maxLoss end
-		return math.max(self.MaxRuntime - degraded, self.MaxRuntime * 0.5)
+		local base = self.MaxRuntime
+		-- Stage multiplier: body deteriorates with psychosis
+		local stageMult = stageRuntimeMult[self.CyberPsychoWarnings] or 1.0
+		base = base * stageMult
+		-- Degradation from sustained use
+		if self.cfg.enableRuntimeDegradation then
+			local degraded = self.maxRuntimeDegraded or 0
+			local maxLoss = self.MaxRuntime * 0.5
+			if degraded > maxLoss then degraded = maxLoss end
+			base = base - degraded
+		end
+		return math.max(base, self.MaxRuntime * 0.1)
+	 end)
+
+	-- Helper: get runtime as percentage of effective max
+	dsp.GetRuntimePercent = (function(self)
+		local effectiveMax = self:GetEffectiveMaxRuntime()
+		if effectiveMax <= 0 then return 0 end
+		return (self.runTime / effectiveMax) * 100
 	 end)
 end
 

@@ -1346,6 +1346,17 @@ dsp = {
 								self:AddStrain(killStrain)
 							end
 						end
+						-- Low runtime strain: body is exhausted, Sandy stresses it more
+						if self.isRunning then
+							local rtPct = self:GetRuntimePercent()
+							if rtPct <= 0 then
+								self:AddStrain(1.0)      -- massive strain at 0% — death wish
+							elseif rtPct < 10 then
+								self:AddStrain(0.5)      -- heavy strain
+							elseif rtPct < 30 then
+								self:AddStrain(0.15)     -- noticeable strain
+							end
+						end
 					end
 
 					-- Strain drain sources (rate varies by tier and effectiveness)
