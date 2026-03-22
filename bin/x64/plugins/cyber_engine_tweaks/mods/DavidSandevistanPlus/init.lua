@@ -1057,12 +1057,14 @@ dsp = {
 	,Calculate_SandevistanCharge = (function(self)
 		-- Last Breath: always report 100% so engine never tries to deactivate
 		if self.lastBreath then return 100 end
+		-- Stage 5 Safety OFF: Sandy stays active during episodes — David doesn't stop
+		if self.CyberPsychoWarnings >= 5 and not self.SafetyOn then return 100 end
 		local CooldownBuffer = 0.05 -- the buffer stops the sandevistan from running out of cooldown
 		local IsFury = self:IsFury()
-		if IsFury then CooldownBuffer = 0 end -- if MAXTAC gets called, sandevistan gives fries a circuit
+		if IsFury then CooldownBuffer = 0 end -- during psycho episode (stages 0-4), Sandy shuts down
 		local RemainingCharge = (((self.runTime / self.MaxRuntime)) + CooldownBuffer) * 100
 		if self.runTime <= 0 and IsFury then
-			RemainingCharge = 0 -- disable sandevistan!
+			RemainingCharge = 0 -- disable sandevistan during episode (stages 0-4 only)
 		elseif self.runTime < self.MaxRuntime and RemainingCharge >= 100 then
 			RemainingCharge = 99 -- stop the ping between 300 and 288s
 		elseif RemainingCharge > 100 then
