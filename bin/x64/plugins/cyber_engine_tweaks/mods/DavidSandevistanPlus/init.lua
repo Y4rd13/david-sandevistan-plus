@@ -1362,8 +1362,12 @@ dsp = {
 				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
 				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
-				-- Auto-attack check (stage 4-5, during Sandy)
-				self:CheckAutoAttack()
+				-- Low runtime auto-attack check (stage 3+, runtime <10%, every 5s)
+				self.lowRuntimeAttackAccum = (self.lowRuntimeAttackAccum or 0) + 1
+				if self.lowRuntimeAttackAccum >= 5 then
+					self.lowRuntimeAttackAccum = 0
+					self:CheckLowRuntimeAutoAttack()
+				end
 				-- Auto-injector cooldown decrement (~1/sec)
 				if self.autoInjectorCooldown > 0 then
 					self.autoInjectorCooldown = self.autoInjectorCooldown - 1

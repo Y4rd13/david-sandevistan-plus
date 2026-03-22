@@ -132,6 +132,10 @@ function loreEffects.attach(dsp)
 		if self:GetRuntimePercent() < 30 then trigger = true end
 		if trigger then
 			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+			-- Auto-attack chance during nosebleed: 5/15/25% by stage
+			local nosebleedAttackChance = { [3]=0.05, [4]=0.15, [5]=0.25 }
+			local chance = nosebleedAttackChance[self.CyberPsychoWarnings]
+			if chance then self:TryAutoAttack(chance, false) end
 		end
 	 end)
 

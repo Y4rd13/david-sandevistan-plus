@@ -182,6 +182,10 @@ function psychosis.attach(dsp)
 		if self:GetHeatLevel() > 0 then
 			self:NCPDIsWatching() -- Come find V !
 		end
+		-- Auto-attack chance during stage change: 40/60/80% by stage
+		local stageAttackChance = { [3]=0.40, [4]=0.60, [5]=0.80 }
+		self:TryAutoAttack(stageAttackChance[self.CyberPsychoWarnings] or 0.40, false)
+
 		-- Reset strain after episode fires (accumulation starts fresh)
 		self.neuralStrain = 0
 	 end)
@@ -322,6 +326,9 @@ function psychosis.attach(dsp)
 			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 		elseif selected.type == "manic_laugh" then
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+			-- Auto-attack chance during manic laugh: 30/50/70% by stage
+			local laughAttackChance = { [3]=0.30, [4]=0.50, [5]=0.70 }
+			self:TryAutoAttack(laughAttackChance[self.CyberPsychoWarnings] or 0.30, true)
 		elseif selected.type == "sandy_flash" then
 			if not self.isRunning and self:IsWearingSandevistan() then
 				self.bbs:StartSandevistan()
@@ -469,14 +476,20 @@ function psychosis.attach(dsp)
 	 end)
 
 	-- ============================================================
-	-- AUTO-ATTACK: Involuntary attack on nearby NPC (Stage 4-5)
+	-- AUTO-ATTACK: Involuntary attack on nearby NPC (Stage 3-5)
+	-- Triggered by: manic_laugh, stage change, low runtime, nosebleed
 	-- ============================================================
 
 	local autoAttackMessages = {
-		[4] = {
+		[3] = {
 			"What did I just do...",
 			"I didn't mean to... my hand moved on its own",
 			"No... that wasn't me",
+		},
+		[4] = {
+			"Can't control it... something's wrong",
+			"My hand... it moved on its own",
+			"NO... STOP...",
 		},
 		[5] = {
 			"THEY WERE LOOKING AT ME",
@@ -485,35 +498,33 @@ function psychosis.attach(dsp)
 		},
 	}
 
-	dsp.nextAutoAttackTime = nil
 	dsp.autoAttackCooldown = 0
 
-	dsp.CheckAutoAttack = (function(self)
-		if not self.cfg.enableCyberpsychosis then return end
-		if self.CyberPsychoWarnings < 4 then self.nextAutoAttackTime = nil return end
-		if self.CachedInMenu or self.CachedBrainDance then return end
-		if self.lastBreath then return end
-		if not self.isRunning then return end  -- only during Sandy use
+	-- Core auto-attack function. Called from specific trigger points.
+	-- fromLaugh: if true, laugh is already active (don't apply PsychoLaughEffect again)
+	dsp.TryAutoAttack = (function(self, chance, fromLaugh)
+		if not self.cfg.enableCyberpsychosis then return false end
+		if self.CyberPsychoWarnings < 3 then return false end
+		if self.CachedInMenu or self.CachedBrainDance then return false end
+		if self.lastBreath then return false end
 
 		local now = os.clock()
-		if self.autoAttackCooldown > now then return end
+		if self.autoAttackCooldown > now then return false end
 
-		-- Chance per check: 15% at stage 4, 35% at stage 5
-		local chance = self.CyberPsychoWarnings >= 5 and 0.35 or 0.15
-		if math.random() > chance then return end
+		if math.random() > chance then return false end
 
 		local V = Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
+		if not V or not IsDefined(V) then return false end
 
 		-- Find NPC in front of V
 		local target = nil
 		pcall(function()
 			target = Game.GetTargetingSystem():GetLookAtObject(V, false, false)
 		end)
-		if not target or not IsDefined(target) then return end
+		if not target or not IsDefined(target) then return false end
 		local isNPC = false
 		pcall(function() isNPC = target:IsNPC() end)
-		if not isNPC then return end
+		if not isNPC then return false end
 
 		-- Check distance
 		local tPos = target:GetWorldPosition()
@@ -521,7 +532,7 @@ function psychosis.attach(dsp)
 		local dx = vPos.x - tPos.x
 		local dy = vPos.y - tPos.y
 		local dist = math.sqrt(dx*dx + dy*dy)
-		if dist > 15 then return end
+		if dist > 15 then return false end
 
 		-- Red outline on target (2s)
 		pcall(function()
@@ -546,6 +557,11 @@ function psychosis.attach(dsp)
 		-- VFX on V
 		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
 
+		-- Post-attack laugh (only if not already laughing)
+		if not fromLaugh then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+		end
+
 		-- Make target hostile toward V
 		pcall(function()
 			local npcAtt = target:GetAttitudeAgent()
@@ -557,7 +573,7 @@ function psychosis.attach(dsp)
 		self.tremor.intensity = math.max(self.tremor.intensity, 0.008)
 
 		-- Message
-		local msgs = autoAttackMessages[self.CyberPsychoWarnings] or autoAttackMessages[4]
+		local msgs = autoAttackMessages[self.CyberPsychoWarnings] or autoAttackMessages[3]
 		self.bbs:SendWarning(msgs[math.random(#msgs)], 3.0)
 
 		-- Cooldown 30s
@@ -566,7 +582,8 @@ function psychosis.attach(dsp)
 		-- Broadcast gunshot stimulus (NPCs flee, NCPD reacts)
 		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 30.0)
 
-		print('[DSP] Auto-attack: fired at NPC, stage '..tostring(self.CyberPsychoWarnings))
+		print('[DSP] Auto-attack: fired at NPC, stage '..tostring(self.CyberPsychoWarnings)..' fromLaugh='..tostring(fromLaugh))
+		return true
 	 end)
 
 	-- Stop forced shooting (called from onUpdate)
@@ -581,6 +598,18 @@ function psychosis.attach(dsp)
 			end)
 			self.autoAttackStopTime = nil
 		end
+	 end)
+
+	-- Per-second check for low runtime auto-attack (stage 3+, runtime <10%)
+	dsp.CheckLowRuntimeAutoAttack = (function(self)
+		if not self.isRunning then return end
+		if self.CyberPsychoWarnings < 3 then return end
+		local rtPct = self:GetRuntimePercent()
+		if rtPct >= 10 then return end
+		-- Low runtime chances: 10% stage 3, 20% stage 4, 35% stage 5
+		local chances = { [3]=0.10, [4]=0.20, [5]=0.35 }
+		local chance = chances[self.CyberPsychoWarnings] or 0.10
+		self:TryAutoAttack(chance, false)
 	 end)
 end
 
