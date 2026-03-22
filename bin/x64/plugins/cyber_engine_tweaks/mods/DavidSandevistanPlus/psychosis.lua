@@ -169,7 +169,7 @@ function psychosis.attach(dsp)
 		-- Combat buffs during psychosis (David was STRONGER: +50% speed, +100% armor, ×10 health regen)
 		self:StatusEffect_CheckAndApply(self.martinez.PsychosisCombatBuff)
 
-		-- Psychosis SFX + VFX (like Wannabe Edgerunner)
+		-- Psychosis SFX (johnny_sickness_blackout already fired in pre-psychosis)
 		local V = Game.GetPlayer()
 		pcall(function()
 			if V and IsDefined(V) then
@@ -177,8 +177,6 @@ function psychosis.attach(dsp)
 				local screamEvt = SoundPlayEvent.new()
 				screamEvt.soundName = "ono_v_fear_panic_scream"
 				V:QueueEvent(screamEvt)
-				-- Johnny sickness blackout VFX
-				GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
 			end
 		end)
 
