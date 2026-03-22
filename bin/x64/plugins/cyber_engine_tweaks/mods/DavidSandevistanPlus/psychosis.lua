@@ -127,11 +127,16 @@ function psychosis.attach(dsp)
 				pcall(function()
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
-						Game.GetStatusEffectSystem():ApplyStatusEffect(V:GetEntityID(),
-							TweakDBID.new('BaseStatusEffect.intrusioncore_ep1'))
-						local evt = SoundPlayEvent.new()
-						evt.soundName = "ONO_V_LongPain"
-						V:QueueEvent(evt)
+						-- Pain SFX: short at low stages, long at high stages
+						local painSfx = SoundPlayEvent.new()
+						if self.CyberPsychoWarnings >= 3 then
+							painSfx.soundName = "ONO_V_LongPain"
+						else
+							painSfx.soundName = "ono_v_pain_short"
+						end
+						V:QueueEvent(painSfx)
+						-- VFX: personal_link_glitch (neural connection distortion)
+						GameObjectEffectHelper.StartEffectEvent(V, CName.new('personal_link_glitch'), false, worldEffectBlackboard.new())
 					end
 				end)
 				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
@@ -160,6 +165,18 @@ function psychosis.attach(dsp)
 		else
 			self:StatusEffect_CheckAndApply(self.martinez.MartinezFury_Level5)
 		end
+		-- Psychosis SFX + VFX (like Wannabe Edgerunner)
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				-- Panic scream
+				local screamEvt = SoundPlayEvent.new()
+				screamEvt.soundName = "ono_v_fear_panic_scream"
+				V:QueueEvent(screamEvt)
+				-- Johnny sickness blackout VFX
+				GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
+			end
+		end)
 		local V = Game.GetPlayer() -- Simulate a gunshot event so enemies agro and NPCs run away
 		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 50.0)
 		if self:GetHeatLevel() > 0 then

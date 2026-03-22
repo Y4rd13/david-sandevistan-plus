@@ -276,11 +276,9 @@ function loreEffects.attach(dsp)
 				if not V or not IsDefined(V) then return end
 				local loc = bs.location
 
-				-- Fast travel glitch VFX (like Wannabe Edgerunner)
+				-- Fast travel glitch VFX (like Wannabe Edgerunner, 0.3s before teleport)
 				pcall(function()
-					local evt = SoundPlayEvent.new()
-					evt.soundName = "fast_travel_glitch"
-					V:QueueEvent(evt)
+					GameObjectEffectHelper.StartEffectEvent(V, CName.new('fast_travel_glitch'), false, worldEffectBlackboard.new())
 				end)
 
 				-- Clear wanted level
@@ -350,7 +348,13 @@ function loreEffects.attach(dsp)
 				Game.GetStatusEffectSystem():RemoveStatusEffect(V:GetEntityID(),
 					TweakDBID.new('BaseStatusEffect.CyberwareInstallationAnimationBlackout'))
 
-				-- Brief groggy VFX
+				-- Post-blackout SFX + VFX (like Wannabe Edgerunner)
+				pcall(function()
+					local painEvt = SoundPlayEvent.new()
+					painEvt.soundName = "ono_v_pain_long"
+					V:QueueEvent(painEvt)
+					GameObjectEffectHelper.StartEffectEvent(V, CName.new('hacking_glitch_low'), false, worldEffectBlackboard.new())
+				end)
 				self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 
 				-- Health based on location type
