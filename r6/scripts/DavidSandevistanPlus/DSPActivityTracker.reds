@@ -60,13 +60,19 @@ public class DSPActivityChecker {
         return false;
     }
 
-    // Main check: returns activity type as Int32 (0=unknown, 1=shower, 2=pet, 3=apartment, 4=social, 5=lover)
+    // Sleep with lover (lying in bed with romantic partner — extra bonus on sleep)
+    public static func IsSleepWithLover(locKey: String) -> Bool {
+        return Equals(locKey, "LocKey#46047");  // Interacting with lover in bed
+    }
+
+    // Main check: returns activity type as Int32 (0=unknown, 1=shower, 2=pet, 3=apartment, 4=social, 5=lover, 6=sleepWithLover)
     public static func Check(locKey: String, gi: GameInstance) -> Int32 {
         if DSPActivityChecker.IsShower(locKey) { return 1; }
         if DSPActivityChecker.IsPet(locKey) { return 2; }
         if DSPActivityChecker.IsApartment(locKey) { return 3; }
         if DSPActivityChecker.IsSocial(locKey) { return 4; }
         if DSPActivityChecker.IsLover(locKey, gi) { return 5; }
+        if DSPActivityChecker.IsSleepWithLover(locKey) { return 6; }
         return 0;
     }
 }

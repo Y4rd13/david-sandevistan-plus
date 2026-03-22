@@ -251,11 +251,12 @@ dsp = {
 	,dailyActivations = 0
 	-- Activity tracking for sleep multiplier (reset on sleep)
 	,activities = {
-		lover = false,      -- visited romantic partner
-		social = false,     -- social interaction (dance, drink, rollercoaster)
-		pet = false,        -- pet Nibbles/cat/iguana
-		shower = false,     -- used shower
-		apartment = false,  -- apartment amenity (coffee, guitar, incense, etc.)
+		lover = false,          -- visited romantic partner
+		social = false,         -- social interaction (dance, drink, rollercoaster)
+		pet = false,            -- pet Nibbles/cat/iguana
+		shower = false,         -- used shower
+		apartment = false,      -- apartment amenity (coffee, guitar, incense, etc.)
+		sleepWithLover = false, -- lying in bed with romantic partner (extra sleep bonus)
 	}
 	,activityCount = 0
 	,sandyStartRuntime = 0
@@ -2203,12 +2204,12 @@ dsp.RegisterActivity = (function(self, activityName)
 		self.activityCount = (self.activityCount or 0) + 1
 
 		-- Immediate strain drain per activity
-		local immediateStrain = { lover = 5, social = 3, pet = 2, shower = 5, apartment = 2 }
+		local immediateStrain = { lover = 5, social = 3, pet = 2, shower = 5, apartment = 2, sleepWithLover = 8 }
 		local drain = immediateStrain[activityName] or 2
 		self.neuralStrain = math.max((self.neuralStrain or 0) - drain, 0)
 
 		-- Immediate runtime restore per activity
-		local immediateRuntime = { lover = 0.10, shower = 0.05 }
+		local immediateRuntime = { lover = 0.10, shower = 0.05, sleepWithLover = 0.15 }
 		local rtRestore = immediateRuntime[activityName] or 0
 		if rtRestore > 0 then
 			local effectiveMax = self:GetEffectiveMaxRuntime()
@@ -2222,6 +2223,7 @@ dsp.RegisterActivity = (function(self, activityName)
 			pet = { "Hey little choom...", "Simple things... they help", "At least someone doesn't judge" },
 			shower = { "Hot water... clears the head a bit", "Feels human again... for a sec", "Washed off the day" },
 			apartment = { "Home... small comforts", "Quiet moment", "Breathing room" },
+			sleepWithLover = { "This is what it's all about...", "With you... the noise stops", "Don't want this moment to end" },
 		}
 		local msgs = activityMessages[activityName]
 		if msgs then self.bbs:SendMessage(msgs[math.random(#msgs)], 3.0) end
@@ -2232,14 +2234,14 @@ dsp.RegisterActivity = (function(self, activityName)
 
 -- Reset all activities (called from Rested)
 dsp.ResetActivities = (function(self)
-	self.activities = { lover = false, social = false, pet = false, shower = false, apartment = false }
+	self.activities = { lover = false, social = false, pet = false, shower = false, apartment = false, sleepWithLover = false }
 	self.activityCount = 0
  end)
 
 -- Get sleep multiplier based on activities done
 dsp.GetSleepMultiplier = (function(self)
 	local count = self.activityCount or 0
-	return 1.0 + (count * 0.3)  -- 1.0 to 2.5 (0 to 5 activities)
+	return 1.0 + (count * 0.25)  -- 1.0 to 2.5 (0 to 6 activities)
  end)
 
 -- Psycho stamina debuff: ×0.85 at stage 4-5 (even outside Sandy)
@@ -2357,7 +2359,7 @@ registerForEvent('onInit', function()
 
 	-- Phase 2: Poll quest fact set by DSPActivityTracker.reds (checked in displayTick)
 	-- Activity types: 1=shower, 2=pet, 3=apartment, 4=social, 5=lover
-	local activityNames = { [1]='shower', [2]='pet', [3]='apartment', [4]='social', [5]='lover' }
+	local activityNames = { [1]='shower', [2]='pet', [3]='apartment', [4]='social', [5]='lover', [6]='sleepWithLover' }
 
 	dsp.CheckActivityQuestFact = (function(self)
 		pcall(function()
