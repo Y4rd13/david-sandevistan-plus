@@ -543,10 +543,8 @@ dsp = {
 		self.combatNPCs = {}
 		self.qs:SaveDailyActivations(0)
 
-		-- Clear comedown state on rest
-		self.comedownTimer = nil
-		self.comedownTremor = false
-		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
+		-- Clear runtime effects on rest
+		self:RemoveRuntimeStamina()
 
 		-- Sleep recovers degraded max runtime (75% by default)
 		if self.cfg.enableRuntimeDegradation and (self.maxRuntimeDegraded or 0) > 0 then
@@ -662,19 +660,8 @@ dsp = {
 		if self.lastBreath then return end
 		print('[DSP] Start: IsWearing=true, dailyActivations='..tostring(self.dailyActivations))
 
-		-- Block reactivation during comedown
-		if self.comedownTimer and self.comedownTimer > 0 and self.cfg.comedownBlockSandy then
-			local comedownLines = {
-				"Body's not responding... need to wait it out",
-				"Not yet... still shaking from the last one",
-				"Can't... muscles won't cooperate",
-				"System's fried... give it a sec",
-				"Spine's burning... come on, work...",
-			}
-			self.bbs:SendWarning(comedownLines[math.random(#comedownLines)], 2.5)
-			self.sps:EndSandevistan()
-			return
-		end
+		-- No reactivation block — David can always reactivate (lore-accurate)
+		-- The cost is progressive: low runtime = debuffs + strain
 
 		self.isRunning = true
 		self.sandyStartRuntime = self.runTime
@@ -785,42 +772,24 @@ dsp = {
 		if self.martinez == nil then return end
 		if not self:IsWearingSandevistan() then return end
 
-		-- Comedown: apply debuff based on how long the sandy was active
-		if self.cfg.enableComedown then
-			local runtimeUsed = self.sandyStartRuntime - self.runTime
-			if runtimeUsed > 0 then
-				local scale = math.min(runtimeUsed / self.cfg.comedownRuntimeThreshold, 1.0)
-				local duration = self.cfg.comedownBaseDuration + (self.cfg.comedownMaxDuration - self.cfg.comedownBaseDuration) * scale
-				-- Psycho multiplier at level 3+
-				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 3 then
-					duration = duration * self.cfg.comedownPsychoMultiplier
-				end
-				self.comedownTimer = duration
-				self:StatusEffect_CheckAndApply(self.martinez.ComedownEffect)
-				-- Tremor during comedown at psycho 3+
-				if self.cfg.comedownTremorAtPsycho and self.CyberPsychoWarnings >= 3 then
-					self.comedownTremor = true
-				end
-				local comedownEndLines = {
-					"World snaps back... everything aches",
-					"Sandy cuts out... legs feel like lead",
-					"Coming down... the world's too fast now",
-					"Spine's cooling off... that one cost me",
-					"Back to normal speed... body's screaming",
-				}
-				self.bbs:SendMessage(comedownEndLines[math.random(#comedownEndLines)], 2.5)
-				if self.dev_mode then
-					print('Comedown: runtimeUsed='..tostring(runtimeUsed)..'s duration='..string.format("%.1f",duration)..'s psychoMult='..(self.CyberPsychoWarnings >= 3 and tostring(self.cfg.comedownPsychoMultiplier) or "1.0"))
-				end
+		-- Deactivation message (lore-accurate: no cooldown, just physical cost)
+		local runtimeUsed = self.sandyStartRuntime - self.runTime
+		if runtimeUsed > 2 then
+			local deactivateLines = {
+				"World snaps back... everything aches",
+				"Sandy cuts out... legs feel like lead",
+				"Back to normal speed... body's screaming",
+				"Spine's cooling off... that one cost me",
+			}
+			self.bbs:SendMessage(deactivateLines[math.random(#deactivateLines)], 2.5)
+		end
 
-				-- Max runtime degradation: 1% per 60s of Sandy use
-				if self.cfg.enableRuntimeDegradation then
-					local degradation = (runtimeUsed / 60) * (self.MaxRuntime * 0.01)
-					self.maxRuntimeDegraded = (self.maxRuntimeDegraded or 0) + degradation
-					local maxLoss = self.MaxRuntime * 0.5
-					if self.maxRuntimeDegraded > maxLoss then self.maxRuntimeDegraded = maxLoss end
-				end
-			end
+		-- Max runtime degradation: 1% per 60s of Sandy use
+		if self.cfg.enableRuntimeDegradation and runtimeUsed > 0 then
+			local degradation = (runtimeUsed / 60) * (self.MaxRuntime * 0.01)
+			self.maxRuntimeDegraded = (self.maxRuntimeDegraded or 0) + degradation
+			local maxLoss = self.MaxRuntime * 0.5
+			if self.maxRuntimeDegraded > maxLoss then self.maxRuntimeDegraded = maxLoss end
 		end
 
 		self.runTime = math.floor(self.runTime)
@@ -1240,15 +1209,7 @@ dsp = {
 			end
 		end
 
-		-- Comedown timer: count down and remove effect when expired
-		if self.comedownTimer ~= nil then
-			self.comedownTimer = self.comedownTimer - dt
-			if self.comedownTimer <= 0 then
-				self.comedownTimer = nil
-				self.comedownTremor = false
-				self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
-			end
-		end
+		-- Comedown system removed — penalties are now runtime-based (lore-accurate)
 
 		-- Micro-episode cleanup timer (auto-remove brief VFX)
 		if self.microEpisodeCleanup then
@@ -1317,16 +1278,7 @@ dsp = {
 						if not self.SafetyOn then
 							self:AddStrain(self.cfg.strainPerSecSafetyOff)
 						end
-						-- Comedown: +1 per 5s (accumulated)
-						if self.comedownTimer and self.comedownTimer > 0 then
-							self.strainComedownAccum = (self.strainComedownAccum or 0) + 1
-							if self.strainComedownAccum >= 5 then
-								self:AddStrain(self.cfg.strainPerComedown5s)
-								self.strainComedownAccum = 0
-							end
-						else
-							self.strainComedownAccum = 0
-						end
+						-- Comedown strain removed — penalties are runtime-based now
 						-- Sandy active: +2 per 60s (accumulated)
 						if self.isRunning then
 							self.strainActiveAccum = (self.strainActiveAccum or 0) + 1
@@ -2175,21 +2127,23 @@ dsp.UpdateRuntimeStamina = (function(self)
 	local rtPct = self:GetRuntimePercent()
 	local newState = nil
 	if rtPct > 30 then
-		newState = 'boost'    -- body energized by Sandy
+		newState = 'boost'     -- body energized by Sandy
 	elseif rtPct > 10 then
-		newState = nil        -- normal stamina (no modifier)
+		newState = nil         -- normal (no modifier)
 	else
-		newState = 'drain'    -- body exhausted
+		newState = 'exhausted' -- body failing: stamina drain + speed/armor penalty
 	end
 	if newState ~= self.currentStaminaState then
-		-- Remove previous
+		-- Remove all previous
 		self:StatusEffect_CheckAndRemove(self.martinez.StaminaBoost)
 		self:StatusEffect_CheckAndRemove(self.martinez.StaminaDrain)
+		self:StatusEffect_CheckAndRemove(self.martinez.RuntimeExhaustion)
 		-- Apply new
 		if newState == 'boost' then
 			self:StatusEffect_CheckAndApply(self.martinez.StaminaBoost)
-		elseif newState == 'drain' then
+		elseif newState == 'exhausted' then
 			self:StatusEffect_CheckAndApply(self.martinez.StaminaDrain)
+			self:StatusEffect_CheckAndApply(self.martinez.RuntimeExhaustion)
 		end
 		self.currentStaminaState = newState
 	end
@@ -2198,6 +2152,7 @@ dsp.UpdateRuntimeStamina = (function(self)
 dsp.RemoveRuntimeStamina = (function(self)
 	self:StatusEffect_CheckAndRemove(self.martinez.StaminaBoost)
 	self:StatusEffect_CheckAndRemove(self.martinez.StaminaDrain)
+	self:StatusEffect_CheckAndRemove(self.martinez.RuntimeExhaustion)
 	self.currentStaminaState = nil
  end)
 
@@ -2218,7 +2173,9 @@ registerForEvent('onInit', function()
 	dsp:Init()
 	
     Observe('SandevistanEvents', 'OnEnter', function(self, event)
-		if dsp:IsWearingSandevistan() then
+		local isWearing = dsp:IsWearingSandevistan()
+		print('[DSP] SandevistanEvents.OnEnter: IsWearing='..tostring(isWearing)..' PlayerAttached='..tostring(dsp.PlayerAttached)..' LoadGameRun='..tostring(dsp.LoadGameRun))
+		if isWearing then
 			dsp:Start()
 			return false
 		end

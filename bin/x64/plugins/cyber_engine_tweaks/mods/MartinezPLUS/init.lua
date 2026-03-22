@@ -210,7 +210,7 @@ local function initUI()
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catCD, catRX, catNLD, catME}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catRX, catNLD, catME}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -809,97 +809,8 @@ local function initUI()
 			applyAll()
 		end)
 
-	------------------------------------------------------------
-	-- COMEDOWN
-	------------------------------------------------------------
-	nativeSettings.addSubcategory(catCD, "Comedown (Deactivation Debuff)")
-
-	nativeSettings.addSwitch(
-		catCD,
-		"Enable Comedown",
-		"Apply a debuff after deactivating the Sandevistan. (Default: ON)\n"
-			.. "Lore: David showed visible strain after deactivating — disorientation, heavy breathing.\n"
-			.. "Duration scales with how long the Sandy was active.",
-		cfg.enableComedown,
-		defaults.enableComedown,
-		function(value)
-			cfg.enableComedown = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catCD,
-		"Base Duration (sec)",
-		"Minimum comedown duration after a short Sandy use. (Default: 3.0)",
-		1.0, 10.0, 0.5, "%.1f",
-		cfg.comedownBaseDuration,
-		defaults.comedownBaseDuration,
-		function(value)
-			cfg.comedownBaseDuration = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catCD,
-		"Max Duration (sec)",
-		"Maximum comedown duration after prolonged Sandy use. (Default: 8.0)",
-		3.0, 20.0, 0.5, "%.1f",
-		cfg.comedownMaxDuration,
-		defaults.comedownMaxDuration,
-		function(value)
-			cfg.comedownMaxDuration = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeInt(
-		catCD,
-		"Scaling Threshold (sec)",
-		"Seconds of Sandy runtime used before comedown reaches max duration. (Default: 60)\n"
-			.. "Below this: comedown scales linearly from base to max.\n"
-			.. "Above this: always max duration.",
-		10, 300, 5,
-		cfg.comedownRuntimeThreshold,
-		defaults.comedownRuntimeThreshold,
-		function(value)
-			cfg.comedownRuntimeThreshold = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catCD,
-		"Block Sandy During Comedown",
-		"Prevent Sandy reactivation during comedown. (Default: ON)\n"
-			.. "Lore: David couldn't just pop it again instantly — his body needed to recover.",
-		cfg.comedownBlockSandy,
-		defaults.comedownBlockSandy,
-		function(value)
-			cfg.comedownBlockSandy = value
-			applyAll()
-		end)
-
-	nativeSettings.addRangeFloat(
-		catCD,
-		"Psycho Duration Multiplier",
-		"Comedown duration multiplier at psycho level 3+. (Default: 1.5)\n"
-			.. "Higher psycho = longer comedown. 1.5 = 50% longer at psycho 3+.",
-		1.0, 3.0, 0.1, "%.1f",
-		cfg.comedownPsychoMultiplier,
-		defaults.comedownPsychoMultiplier,
-		function(value)
-			cfg.comedownPsychoMultiplier = value
-			applyAll()
-		end)
-
-	nativeSettings.addSwitch(
-		catCD,
-		"Tremor During Comedown (Psycho 3+)",
-		"Camera shake during comedown at psycho level 3+. (Default: ON)",
-		cfg.comedownTremorAtPsycho,
-		defaults.comedownTremorAtPsycho,
-		function(value)
-			cfg.comedownTremorAtPsycho = value
-			applyAll()
-		end)
+	-- Comedown removed — penalties are now runtime-based (lore-accurate: David never had a cooldown)
+	-- Speed/armor/stamina debuffs apply progressively during Sandy use as runtime drops
 
 	------------------------------------------------------------
 	-- DOC PRESCRIPTION (Graduated Recovery)

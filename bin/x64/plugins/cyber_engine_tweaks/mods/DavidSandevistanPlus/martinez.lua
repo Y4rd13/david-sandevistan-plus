@@ -123,6 +123,11 @@ martinez.StaminaBoost_LP                 = 'BaseStatusEffect.MartinezSandevistan
 martinez.StaminaBoost_SMG                = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost_SMG'
 martinez.StaminaBoost_SM1                = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost_SM1'
 martinez.StaminaDrain                    = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain'
+martinez.RuntimeExhaustion               = 'BaseStatusEffect.MartinezSandevistan_RuntimeExhaustion'
+martinez.RuntimeExhaustion_LP            = 'BaseStatusEffect.MartinezSandevistan_RuntimeExhaustion_LP'
+martinez.RuntimeExhaustion_SMG           = 'BaseStatusEffect.MartinezSandevistan_RuntimeExhaustion_SMG'
+martinez.RuntimeExhaustion_SM1           = 'BaseStatusEffect.MartinezSandevistan_RuntimeExhaustion_SM1'
+martinez.RuntimeExhaustion_SM2           = 'BaseStatusEffect.MartinezSandevistan_RuntimeExhaustion_SM2'
 martinez.StaminaDrain_LP                 = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_LP'
 martinez.StaminaDrain_SMG                = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_SMG'
 martinez.StaminaDrain_SM1                = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_SM1'
@@ -990,6 +995,18 @@ function martinez.CreateSandevistan(self)
 		 '' ,{} ,{} ,'' ,{} ,self.StaminaDrain_SMG ,false
 		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
 		,{self.StaminaDrain_LP} ,nil ,false ,false ,nil ,false ,false ,false
+		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
+
+	-- RuntimeExhaustion: ×0.6 speed + ×0.5 armor when runtime <10% during Sandy
+	self:CreateConstantStatModifier(self.RuntimeExhaustion_SM1, { 'Multiplier', 'BaseStats.MaxSpeed', 0.6 })
+	self:CreateConstantStatModifier(self.RuntimeExhaustion_SM2, { 'Multiplier', 'BaseStats.Armor', 0.5 })
+	self:CreateLogicPackage(self.RuntimeExhaustion_LP, { '', {}, {}, {}, '' , false, {}, { self.RuntimeExhaustion_SM1, self.RuntimeExhaustion_SM2 } })
+	self:CreateStatModifierGroup(self.RuntimeExhaustion_SMG, { false, false, {}, false, { self.RuntimeExhaustion_SM1, self.RuntimeExhaustion_SM2 }, -1, nil })
+	self:CreateStatusEffect(self.RuntimeExhaustion,{
+		 '' ,{} ,{} ,'' ,{} ,self.RuntimeExhaustion_SMG ,false
+		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
+		,{self.RuntimeExhaustion_LP} ,nil ,false ,false ,nil ,false ,false ,false
 		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
 	})
 
