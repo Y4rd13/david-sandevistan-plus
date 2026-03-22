@@ -45,7 +45,7 @@ During psychosis episodes (stage 3+) and Last Breath, V's cyberware delivers com
 |--------|---------|-------------|
 | **PsychosisCombatBuff** | Episodes + Last Breath decay | +50% movement speed, +100% armor, x10 health regen -- David was STRONGER during psychosis |
 | **Cycled SFX** | Episodes + Last Breath decay | `ui_gmpl_perk_edgerunner` (Edgerunner perk sound) fires during psychosis episodes and Last Breath decay |
-| **Weapon auto-draw** | Episodes (FrightenNPCs) | `EquipmentSystem` forces weapon draw from wheel slot -- V reaches for a weapon involuntarily |
+| **Weapon auto-draw** | Episodes (FrightenNPCs) | `DrawItemRequest` forces weapon draw from wheel slot -- V reaches for a weapon involuntarily |
 | **Ticking Time Bomb** | Last Breath decay | 20m AoE EMP wave stuns enemies (Stun + EMP + Electrocuted status effects) |
 | **Blackwall Kill** | Last Breath decay | 25m AoE Blackwall corruption (`HauntedBlackwallForceKill` + `BlackWallHack` -- real Phantom Liberty effects) |
 | **Blackwall Civilian Corruption** | Last Breath decay | V's cyberware malfunctions and corrupts nearby civilians: 30% chance at Chorus 1, 40% at Chorus 2, 60% at Final Chorus |
@@ -102,8 +102,9 @@ An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Sa
 | Drain Source | Amount | Note |
 |--------------|--------|------|
 | Safe area | -0.05/s | Only when Sandy inactive |
-| Sleep | -40 (scaled) | Scaled by hours rested |
+| Sleep | -40 (scaled) | Scaled by hours rested and activity multiplier (x1.0 to x2.5) |
 | Ripperdoc | -25 | Professional treatment |
+| Activities | -2 to -8 (immediate) | Lover -5, sleepWithLover -8, shower -5, social -3, pet -2, apartment -2 |
 | Immunoblocker | -0.08/0.18/0.35/s | Per tier (Common/Uncommon/Rare). Reduces accumulation 80% (full) or 50% (partial) |
 | DF Immunosuppressant | -0.08/s | Weaker, doesn't block accumulation |
 
@@ -174,7 +175,7 @@ Suppressed by immunoblocker (full/partial effectiveness).
 
 #### Auto-Attack (Stage 3-5)
 
-V involuntarily attacks nearby NPCs — loss of motor control. Uses `AIWeapon.Fire()` to fire V's weapon at a detected NPC, the same method used by Wannabe Edgerunner. Does not require aiming. If no weapon is drawn, `EquipmentSystem` auto-draws from the weapon wheel slot before firing.
+V involuntarily attacks nearby NPCs — loss of motor control. Uses `AIWeapon.Fire()` to fire V's weapon at a detected NPC, the same method used by Wannabe Edgerunner. Does not require aiming. If weapon is in hand, fires immediately with `ono_v_laughs_hard`. If no weapon is drawn, `DrawItemRequest` forces a draw from the weapon wheel slot, then fires after a 2s delay.
 
 Four trigger points, each with stage-scaled chances:
 
@@ -290,10 +291,30 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **Hallucinations** | Phantom NPCs appear and vanish at psycho lvl 3-5 | David seeing things in Eps 8-10 |
 | **Auto-attack** | Involuntary weapon fire (`AIWeapon.Fire()`) at nearby NPCs at psycho lvl 3-5, from 4 trigger points | David losing control in Ep 10 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
+| **Pre-psychosis VFX** | Before each psycho episode (`PrePsychosisEffect`: 2s blackout distortion, then 1.5s delay before episode fires) | David's vision distorting before losing control |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
 | **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
+
+### Activity Tracking + Sleep Multiplier
+
+Human connections reduce Neural Strain and improve sleep recovery. David stayed human through Lucy and his crew -- these interactions ground V the same way.
+
+Six activities are tracked per day. Each gives an immediate strain drain and contextual message. Some also restore runtime. On sleep, the total activity count determines a sleep multiplier that scales strain drain: 1.0 base + 0.25 per activity, up to x2.5 with all six.
+
+| Activity | Immediate Strain Drain | Runtime Restore | Detection |
+|----------|----------------------|-----------------|-----------|
+| Lover (romantic partner) | -5 | +10% max | Redscript LocKey match (requires active romance quest fact) |
+| Sleep with Lover | -8 | +15% max | Redscript LocKey match |
+| Shower | -5 | +5% max | Redscript LocKey match + CET status effect fallback |
+| Social (dance, drink, rollercoaster) | -3 | -- | Redscript LocKey match |
+| Pet (Nibbles, cats, iguana) | -2 | -- | Redscript LocKey match + CET status effect fallback |
+| Apartment amenity (coffee, guitar, incense) | -2 | -- | 30s in safe area (not club, not running Sandy) |
+
+Activities reset on sleep. The sleep multiplier formula: `1.0 + (activityCount * 0.25)`.
+
+Detection uses two phases: **Phase 2** (primary) is redscript `DSPActivityTracker.reds`, which wraps `dialogWidgetGameController` to intercept dialog LocKeys and match them to activities via `DSPActivityChecker.Check()`. **Phase 1** (fallback) is CET status effect observers that detect shower and pet interactions via status effect names.
 
 ## Requirements
 
@@ -334,7 +355,9 @@ Cyberpunk 2077/
 │   └── last_breath_song.ogg
 └── r6/scripts/DavidSandevistanPlus/
     ├── DSPHUDSystem.reds
-    └── DSPKillTracker.reds
+    ├── DSPKillTracker.reds
+    ├── DSPActivityTracker.reds
+    └── DSPConsumeOverride.reds
 ```
 
 > **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
@@ -512,8 +535,12 @@ Death at level 5 + Second Heart:
 
 Recovery (levels 1–5) — Graduated:
   ├─ Sleep: -1 psycho level max + drains strain + partial treatment dose
+  │   └─ Sleep strain drain scaled by activity multiplier (1.0 to ×2.5)
   ├─ Visit Viktor: -1 level + drains strain + treatment dose + runtime recharge
   ├─ Immunoblocker: reduces strain accumulation + drains strain + counts as dose
+  ├─ Activities: 6 tracked (lover, sleepWithLover, shower, social, pet, apartment)
+  │   ├─ Immediate strain drain (-2 to -8) + runtime restore (lover/shower/sleepWithLover)
+  │   └─ Sleep multiplier: 1.0 + (activities × 0.25), max ×2.5 with all 6
   ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
   ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
   └─ HUD shows prescription progress: "RX completed/total"

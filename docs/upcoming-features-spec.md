@@ -1,6 +1,6 @@
 # Upcoming Features — Technical Spec
 
-All three features have been implemented.
+All four features have been implemented.
 
 ---
 
@@ -33,10 +33,10 @@ Four trigger points, each with stage-scaled chances:
    - Must be within 15m range
 
 3. Attack execution:
-   - Get active weapon via V:GetActiveWeapon()
-   - Get weapon's primary trigger mode from TweakDB record
-   - AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode) — single shot
-   - No stop needed (AIWeapon.Fire is instantaneous, unlike QuestForceShoot)
+   - If weapon in hand (V:GetActiveWeapon()): fire immediately via AIWeapon.Fire() + ono_v_laughs_hard
+   - If no weapon: DrawItemRequest → 2s delay (autoAttackFireTime) → AIWeapon.Fire() + ono_v_laughs_hard
+   - AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode) — single shot, instantaneous
+   - UpdateAutoAttack() handles the delayed fire after weapon draw
 
 4. Visual feedback:
    - Red outline on target NPC for 2s (OutlineRequestEvent, EOutlineType.RED)
@@ -52,12 +52,14 @@ Four trigger points, each with stage-scaled chances:
 
 ### Weapon Auto-Draw (FrightenNPCs)
 
-During psychosis episodes, `FrightenNPCs()` forces a weapon draw before auto-attack:
+During psychosis episodes, `FrightenNPCs()` forces a weapon draw before auto-attack via `DrawItemRequest`:
 ```lua
-local es = Game.GetScriptableSystemsContainer():Get(CName.new('EquipmentSystem'))
-local pd = es:GetPlayerData(V)
-pd:SetLastUsedStruct(gamedataEquipmentArea.WeaponWheel)
-pd:UpdateEquipAreaActiveIndex(gamedataEquipmentArea.WeaponWheel, 0)
+local es = V:GetEquipmentSystem()
+local drawReq = DrawItemRequest.new()
+local espd = EquipmentSystem.GetData(V)
+drawReq.itemID = espd:GetItemInEquipSlot(gamedataEquipmentArea.WeaponWheel, 0)
+drawReq.owner = V
+es:QueueRequest(drawReq)
 ```
 
 ### Combat Buffs (FrightenNPCs + Last Breath)
@@ -270,3 +272,49 @@ Last Breath (Stage VI) includes all combat effects from psychosis episodes, plus
 | Blackwall civilian corruption | 30% at Chorus 1, 40% at Chorus 2, 60% at Final Chorus |
 | Ticking Time Bomb | Song-synced AoE stun (Chorus drops) |
 | Blackwall Kill | Song-synced AoE kill (Chorus drops) |
+
+---
+
+## Feature 4: Activity Tracking + Sleep Multiplier — IMPLEMENTED
+
+Human connections reduce Neural Strain and improve sleep recovery. David stayed human through Lucy and his crew.
+
+### Tracked Activities
+
+Six activities tracked per day, each firing once (boolean flag per activity):
+
+| Activity | Strain Drain | Runtime Restore | Detection Method |
+|----------|-------------|-----------------|------------------|
+| Lover (romantic partner) | -5 | +10% max | Redscript LocKey match + romance quest fact validation |
+| Sleep with Lover | -8 | +15% max | Redscript LocKey match (LocKey#46047) |
+| Shower | -5 | +5% max | Redscript LocKey match (LocKey#46419) + CET status effect fallback |
+| Social (dance, drink, rollercoaster) | -3 | -- | Redscript LocKey match (5 LocKeys) |
+| Pet (Nibbles, cats, iguana) | -2 | -- | Redscript LocKey match (5 LocKeys) + CET status effect fallback |
+| Apartment amenity | -2 | -- | 30s in safe area (not club, Sandy inactive) |
+
+### Sleep Multiplier
+
+```
+sleepMultiplier = 1.0 + (activityCount * 0.25)   -- range: 1.0 to 2.5
+sleepStrainDrain = strainDrainSleep * (RestedHours / 8) * strainRecoveryMultiplier * sleepMultiplier
+```
+
+### Detection Architecture
+
+**Phase 2 (primary):** `DSPActivityTracker.reds` wraps `dialogWidgetGameController`:
+1. `DialogHubLogicController.SetupTitle()` → captures hub title LocKey via `DSPHubTitleUpdatedEvent`
+2. `OnDSPLastAttemptedChoice()` → calls `DSPActivityChecker.Check(locKey, gi)`
+3. Activity type (Int32: 1=shower, 2=pet, 3=apartment, 4=social, 5=lover, 6=sleepWithLover) → `dsp_activity_detected` quest fact
+4. CET Lua polls quest fact each display tick via `CheckActivityQuestFact()`
+
+**Phase 1 (fallback):** CET `OnStatusEffectApplied` observer matches status effect names (`Shower`, `Refreshed`, `PetInteraction`, `Nibbles`).
+
+**Apartment detection:** `safeAreaTime` accumulator in display tick — 30 continuous seconds in safe area (not club, Sandy not active) triggers apartment activity.
+
+### Implementation
+
+- `DSPActivityTracker.reds`: dialog LocKey interception + `DSPActivityChecker` with activity-specific matchers
+- `RegisterActivity(name)` in init.lua: immediate strain drain + runtime restore + message
+- `ResetActivities()` in init.lua: called from `Rested()` — resets all flags + count
+- `GetSleepMultiplier()` in init.lua: `1.0 + (activityCount * 0.25)`
+- `CheckActivityQuestFact()` in init.lua: polls `dsp_activity_detected` quest fact each tick

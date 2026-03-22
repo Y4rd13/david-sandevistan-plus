@@ -38,10 +38,12 @@ Psychological/physical strain (raw — bypasses stage multiplier):
 
 Actions reduce strain:
   Safe area /sec      → -0.05
-  Sleep               → -40 (scaled by hours)
+  Sleep               → -40 (scaled by hours × activity multiplier)
   Ripperdoc           → -25
   Immunoblocker /sec  → -0.08/0.18/0.35 per tier (reduces accumulation 80% full, 50% partial)
   DF Immunosup. /sec  → -0.08
+  Activities          → -2 to -8 immediate (lover -5, sleepWithLover -8, shower -5, social -3, pet -2, apartment -2)
+  Sleep multiplier    → 1.0 + (activities × 0.25), max ×2.5 with all 6
 
 When strain >= threshold → dice roll each second:
   chance = (strain - threshold) / 200
@@ -407,7 +409,7 @@ Phantom NPCs spawn near V during Sandy use via `exEntitySpawner`. These hallucin
 
 ### Auto-Attack (Stage 3–5)
 
-V's weapon fires involuntarily via `AIWeapon.Fire()`, the same method used by Wannabe Edgerunner. Does not require aiming. If no weapon is drawn, `EquipmentSystem` auto-draws from the weapon wheel slot before firing. 30s cooldown, 15m NPC range, red outline 2s on target, target becomes hostile.
+V's weapon fires involuntarily via `AIWeapon.Fire()`, the same method used by Wannabe Edgerunner. Does not require aiming. If weapon is in hand, fires immediately with `ono_v_laughs_hard`. If no weapon is drawn, `DrawItemRequest` forces a draw, then fires after a 2s delay with `ono_v_laughs_hard`. 30s cooldown, 15m NPC range, red outline 2s on target, target becomes hostile.
 
 Four trigger points with stage-scaled chances:
 
@@ -442,8 +444,8 @@ During psychosis episodes (`FrightenNPCs`) and Last Breath decay, V receives com
 |--------|---------------|--------|
 | **PsychosisCombatBuff** | Status effect with 3 stat modifiers | +50% MaxSpeed (x1.5), +100% Armor (x2.0), x10 HealthInCombatRegenRate |
 | **Cycled SFX** | `ui_gmpl_perk_edgerunner` SoundPlayEvent | Fires during FrightenNPCs and at Last Breath decay start |
-| **Weapon auto-draw** | EquipmentSystem SetLastUsedStruct + UpdateEquipAreaActiveIndex | Forces weapon from WeaponWheel slot 0 |
-| **Pre-psychosis VFX** | `johnny_sickness_blackout` effect + pain SFX | Fires in BleedingEffect BEFORE the episode; `ono_v_fear_panic_scream` fires DURING (in FrightenNPCs) |
+| **Weapon auto-draw** | `DrawItemRequest` via EquipmentSystem | Forces weapon from WeaponWheel slot 0 |
+| **Pre-psychosis VFX** | `PrePsychosisEffect` (2s status effect: `johnny_sickness_blackout` + `fx_damage_high`), then 1.5s delay via `pendingEpisode` timer | Blackout distortion (2s) fires in `BleedingEffect` BEFORE the episode; panic scream (`ono_v_fear_panic_scream`) + MartinezFury + combat buffs fire DURING (in `FrightenNPCs`). Pain SFX: `ono_v_pain_short` at low stages, `ONO_V_LongPain` at stage 3+ |
 
 ## System 8: Blackout (Overuse Exhaustion)
 
@@ -546,6 +548,17 @@ During Last Breath decay, V's cyberware malfunctions and corrupts nearby civilia
                    │ Blackout     │
                    │ (Exhaustion) │
                    └──────────────┘
+
+          ┌──────────────┐
+          │ Activities   │─── immediate ──► strain drain + runtime restore
+          │ (6 tracked)  │                  (lover -5, shower -5, pet -2, etc.)
+          └──────┬───────┘
+                 │ count → sleep multiplier
+                 ▼
+          ┌──────────────┐
+          │ Sleep        │─── strain drain × (1.0 + activities × 0.25)
+          │ Recovery     │    max ×2.5 with all 6 activities
+          └──────────────┘
 ```
 
 | Interaction | Behavior |
@@ -562,8 +575,71 @@ During Last Breath decay, V's cyberware malfunctions and corrupts nearby civilia
 | Blackout on extreme overuse | 3x safe activations → stage-based chance (90/70/40/15% for stages 0-3), 200m range check, location-specific recovery (ripper: strain -25 + 50% RT vs apartment: strain -15 + 25% RT + psycho reduction), daily cooldown |
 | Prescription resets micro-episode timer | Level change = new frequency bracket |
 | Last Breath bypasses ALL eight systems | Its own decay handles everything, sets strain=0 |
-| Sleep resets session fatigue + recovers runtime degradation + drains strain | Fresh start each day |
+| Activities give immediate strain drain + runtime restore | Lover -5 strain +10% RT, sleepWithLover -8 strain +15% RT, shower -5 strain +5% RT, social -3, pet -2, apartment -2 |
+| Activity count scales sleep strain drain | Sleep multiplier: 1.0 + (activities × 0.25), max ×2.5 with all 6 |
+| Sleep resets session fatigue + recovers runtime degradation + drains strain + resets activities | Fresh start each day |
 | Ripper fully restores runtime degradation + drains strain | "Good as new" visit |
+
+## Activity Tracking + Sleep Multiplier
+
+Human connections reduce Neural Strain and improve sleep recovery. David stayed human through Lucy and his crew -- these interactions ground V the same way.
+
+### Tracked Activities
+
+Six activities are tracked per day. Each provides an immediate strain drain and contextual message on detection. Some also restore runtime immediately.
+
+| Activity | Strain Drain | Runtime Restore | Lore |
+|----------|-------------|-----------------|------|
+| Lover (romantic partner) | -5 | +10% max | David's connection to Lucy kept him grounded |
+| Sleep with Lover | -8 | +15% max | Strongest human anchor -- sleeping beside someone who cares |
+| Shower | -5 | +5% max | Physical grounding -- washing off the day |
+| Social (dance, drink, rollercoaster) | -3 | -- | Crew activities -- the moments that keep you human |
+| Pet (Nibbles, cats, iguana) | -2 | -- | Simple, unjudging connection |
+| Apartment amenity (coffee, guitar, incense) | -2 | -- | Quiet domestic moments |
+
+### Sleep Multiplier
+
+On sleep, the activity count determines a multiplier for strain drain:
+
+```
+sleepStrainDrain = strainDrainSleep * (RestedHours / 8) * strainRecoveryMultiplier * sleepMultiplier
+sleepMultiplier  = 1.0 + (activityCount * 0.25)
+```
+
+| Activities Done | Sleep Multiplier | Effective Sleep Drain (base 40) |
+|-----------------|-----------------|--------------------------------|
+| 0 | x1.0 | 40 |
+| 1 | x1.25 | 50 |
+| 2 | x1.5 | 60 |
+| 3 | x1.75 | 70 |
+| 4 | x2.0 | 80 |
+| 5 | x2.25 | 90 |
+| 6 | x2.5 | 100 |
+
+Activities reset on sleep.
+
+### Detection
+
+Two-phase detection system:
+
+**Phase 2 (primary):** Redscript `DSPActivityTracker.reds` wraps `dialogWidgetGameController` to intercept dialog choices. `DSPActivityChecker.Check()` matches dialog LocKeys to activity types (shower, pet, apartment, social, lover, sleepWithLover). The lover check validates the romance quest fact (e.g., `sq030_judy_lover == 1`). Detected activities are reported to CET Lua via the `dsp_activity_detected` quest fact, polled each display tick.
+
+**Phase 1 (fallback):** CET `OnStatusEffectApplied` observer on `PlayerPuppet` detects shower and pet interactions via status effect name matching (e.g., `Shower`, `Refreshed`, `PetInteraction`, `Nibbles`).
+
+**Apartment activity:** Registered after 30 continuous seconds in a safe area (not a club, Sandy not active). Tracked via `safeAreaTime` accumulator in `displayTick`.
+
+### Messages
+
+Each activity triggers a contextual message from V's inner monologue:
+
+| Activity | Example Messages |
+|----------|-----------------|
+| Lover | *"Feels good to be close to someone..."*, *"For a moment, the buzzing stops"* |
+| Sleep with Lover | *"This is what it's all about..."*, *"With you... the noise stops"* |
+| Shower | *"Hot water... clears the head a bit"*, *"Feels human again... for a sec"* |
+| Social | *"Good to be around people..."*, *"Almost feels normal"* |
+| Pet | *"Hey little choom..."*, *"Simple things... they help"* |
+| Apartment | *"Home... small comforts"*, *"Quiet moment"* |
 
 ## Configuration Reference
 
@@ -632,6 +708,8 @@ All parameters with their cfg key names:
 | `gui.lua` | CET ImGui debug window |
 | `DSPHUDSystem.reds` | Redscript HUD: fullscreen ink canvas, runtime/psycho/strain bars, widget tree |
 | `DSPKillTracker.reds` | Redscript kill hook: `@wrapMethod(ScriptedPuppet) RewardKiller()` → faction-based strain costs |
+| `DSPActivityTracker.reds` | Redscript activity detection: wraps `dialogWidgetGameController` to intercept dialog LocKeys, matches to 6 activity types via `DSPActivityChecker`, reports via `dsp_activity_detected` quest fact |
+| `DSPConsumeOverride.reds` | Redscript consume action wrapper: suppresses vanilla HealthBooster animation for Immunoblocker items |
 | `MartinezPLUS/init.lua` | Native Settings UI: 50 settings across 14 subcategories, config persistence |
 
 ## Verification Checklist
