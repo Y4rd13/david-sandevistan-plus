@@ -197,17 +197,15 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		-- Force draw weapon (like Wannabe Edgerunner)
+		-- Force draw weapon (like Wannabe Edgerunner — DrawItemRequest)
 		pcall(function()
 			if V and IsDefined(V) then
-				local es = Game.GetScriptableSystemsContainer():Get(CName.new('EquipmentSystem'))
-				if es then
-					local pd = es:GetPlayerData(V)
-					if pd then
-						pd:SetLastUsedStruct(gamedataEquipmentArea.WeaponWheel)
-						pd:UpdateEquipAreaActiveIndex(gamedataEquipmentArea.WeaponWheel, 0)
-					end
-				end
+				local es = V:GetEquipmentSystem()
+				local drawReq = DrawItemRequest.new()
+				local espd = EquipmentSystem.GetData(V)
+				drawReq.itemID = espd:GetItemInEquipSlot(gamedataEquipmentArea.WeaponWheel, 0)
+				drawReq.owner = V
+				es:QueueRequest(drawReq)
 			end
 		end)
 
@@ -591,25 +589,18 @@ function psychosis.attach(dsp)
 			target:QueueEvent(evt)
 		end)
 
-		-- Force draw weapon + shoot via AIWeapon.Fire (same method as Wannabe Edgerunner)
+		-- Phase 1: Draw weapon (like Wannabe Edgerunner — DrawItemRequest)
 		pcall(function()
-			local es = Game.GetScriptableSystemsContainer():Get(CName.new('EquipmentSystem'))
-			if es then
-				local pd = es:GetPlayerData(V)
-				if pd then
-					pd:SetLastUsedStruct(gamedataEquipmentArea.WeaponWheel)
-					pd:UpdateEquipAreaActiveIndex(gamedataEquipmentArea.WeaponWheel, 0)
-				end
-			end
+			local es = V:GetEquipmentSystem()
+			local drawReq = DrawItemRequest.new()
+			local espd = EquipmentSystem.GetData(V)
+			drawReq.itemID = espd:GetItemInEquipSlot(gamedataEquipmentArea.WeaponWheel, 0)
+			drawReq.owner = V
+			es:QueueRequest(drawReq)
 		end)
-		pcall(function()
-			local weapon = V:GetActiveWeapon()
-			if weapon and IsDefined(weapon) then
-				local simTime = EngineTime.ToFloat(Game.GetSimTime())
-				local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
-				AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
-			end
-		end)
+
+		-- Phase 2: Fire after 2s delay (weapon needs time to draw)
+		self.autoAttackFireTime = os.clock() + 2.0
 
 		-- VFX on V
 		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
@@ -643,8 +634,23 @@ function psychosis.attach(dsp)
 		return true
 	 end)
 
-	-- UpdateAutoAttack: no-op — AIWeapon.Fire() is a single shot, no stop needed
-	dsp.UpdateAutoAttack = (function(self) end)
+	-- UpdateAutoAttack: fires weapon 2s after draw (delayed shot)
+	dsp.UpdateAutoAttack = (function(self)
+		if self.autoAttackFireTime and os.clock() >= self.autoAttackFireTime then
+			self.autoAttackFireTime = nil
+			pcall(function()
+				local V = Game.GetPlayer()
+				if V and IsDefined(V) then
+					local weapon = V:GetActiveWeapon()
+					if weapon and IsDefined(weapon) then
+						local simTime = EngineTime.ToFloat(Game.GetSimTime())
+						local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
+						AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
+					end
+				end
+			end)
+		end
+	 end)
 
 	-- Per-second check for low runtime auto-attack (stage 3+, runtime <10%)
 	dsp.CheckLowRuntimeAutoAttack = (function(self)
