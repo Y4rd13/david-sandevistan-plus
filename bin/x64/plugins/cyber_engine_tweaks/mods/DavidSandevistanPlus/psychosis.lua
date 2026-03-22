@@ -592,11 +592,14 @@ function psychosis.attach(dsp)
 		-- Draw weapon if not already equipped, then fire
 		local weapon = V:GetActiveWeapon()
 		if weapon and IsDefined(weapon) then
-			-- Already armed — fire immediately
+			-- Already armed — fire immediately + laugh
 			pcall(function()
 				local simTime = EngineTime.ToFloat(Game.GetSimTime())
 				local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
 				AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
+				local laughEvt = SoundPlayEvent.new()
+				laughEvt.soundName = "ono_v_laughs_hard"
+				V:QueueEvent(laughEvt)
 			end)
 		else
 			-- No weapon — draw first, fire after 2s
@@ -643,7 +646,7 @@ function psychosis.attach(dsp)
 		return true
 	 end)
 
-	-- UpdateAutoAttack: fires weapon 2s after draw (delayed shot)
+	-- UpdateAutoAttack: fires weapon 2s after draw, then laugh
 	dsp.UpdateAutoAttack = (function(self)
 		if self.autoAttackFireTime and os.clock() >= self.autoAttackFireTime then
 			self.autoAttackFireTime = nil
@@ -655,6 +658,10 @@ function psychosis.attach(dsp)
 						local simTime = EngineTime.ToFloat(Game.GetSimTime())
 						local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
 						AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
+						-- Laugh after involuntary shot
+						local laughEvt = SoundPlayEvent.new()
+						laughEvt.soundName = "ono_v_laughs_hard"
+						V:QueueEvent(laughEvt)
 					end
 				end
 			end)
