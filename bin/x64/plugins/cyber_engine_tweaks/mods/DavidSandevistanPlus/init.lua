@@ -1952,9 +1952,6 @@ dsp = {
 		 ThatValue = 800*12.5 -- don't change these values, shit is hard coded for them
 		,ThatOtherValue = 375*64 -- not for editing
 		,Init = (function(self)
-			local localTime = os.date("*t")
-			if (localTime.month ~= 4) or (localTime.day ~= 1) then return end
-			self.NextJackie = os.time() + math.random(3, 15)
 		 end)
 		,GetThatValue = (function(self,Heat)
 			return (Heat==5) and self.ThatOtherValue or self.ThatValue
@@ -2016,14 +2013,6 @@ dsp = {
 			return self:BlackBoardQuery('Braindance','IsActive',false)
 		 end)
 		,StartSandevistan = (function(self)
-			if self.NextJackie == nil then return end
-			local ThisJackie = os.time()
-			if ThisJackie > self.NextJackie then
-				self.NextJackie = os.time() + math.random(30, 180)
-				
-				local V = Game.GetPlayer()
-				V:PlaySoundEvent("ono_jackie_laughs_hard")
-			end
 		 end)
 		,SendMessage = (function(self,message,duration)
 			local MSG = SimpleScreenMessage.new()
