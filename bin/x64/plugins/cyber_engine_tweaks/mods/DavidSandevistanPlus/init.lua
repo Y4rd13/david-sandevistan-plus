@@ -2366,6 +2366,7 @@ registerForEvent('onUpdate', function(dt)
     dsp:UpdateBlackout(dt)
     dsp:UpdateHallucinations(dt)
     dsp:UpdateAutoAttack()
+    dsp:UpdatePendingEpisode(dt)
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt

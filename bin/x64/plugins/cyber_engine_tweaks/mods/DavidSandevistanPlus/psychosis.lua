@@ -123,11 +123,10 @@ function psychosis.attach(dsp)
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
 			if self.cfg.enableCyberpsychosis then
-				-- Pre-Psychosis VFX: pain + glitch before stage change (like Wannabe Edgerunner)
+				-- Pre-Psychosis VFX: pain + glitch BEFORE stage change (1.5s delay before episode)
 				pcall(function()
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
-						-- Pain SFX: short at low stages, long at high stages
 						local painSfx = SoundPlayEvent.new()
 						if self.CyberPsychoWarnings >= 3 then
 							painSfx.soundName = "ONO_V_LongPain"
@@ -135,28 +134,46 @@ function psychosis.attach(dsp)
 							painSfx.soundName = "ono_v_pain_short"
 						end
 						V:QueueEvent(painSfx)
-						-- VFX: johnny_sickness_blackout (digital distortion cascade)
 						GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
 					end
 				end)
 				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
 
-				if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
-				local psychoMessages = {
-					[1] = { msg = "CYBERPSYCHOSIS I \xe2\x80\x94 NEURAL INSTABILITY DETECTED", dur = 4.0 },
-					[2] = { msg = "CYBERPSYCHOSIS II \xe2\x80\x94 SENSORY GLITCHES INCREASING", dur = 4.0 },
-					[3] = { msg = "CYBERPSYCHOSIS III \xe2\x80\x94 LOSING GRIP ON REALITY", dur = 5.0 },
-					[4] = { msg = "CYBERPSYCHOSIS IV \xe2\x80\x94 CRITICAL \xe2\x80\x94 REST NOW", dur = 5.0 },
-					[5] = { msg = "CYBERPSYCHO V \xe2\x80\x94 POINT OF NO RETURN", dur = 6.0 },
+				-- Delay the actual episode by 1.5s so pre-psychosis VFX plays first
+				self.pendingEpisode = {
+					timer = 1.5,
+					forcePsycho = forcePsycho,
 				}
-				local entry = psychoMessages[self.CyberPsychoWarnings]
-				if entry then self.bbs:SendWarning(entry.msg, entry.dur) end
-				self:SyncSafetyWithStage()
-				self:FrightenNPCs()
+				return  -- episode fires later via UpdatePendingEpisode
 			end
 			self:DisableSandevistan("BleedingEffect()")
 			self:SaveGame("BleedingEffect()")
 		end
+	 end)
+
+	-- Delayed episode execution (called from onUpdate)
+	dsp.UpdatePendingEpisode = (function(self, dt)
+		if not self.pendingEpisode then return end
+		self.pendingEpisode.timer = self.pendingEpisode.timer - dt
+		if self.pendingEpisode.timer > 0 then return end
+
+		-- Now fire the actual episode
+		self.pendingEpisode = nil
+
+		if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
+		local psychoMessages = {
+			[1] = { msg = "CYBERPSYCHOSIS I \xe2\x80\x94 NEURAL INSTABILITY DETECTED", dur = 4.0 },
+			[2] = { msg = "CYBERPSYCHOSIS II \xe2\x80\x94 SENSORY GLITCHES INCREASING", dur = 4.0 },
+			[3] = { msg = "CYBERPSYCHOSIS III \xe2\x80\x94 LOSING GRIP ON REALITY", dur = 5.0 },
+			[4] = { msg = "CYBERPSYCHOSIS IV \xe2\x80\x94 CRITICAL \xe2\x80\x94 REST NOW", dur = 5.0 },
+			[5] = { msg = "CYBERPSYCHO V \xe2\x80\x94 POINT OF NO RETURN", dur = 6.0 },
+		}
+		local entry = psychoMessages[self.CyberPsychoWarnings]
+		if entry then self.bbs:SendWarning(entry.msg, entry.dur) end
+		self:SyncSafetyWithStage()
+		self:FrightenNPCs()
+		self:DisableSandevistan("BleedingEffect()")
+		self:SaveGame("BleedingEffect()")
 	 end)
 
 	dsp.FrightenNPCs = (function(self)
