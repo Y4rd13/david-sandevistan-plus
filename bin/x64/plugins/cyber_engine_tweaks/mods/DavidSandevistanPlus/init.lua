@@ -678,6 +678,8 @@ dsp = {
 		self.lowRuntimeWarned = false
 		-- set initial charge level on startup!
 		self:SandevistanCharge()
+		-- Apply stamina modifier immediately on activation
+		self:UpdateRuntimeStamina()
 
 		-- Activation notification — lore-immersive, varies by psycho level
 		local dilation = self.TimeDilationActualSpeed or 85
