@@ -31,20 +31,24 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | 1 | Unstable | None | Subtle tremor (0.001), micro-episodes every 5-10 min |
 | 2 | Glitching | Subtle glitch | Persistent `hacking_glitch_low`, heartbeat, tremor, random nosebleeds |
 | 3 | Losing It | Medium distortion | Persistent glitch + drugged VFX, stronger tremor |
-| 4 | On The Edge | Heavy distortion | 3-layer VFX, 15% movement penalty, manic laughter, **auto-attack** (involuntary), hallucinations |
+| 4 | On The Edge | Heavy distortion | 3-layer VFX, 15% movement penalty, manic laughter, **auto-attack** (involuntary, stage 3+), hallucinations |
 | 5 | Cyberpsycho | Full psychosis | 5 simultaneous VFX, 15% movement penalty, Safety OFF automatic, Sandy stays active during episodes |
 | 6 | Last Breath | All VFX removed → ramp | **Permanent death** — Second Heart revival triggers final stand |
 
 **Safety is automatic:** Stages 0-4 have Safety ON (limiters active). At stage 5, Safety OFF engages automatically — the limiters fail and V can't stop, like David in Episode 10. Sandy stays active during psycho episodes at stage 5. Death is near-inevitable.
 
-#### Psychosis Combat Effects (Level 5+)
+#### Psychosis Combat Effects
 
-At high psychosis levels and during Last Breath, V's cyberware malfunctions offensively:
+During psychosis episodes (stage 3+) and Last Breath, V's cyberware delivers combat advantages and malfunctions offensively:
 
-| Effect | Range | What Happens | Visual |
-|--------|-------|-------------|--------|
-| **Ticking Time Bomb** | 20m AoE | EMP wave radiates outward from V, stunning enemies | Electrical arcs on V (epicenter) + staggered stun wave expanding by distance |
-| **Blackwall Kill** | 25m AoE | Blackwall corruption spreads to nearby enemies | `HauntedBlackwallForceKill` + `BlackWallHack` — real Phantom Liberty Blackwall effects |
+| Effect | Context | What Happens |
+|--------|---------|-------------|
+| **PsychosisCombatBuff** | Episodes + Last Breath decay | +50% movement speed, +100% armor, x10 health regen -- David was STRONGER during psychosis |
+| **Cycled SFX** | Episodes + Last Breath decay | `ui_gmpl_perk_edgerunner` (Edgerunner perk sound) fires during psychosis episodes and Last Breath decay |
+| **Weapon auto-draw** | Episodes (FrightenNPCs) | `EquipmentSystem` forces weapon draw from wheel slot -- V reaches for a weapon involuntarily |
+| **Ticking Time Bomb** | Last Breath decay | 20m AoE EMP wave stuns enemies (Stun + EMP + Electrocuted status effects) |
+| **Blackwall Kill** | Last Breath decay | 25m AoE Blackwall corruption (`HauntedBlackwallForceKill` + `BlackWallHack` -- real Phantom Liberty effects) |
+| **Blackwall Civilian Corruption** | Last Breath decay | V's cyberware malfunctions and corrupts nearby civilians: 30% chance at Chorus 1, 40% at Chorus 2, 60% at Final Chorus |
 
 ### Last Breath (Stage VI — Requires Second Heart)
 
@@ -57,11 +61,14 @@ When V dies at psycho level 5 and Second Heart revives them, Stage VI begins —
 - `CYBERPSYCHOSIS VI — UNCLASSIFIED — LAST BREATH`
 
 **Phase 2 — Decay (~225s, song-synced):**
+- Combat buffs active throughout decay (+50% speed, +100% armor, x10 health regen)
+- Cycled SFX: `ui_gmpl_perk_edgerunner` fires at decay start
 - Effects synchronized to the song's emotional arc:
-  - **Chorus drops** (1:15, 2:46) → Ticking Time Bomb + Blackwall Kill fire
+  - **Chorus 1** (1:15) → Ticking Time Bomb + Blackwall Kill + 30% Blackwall civilian corruption
+  - **Chorus 2** (2:46) → full intensity + 40% civilian corruption
   - **Verse 2** (1:53) → calm, all combat effects pause
   - **Bridge** (3:08) → moment of clarity, ALL effects stripped
-  - **Final Chorus** (3:40) → peak burst, maximum intensity
+  - **Final Chorus** (3:40) → peak burst, maximum intensity + 60% civilian corruption
   - **Outro** (3:58) → effects fade
 - Time dilation degrades 99.35% → 90% (exp 2.5 curve)
 - Camera tremor, V's laugh, delusional messages — all song-phase aware
@@ -77,7 +84,7 @@ When V dies at psycho level 5 and Second Heart revives them, Stage VI begins —
 
 ### Lore-Accurate Gameplay Systems
 
-Six interconnected systems that make gameplay feel like David's experience in Edgerunners. All toggleable — disable any system without side effects. For formulas, cross-system interactions, and implementation details, see **[docs/lore-systems.md](docs/lore-systems.md)**.
+Eight interconnected systems that make gameplay feel like David's experience in Edgerunners. All toggleable — disable any system without side effects. For formulas, cross-system interactions, and implementation details, see **[docs/lore-systems.md](docs/lore-systems.md)**.
 
 #### Neural Strain (Episode Trigger)
 
@@ -99,6 +106,11 @@ An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Sa
 | Ripperdoc | -25 | Professional treatment |
 | Immunoblocker | -0.08/0.18/0.35/s | Per tier (Common/Uncommon/Rare). Reduces accumulation 80% (full) or 50% (partial) |
 | DF Immunosuppressant | -0.08/s | Weaker, doesn't block accumulation |
+
+Strain sources are split into two categories with different scaling:
+
+- **Tolerance-based strain** (Sandy activation, overuse bonus, active time): scaled by a stage multiplier that reflects the body's growing tolerance to cyberware. Stage 0-1: x0.5, Stage 2: x0.75, Stage 3-5: x1.0.
+- **Psychological/physical strain** (kills, low/zero runtime, Safety OFF): bypasses the stage multiplier (`raw=true`). The psychological trauma of killing and the physical stress of pushing the body at zero runtime hit equally hard at all stages.
 
 When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
 
@@ -160,29 +172,39 @@ V sees things that aren't real. Phantom NPCs spawn 5-15m from V, appear briefly 
 
 Suppressed by immunoblocker (full/partial effectiveness).
 
-#### Auto-Attack (Stage 4-5)
+#### Auto-Attack (Stage 3-5)
 
-V involuntarily attacks nearby NPCs during Sandy — loss of control. The Sandy detects an NPC in front of V and fires/attacks automatically.
+V involuntarily attacks nearby NPCs — loss of motor control. Uses `AIWeapon.Fire()` to fire V's weapon at a detected NPC, the same method used by Wannabe Edgerunner. Does not require aiming. If no weapon is drawn, `EquipmentSystem` auto-draws from the weapon wheel slot before firing.
 
-| Stage | Chance per second | Cooldown | Effect |
-|-------|------------------|----------|--------|
-| 4 | 15% | 30s | Weapon fires at NPC, red outline 2s, NPC becomes hostile |
-| 5 | 35% | 30s | Same but more frequent — *"THEY WERE LOOKING AT ME"* |
+Four trigger points, each with stage-scaled chances:
 
-Only triggers during Sandy active, with weapon equipped, NPC within 15m.
+| Trigger | Stage 3 | Stage 4 | Stage 5 | Context |
+|---------|---------|---------|---------|---------|
+| Manic laugh (micro-episode) | 30% | 50% | 70% | Laugh → hand fires on its own |
+| Stage change (BleedingEffect) | 40% | 60% | 80% | Psycho level escalation → violent outburst |
+| Low runtime (<10%, per second) | 10% | 20% | 35% | Body exhausted, Sandy stresses the nervous system |
+| Nosebleed (on activation) | 5% | 15% | 25% | Physical deterioration → involuntary trigger pull |
+
+30s cooldown between attacks. NPC within 15m, red outline 2s, target becomes hostile. Post-attack VFX (PsychoWarningEffect_Medium) + camera shake + contextual messages (*"What did I just do..."* / *"THEY WERE LOOKING AT ME"*).
 
 #### Blackout (Overuse Exhaustion)
 
-At 3× safe daily activations, V collapses and wakes up hours later at a random safe location. Replaces the old stun mechanic with a full blackout sequence.
+At 3x safe daily activations, V collapses and wakes up hours later at a safe location. Stage-based chance determines whether the blackout fires: 90% at stage 0, 70% at stage 1, 40% at stage 2, 15% at stage 3. V must be within 200m of a known safe location; otherwise a stun-only fallback triggers. Daily cooldown (one blackout per day). Stage 4-5: no blackout -- psychosis/death path takes over.
 
 | Step | What happens |
 |------|-------------|
 | 1 | Sandy deactivates, screen darkens (*"Body gives out... everything goes dark"*) |
-| 2 | Teleport to: apartment (60%), Viktor's clinic (30%), random alley (10%) |
-| 3 | Time advances 4-8 hours, sleep recovery applied |
-| 4 | Wake up with 50-70% health, groggy VFX, location-specific message |
+| 2 | Teleport to nearest safe location within 200m |
+| 3 | Time advances 4-8 hours |
+| 4 | Wake up with location-specific recovery |
 
-Stage 5 Safety OFF: no blackout — V fights through to death (David doesn't pass out at stage 5).
+Recovery depends on location type:
+
+| Location | Type | Strain Drain | Runtime Restore | Health | Psycho Recovery |
+|----------|------|-------------|-----------------|--------|-----------------|
+| V's apartment | Apartment | -15 | +25% max | 40-60% | Can reduce psycho level (like sleep) |
+| Viktor's clinic | Ripper | -25 | +50% max | 60-70% | Treatment dose only |
+| Kabuki ripper | Ripper | -25 | +50% max | 60-70% | Treatment dose only |
 
 #### Doc Prescription (Graduated Recovery)
 
@@ -266,7 +288,7 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 4–8min at lvl 2, 30–60s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
 | **Blackout collapse** | Sandy activation at 3× safe daily limit → teleport to safe location + time skip | David passes out after 8 uses in Ep 2 |
 | **Hallucinations** | Phantom NPCs appear and vanish at psycho lvl 3-5 | David seeing things in Eps 8-10 |
-| **Auto-attack** | Involuntary weapon fire at nearby NPCs at psycho lvl 4-5 | David losing control in Ep 10 |
+| **Auto-attack** | Involuntary weapon fire (`AIWeapon.Fire()`) at nearby NPCs at psycho lvl 3-5, from 4 trigger points | David losing control in Ep 10 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
@@ -463,12 +485,23 @@ Runtime-based penalties (during Sandy active):
 MaxRuntime scales by stage: 100% → 90% → 80% → 65% → 50% → 35%
 
 Overuse exhaustion (3× safe activations):
-  ├─ Stages 0-4: BLACKOUT → teleport to safe location + time skip 4-8h
-  └─ Stage 5: no blackout — death path (David fights to the end)
+  ├─ Stages 0-3: BLACKOUT → stage-based chance (90/70/40/15%), 200m range check
+  │   ├─ Near safe location: teleport + time skip 4-8h + location-specific recovery
+  │   └─ Too far: stun only (no teleport)
+  ├─ Stage 4-5: no blackout — psychosis/death path
+  └─ Daily cooldown: one blackout per day
+
+Strain scaling by stage (tolerance-based strain only):
+  ├─ Stage 0-1: ×0.5 (body resists at low stages)
+  ├─ Stage 2: ×0.75
+  └─ Stage 3-5: ×1.0 (full impact)
+  Note: kill strain, runtime strain, Safety OFF strain bypass multiplier (raw=true)
 
 Psychosis features by stage:
   ├─ Stage 3+: Hallucinations (phantom NPCs spawn and vanish)
-  ├─ Stage 4+: Auto-attack (involuntary weapon fire at nearby NPCs)
+  ├─ Stage 3+: Auto-attack (AIWeapon.Fire() — 4 trigger points, stage-scaled chances)
+  ├─ Stage 3+: Combat buffs during episodes (+50% speed, +100% armor, ×10 health regen)
+  ├─ Stage 3+: Cycled SFX (ui_gmpl_perk_edgerunner during episodes)
   └─ Stage 5: Safety OFF automatic, Sandy stays on during episodes
 
 Death at level 5 + Second Heart:

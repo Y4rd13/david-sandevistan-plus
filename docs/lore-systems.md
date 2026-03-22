@@ -25,9 +25,12 @@ An accumulation pool + dice roll system. Episodes are unpredictable and cumulati
 ```
 NEURAL STRAIN (0 → guaranteed per stage)
 
-Actions add strain:
+Tolerance-based strain (scaled by stage multiplier):
   Sandy activation    → +5 (+ overuse bonus)
   Sandy active /60s   → +2
+  Stage multiplier:   Stage 0-1: ×0.5, Stage 2: ×0.75, Stage 3-5: ×1.0
+
+Psychological/physical strain (raw — bypasses stage multiplier):
   Safety OFF /sec     → +0.15
   Kill during Sandy   → +2 to +8 (faction-based, configurable per faction)
   Low runtime (<10%)  → +0.5/s
@@ -45,6 +48,22 @@ When strain >= threshold → dice roll each second:
   Success → EPISODE (MartinezFury, psycho++) + strain reset to 0
   At guaranteed → forced episode (can't avoid)
 ```
+
+### Strain Multiplier Separation
+
+`AddStrain(amount, raw)` accepts a `raw` parameter:
+
+- `raw = false` (default): Applies the stage-based strain multiplier. Used for tolerance-based strain (Sandy activation, overuse bonus, active time). At low stages the body resists more, making it harder to trigger episodes from normal use.
+- `raw = true`: Bypasses the stage multiplier entirely. Used for psychological/physical strain (kills, low/zero runtime, Safety OFF). The trauma of killing and physical stress of pushing past limits hit equally hard regardless of stage.
+
+| Stage | Multiplier | Tolerance Strain Impact |
+|-------|-----------|------------------------|
+| 0 | x0.5 | Half impact -- body is fresh |
+| 1 | x0.5 | Half impact -- still resilient |
+| 2 | x0.75 | Reduced but noticeable |
+| 3 | x1.0 | Full impact |
+| 4 | x1.0 | Full impact |
+| 5 | x1.0 | Full impact |
 
 ### Kill Strain (Redscript Hook)
 
@@ -386,14 +405,20 @@ Phantom NPCs spawn near V during Sandy use via `exEntitySpawner`. These hallucin
 | 4 | More frequent, shorter despawn window |
 | 5 | Near-constant, blending with real enemies |
 
-### Auto-Attack (Stage 4–5)
+### Auto-Attack (Stage 3–5)
 
-V's weapon fires involuntarily via `QuestForceShoot`, reflecting loss of motor control. The attack fires the currently equipped weapon without player input.
+V's weapon fires involuntarily via `AIWeapon.Fire()`, the same method used by Wannabe Edgerunner. Does not require aiming. If no weapon is drawn, `EquipmentSystem` auto-draws from the weapon wheel slot before firing. 30s cooldown, 15m NPC range, red outline 2s on target, target becomes hostile.
 
-| Stage | Chance per tick |
-|-------|-----------------|
-| 4 | 15% |
-| 5 | 35% |
+Four trigger points with stage-scaled chances:
+
+| Trigger | Stage 3 | Stage 4 | Stage 5 |
+|---------|---------|---------|---------|
+| Manic laugh (micro-episode) | 30% | 50% | 70% |
+| Stage change (FrightenNPCs) | 40% | 60% | 80% |
+| Low runtime (<10%, per second) | 10% | 20% | 35% |
+| Nosebleed (on activation) | 5% | 15% | 25% |
+
+Post-attack effects: PsychoWarningEffect_Medium VFX, PsychoLaughEffect (unless triggered from laugh), camera shake (0.008), gunshot stimulus broadcast.
 
 ### Safety ON/OFF
 
@@ -409,28 +434,71 @@ At stage 5 Safety OFF:
 - `Calculate_SandevistanCharge` returns 100% — the engine reports full charge regardless of actual runtime
 - The Sandy cannot be safely shut down
 
+### Psychosis Episode Effects (Stage 3+)
+
+During psychosis episodes (`FrightenNPCs`) and Last Breath decay, V receives combat buffs and audio cues:
+
+| Effect | Implementation | Values |
+|--------|---------------|--------|
+| **PsychosisCombatBuff** | Status effect with 3 stat modifiers | +50% MaxSpeed (x1.5), +100% Armor (x2.0), x10 HealthInCombatRegenRate |
+| **Cycled SFX** | `ui_gmpl_perk_edgerunner` SoundPlayEvent | Fires during FrightenNPCs and at Last Breath decay start |
+| **Weapon auto-draw** | EquipmentSystem SetLastUsedStruct + UpdateEquipAreaActiveIndex | Forces weapon from WeaponWheel slot 0 |
+| **Pre-psychosis VFX** | `johnny_sickness_blackout` effect + pain SFX | Fires in BleedingEffect BEFORE the episode; `ono_v_fear_panic_scream` fires DURING (in FrightenNPCs) |
+
 ## System 8: Blackout (Overuse Exhaustion)
 
-When V pushes Sandy use far beyond safe limits (3× safe daily activations), the body shuts down involuntarily.
+When V pushes Sandy use far beyond safe limits (3x safe daily activations), the body shuts down involuntarily.
 
 ### Trigger
 
-`ExhaustionCheck()` fires when `sessionActivations > 3 × effectiveSafeActivations`.
+`ExhaustionCheck()` fires when `dailyActivations >= 3 * effectiveSafeActivations` and Sandy is active. Stage 4-5: no blackout (psychosis/death path takes over). Daily cooldown: one blackout per day.
 
-### Effect
+### Stage-Based Chance
 
-V blacks out — teleported to a safe location with a time skip of 4–8 hours. Possible destinations:
-- V's apartment
-- Viktor Vektor's clinic
-- A random alley
+| Stage | Blackout Chance |
+|-------|----------------|
+| 0 | 90% |
+| 1 | 70% |
+| 2 | 40% |
+| 3 | 15% |
+| 4-5 | No blackout |
+
+### Distance Check
+
+V must be within 200m of a known safe location. If too far, a stun-only fallback triggers (*"Body gives out... can't move..."*) without teleport.
+
+### Wakeup Locations
+
+| Location | Type | Strain Drain | Runtime Restore | Health | Treatment Dose | Psycho Recovery |
+|----------|------|-------------|-----------------|--------|----------------|-----------------|
+| V's apartment | Apartment | -15 | +25% max | 40-60% | 0.5 | Can reduce psycho level |
+| Viktor's clinic | Ripper | -25 | +50% max | 60-70% | 1.0 | No |
+| Kabuki ripper | Ripper | -25 | +50% max | 60-70% | 1.0 | No |
+
+### Blackout Sequence
+
+1. **Pre-blackout**: Sandy deactivates, pain SFX + NosebleedEffect + PsychoWarningEffect_Light
+2. **Screen black** (0.5s): `CyberwareInstallationAnimationBlackout` applied, `fast_travel_glitch` VFX
+3. **Teleport** (1.0s): Clear wanted level, teleport to nearest safe location
+4. **Wake up** (2.0s): Location-specific recovery, time advance 4-8h, post-blackout SFX + groggy VFX
 
 ### Lore
 
-This mirrors David's blackouts in the anime — moments where the body simply refused to continue. The blackout is not a stun or a freeze; V loses time entirely.
+This mirrors David's blackouts in the anime -- moments where the body simply refused to continue. The blackout is not a stun or a freeze; V loses time entirely.
 
 ### Blackwall Kill (Combat Effect)
 
-The Blackwall Kill combat effect uses real Phantom Liberty effects: `HauntedBlackwallForceKill` + `QuickHack.BlackWallHack`. These are applied during Last Breath's Ticking Time Bomb sequence for authentic Blackwall visuals.
+The Blackwall Kill combat effect uses real Phantom Liberty effects: `HauntedBlackwallForceKill` + `QuickHack.BlackWallHack`. These are applied during Last Breath's song-synced decay for authentic Blackwall visuals.
+
+### Blackwall Civilian Corruption (Last Breath Stage 6)
+
+During Last Breath decay, V's cyberware malfunctions and corrupts nearby civilians (15m range). Corruption chance scales with song phase:
+
+| Song Phase | Corruption Chance |
+|------------|------------------|
+| Chorus 1 (58s) | 30% |
+| Chorus 2 (149s) | 40% |
+| Final Chorus (203s) | 60% |
 
 ## Cross-System Interactions
 
@@ -464,7 +532,7 @@ The Blackwall Kill combat effect uses real Phantom Liberty effects: `HauntedBlac
 
           ┌──────────────┐     ┌──────────────┐
           │ Hallucinations│     │ Auto-Attack  │
-          │ (Stage 3-5)  │     │ (Stage 4-5)  │
+          │ (Stage 3-5)  │     │ (Stage 3-5)  │
           └──────────────┘     └──────────────┘
                  ▲                     ▲
                  │ unlocked by         │
@@ -489,9 +557,9 @@ The Blackwall Kill combat effect uses real Phantom Liberty effects: `HauntedBlac
 | DF Immunosuppressant drains strain | -0.08/s drain (weaker, doesn't block accumulation) |
 | Runtime penalties scale with runtime | High runtime = stamina boost, low runtime = speed/armor/stamina penalties |
 | Hallucinations spawn phantoms | Stage 3–5, phantom NPCs via exEntitySpawner, despawn after 2–8s |
-| Auto-Attack fires weapon | Stage 4–5, QuestForceShoot involuntary fire at 15%/35% chance |
+| Auto-Attack fires weapon | Stage 3–5, AIWeapon.Fire() from 4 trigger points (manic laugh 30/50/70%, stage change 40/60/80%, low runtime 10/20/35%, nosebleed 5/15/25%) |
 | Safety OFF at stage 5 | Sandy stays active through episodes, charge reports 100% |
-| Blackout on extreme overuse | 3× safe activations → teleport to safe location + 4–8h time skip |
+| Blackout on extreme overuse | 3x safe activations → stage-based chance (90/70/40/15% for stages 0-3), 200m range check, location-specific recovery (ripper: strain -25 + 50% RT vs apartment: strain -15 + 25% RT + psycho reduction), daily cooldown |
 | Prescription resets micro-episode timer | Level change = new frequency bracket |
 | Last Breath bypasses ALL eight systems | Its own decay handles everything, sets strain=0 |
 | Sleep resets session fatigue + recovers runtime degradation + drains strain | Fresh start each day |
@@ -551,10 +619,10 @@ All parameters with their cfg key names:
 |------|---------|
 | `init.lua` | Core game loop, all system orchestration: `Running()`, `Start()`, `End()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `displayTick` phases, VFX progression (stages 0-5), config defaults |
 | `martinez.lua` | TweakDB factory: all status effects (Fury, VFX warnings Light/Medium/Heavy, Sluggish, Immunoblocker 3 tiers), Sandevistan item, vendor records |
-| `loreEffects.lua` | Sensory effects: `UpdateTremor()` (stages 1-5), `UpdateFOVPulse()`, `UpdateTerminalClarity()`, `Heartbeat()` (stage 2+), `Nosebleed()`, `ExhaustionCheck()`, `RandomNosebleed()` (stage 2+), `GetEffectiveMaxRuntime()` |
-| `strain.lua` | Neural Strain accumulation/drain: `AddStrain()` (with buildup multiplier), `DrainStrain()`, `GetStrainThreshold()`, `GetStrainGuaranteed()`, dice roll logic |
-| `psychosis.lua` | Cyberpsychosis episode handling: `FireMicroEpisode()`, `PsychoOutburst()`, `FrightenNPCs()`, psycho level transitions |
-| `death.lua` | Death and Last Breath: `KillV()`, `KillV_Execute()`, `UpdateLastBreath()`, song-synced timeline, combat effects (Ticking Time Bomb, Blackwall Kill) |
+| `loreEffects.lua` | Sensory effects: `UpdateTremor()` (stages 1-5), `UpdateFOVPulse()`, `UpdateTerminalClarity()`, `Heartbeat()` (stage 2+), `Nosebleed()` (+ auto-attack on nosebleed), `ExhaustionCheck()` (blackout with stage chance, 200m range, location-specific recovery), `UpdateBlackout()`, `RandomNosebleed()` (stage 2+), `GetEffectiveMaxRuntime()` |
+| `strain.lua` | Neural Strain accumulation/drain: `AddStrain(amount, raw)` (stage multiplier for tolerance strain, raw bypass for kills/runtime/Safety OFF), `GetStrainThreshold()`, `GetStrainGuaranteed()`, `CheckStrainEpisode()` dice roll, `TriggerStrainEpisode()` |
+| `psychosis.lua` | Cyberpsychosis episode handling: `FireMicroEpisode()`, `FrightenNPCs()` (combat buffs, weapon draw, cycled SFX, auto-attack), `TryAutoAttack()` (AIWeapon.Fire), `CheckLowRuntimeAutoAttack()`, hallucinations, psycho level transitions |
+| `death.lua` | Death and Last Breath: `KillV()`, `KillV_Execute()`, `UpdateLastBreath()` (song-synced timeline with combat buffs + cycled SFX at decay start), `TickingTimeBomb()`, `BlackwallKill()`, `BlackwallCivilianCorruption()` (30/40/60% by chorus) |
 | `immunoblocker.lua` | Immunoblocker TweakDB records: consumable items (3 tiers), vendor integration, custom icons |
 | `immunoblocker_logic.lua` | Immunoblocker runtime logic: `IsImmunoblockerActive()`, `GetImmunoblockerEffectiveness()`, strain blocking/draining |
 | `gameListeners.lua` | CET event listeners: `onInit`, `onUpdate`, `onDraw`, game state observers (sleep, ripperdoc, scene changes) |
@@ -598,6 +666,6 @@ All parameters with their cfg key names:
 28. Safety ON (stage 0–4) / Safety OFF (stage 5) transitions automatically
 29. Stage 5 Safety OFF: Sandy stays active during strain episodes, charge reports 100%
 30. Hallucinations spawn phantom NPCs at stage 3–5, despawn after 2–8s
-31. Auto-Attack fires weapon involuntarily at stage 4 (15%) and 5 (35%)
-32. Blackout triggers at 3× safe activations — teleport + time skip
+31. Auto-Attack fires weapon via AIWeapon.Fire() at stage 3-5 from 4 trigger points (manic laugh, stage change, low runtime, nosebleed)
+32. Blackout triggers at 3x safe activations — stage-based chance (90/70/40/15%), 200m range check, daily cooldown, location-specific recovery
 33. Blackwall Kill uses real Phantom Liberty effects (HauntedBlackwallForceKill + QuickHack.BlackWallHack)
