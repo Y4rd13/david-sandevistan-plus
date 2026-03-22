@@ -1055,6 +1055,8 @@ dsp = {
 		end
 	 end)
 	,Calculate_SandevistanCharge = (function(self)
+		-- Last Breath: always report 100% so engine never tries to deactivate
+		if self.lastBreath then return 100 end
 		local CooldownBuffer = 0.05 -- the buffer stops the sandevistan from running out of cooldown
 		local IsFury = self:IsFury()
 		if IsFury then CooldownBuffer = 0 end -- if MAXTAC gets called, sandevistan gives fries a circuit
