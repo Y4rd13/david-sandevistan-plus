@@ -1,6 +1,6 @@
 # Lore-Accurate Gameplay Systems — Technical Reference
 
-Six interconnected systems implementing physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
+Eight interconnected systems implementing physical, unpredictable, and cumulative deterioration inspired by David Martinez's arc in Edgerunners.
 
 ### Stage Progression Matrix
 
@@ -29,8 +29,9 @@ Actions add strain:
   Sandy activation    → +5 (+ overuse bonus)
   Sandy active /60s   → +2
   Safety OFF /sec     → +0.15
-  Kill during Sandy   → +2 to +8 (faction-based)
-  Comedown /5s        → +1
+  Kill during Sandy   → +2 to +8 (faction-based, configurable per faction)
+  Low runtime (<10%)  → +0.5/s
+  Zero runtime        → +1.0/s
 
 Actions reduce strain:
   Safe area /sec      → -0.05
@@ -56,7 +57,7 @@ When strain >= threshold → dice roll each second:
 | Arasaka / Militech / KangTao | 3 | Corporate security |
 | All gangs | 2 | Normal enemies |
 
-Kill strain routes through `DSPHUDSystem.AddKillStrain(cost)` → CET Lua reads via `GetAndClearKillStrain()` each tick.
+Per-faction strain values are configurable. Kill strain routes through `DSPHUDSystem.AddKillStrain(cost)` using a packed Int32 encoding (gang/corpo/ncpd/civilian values packed into a single integer) → CET Lua reads via `GetAndClearKillStrain()` each tick.
 
 ### Thresholds Per Stage
 
@@ -83,15 +84,15 @@ Strain reaching 0 means "safe within current level" but doesn't reduce the level
 
 ## System 2: Immunoblocker (Consumable Item)
 
-Doc's prescribed medication — *"Nine times your customary dosage."* A consumable item purchasable from ripperdoc TRADE tabs.
+Doc's prescribed medication — *"Nine times your customary dosage."* A consumable item purchasable from dedicated VendorsXL vendors.
 
 ### Item Tiers
 
-| Tier | In-Game Name | Duration | Price | Drain Rate | Vendor Availability |
-|------|-------------|----------|-------|------------|---------------------|
-| Common | Immunoblocker | 180s (3 min) | 3,000€$ | 0.08/s (14.4 total) | Always Present |
-| Uncommon | Immunoblocker — High Dosage | 360s (6 min) | 12,000€$ | 0.18/s (64.8 total) | Commonly Present |
-| Rare | Military-Grade Immunoblocker | 600s (10 min) | 50,000€$ | 0.35/s (210 total) | Uncommonly Present |
+| Tier | In-Game Name | Quality | Duration | Price | Drain Rate |
+|------|-------------|---------|----------|-------|------------|
+| Rare | Immunoblocker | Rare (blue) | 180s (3 min) | 6,000€$ | 0.08/s (14.4 total) |
+| Epic | Immunoblocker — High Dosage | Epic (purple) | 360s (6 min) | 24,000€$ | 0.18/s (64.8 total) |
+| Legendary | Military-Grade Immunoblocker | Legendary (gold) | 600s (10 min) | 100,000€$ | 0.35/s (210 total) |
 
 Each tier has a custom inventory icon (separate inkatlas+xbm per tier).
 
@@ -101,25 +102,19 @@ Each tier creates:
 - **StatusEffect**: `BaseStatusEffect.MartinezSandevistan_ImmunoblockerCommon/Uncommon/Rare` — timed, tagged `Immunoblocker`, no stat packages (detection-only via `StatusEffect_CheckOnly()`)
 - **ConsumableItem**: `Items.MartinezImmunoblockerCommon/Uncommon/Rare` — `ItemType.Con_LongLasting`, custom icon via `UIIcon.Immunoblocker_Common/Uncommon/Rare`
 - **ObjectActionEffect** + **ItemAction**: bridge records for the consume action
-- **VendorItem**: entries on 5 ripperdoc `medicstore_01` vendor `itemStock` arrays (TRADE tab)
 - **Price override**: `.buyPrice` set with custom `ConstantStatModifier` (overrides inherited HealthBooster pricing)
 - **Stat cleanup**: `.statModifiers`, `.OnEquip` cleared to remove inherited HealthBooster stats; `.statModifierGroups` keeps only `Items.LongLastingConsumableDuration` for tooltip duration
 
 ### Vendors
 
-Immunoblockers appear in ripperdoc **TRADE tabs** (not CYBERWARE). Each ripperdoc NPC has two vendor records: `ripperdoc_01` feeds CYBERWARE, `medicstore_01` feeds TRADE.
+Immunoblockers are sold exclusively through VendorsXL custom vendors at two locations:
 
-| Location | Vendor Record |
-|----------|---------------|
-| Viktor Vektor, Watson | `Vendors.wat_lch_medicstore_01` |
-| Cassius Ryder, Kabuki | `Vendors.wat_kab_medicstore_01` |
-| Arroyo ripperdoc | `Vendors.std_arr_medicstore_01` |
-| Heywood ripperdoc | `Vendors.hey_spr_medicstore_01` |
-| Japantown ripperdoc | `Vendors.wbr_jpn_medicstore_01` |
+| Location | Vendor |
+|----------|--------|
+| Arroyo | VendorsXL vendor NPC |
+| Kabuki | VendorsXL vendor NPC |
 
-Pacifica excluded — `pac_wwd` has no `medicstore_01` record (no TRADE tab vendor exists in-game).
-
-VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (called from `LoadGamePart1`), not during `onInit`, because CET TweakDB records created during `onInit` are not seen by native `MarketSystem.GetVendorItemsForSale()`.
+VendorsXL is the only way to create interactive vendor NPCs that work with the game's native `MarketSystem`. Ripperdoc TRADE tabs are not used.
 
 ### Effects While Active
 
@@ -144,7 +139,7 @@ VendorItem records are created at runtime in `AddImmunoblockersToVendors()` (cal
 | Reduces accumulation | 80% (full) / 50% (partial) | No |
 | Drain rate | 0.08–0.35/s (per tier) | -0.08/s |
 | Suppresses micro-episodes | Yes (full/partial) | Yes |
-| Source | Ripperdoc shop | Dark Future mod |
+| Source | VendorsXL vendors (Arroyo + Kabuki) | Dark Future mod |
 
 Both can be active simultaneously without conflict.
 
@@ -168,50 +163,39 @@ Timeline (~1.9s total):
 
 ![Immunoblocker Injection Timeline](immunoblocker-animation-timeline.svg)
 
-## System 3: Enhanced Comedown
+## System 3: Runtime-Based Penalties
 
-Deactivating the Sandy triggers stat penalties, visual distortion, and blocks reactivation.
+The Sandevistan's physical toll scales with remaining runtime. V can always reactivate — there is no cooldown or reactivation block (lore-accurate: David never had a cooldown). Instead, pushing through low runtime carries escalating penalties.
 
-### TweakDB Record
+### Penalty Tiers
 
-`BaseStatusEffect.MartinezSandevistan_Comedown` — defined in `martinez.lua`:
+| Runtime | Stamina | Speed | Armor | Tremor | Strain/s | Experience |
+|---------|---------|-------|-------|--------|----------|------------|
+| >30% | ×1.5 | — | — | — | — | Body energized by Sandy |
+| 10–30% | Normal | — | — | 0.003 | +0.15/s | Nosebleed on activation |
+| <10% | ×0.5 | ×0.6 | ×0.5 | 0.006 | +0.5/s | Heavy physical distress |
+| 0% | — | — | — | — | +1.0/s | Death wish territory |
 
-| Component | Record | Value |
-|-----------|--------|-------|
-| **Status Effect** | Infinite duration, controlled by Lua timer | VFX: `burnout_glitch` + `hacking_glitch_low` |
-| **Stat: MaxSpeed** | ConstantStatModifier | ×0.6 (40% slower) |
-| **Stat: StaminaRegenRate** | ConstantStatModifier | ×0.3 (70% less regen) |
-| **Stat: Armor** | ConstantStatModifier | ×0.5 (50% less armor) |
+### MaxRuntime Scaling by Stage
 
-### Duration Formula
+Each psycho stage reduces the effective maximum runtime:
 
-```
-runtimeUsed = sandyStartRuntime - currentRuntime
-scale = min(runtimeUsed / comedownScalingThreshold, 1.0)
-duration = comedownBaseDuration + (comedownMaxDuration - comedownBaseDuration) * scale
-
-if psychoLevel >= 3:
-    duration *= comedownPsychoMultiplier
-```
-
-| Defaults | Value |
-|----------|-------|
-| `comedownBaseDuration` | 5.0s |
-| `comedownMaxDuration` | 20.0s |
-| `comedownScalingThreshold` | 60s |
-| `comedownPsychoMultiplier` | 1.5 |
-
-**Examples:**
-- 10s Sandy use → ~7.5s comedown
-- 60s Sandy use → 20s comedown
-- 60s Sandy use at psycho 3 → 30s comedown
+| Stage | MaxRuntime | Example (120s base) |
+|-------|-----------|---------------------|
+| 0 | 100% | 120s |
+| 1 | 90% | 108s |
+| 2 | 80% | 96s |
+| 3 | 65% | 78s |
+| 4 | 50% | 60s |
+| 5 | 35% | 42s |
 
 ### Behavior
 
-- Sandy blocked during comedown (`comedownBlockSandy = true`)
-- Camera tremor at psycho 3+ (`comedownTremorAtPsycho = true`, intensity 0.003)
-- Comedown removed on death/Last Breath
-- Cleanup in `RemoveAllPsychoVFX()` and `RemoveDeadV()`
+- No reactivation block — V can always fire the Sandy regardless of runtime
+- Stamina bonus (×1.5) at high runtime reflects the Sandy energizing the body
+- Low runtime tremor and nosebleed provide visceral feedback before stat penalties hit
+- Zero runtime strain accumulation (+1.0/s) makes staying active at empty runtime extremely dangerous
+- Penalties are evaluated continuously during Sandy use
 
 ## System 4: Doc Prescription (Graduated Recovery)
 
@@ -234,7 +218,7 @@ Recovery is a process, not an instant cure. Each psycho level requires a specifi
 - Max -1 psycho level per sleep (configurable via `maxPsychoRecoveryPerSleep`)
 - Counts as 1 treatment dose toward prescription
 - Level 5 can only drop to 4 via sleep — ripper required to go lower
-- Clears comedown state, resets `sessionActivations`
+- Resets `sessionActivations`
 - Recovers 75% of degraded max runtime (`sleepRecoveryPercent`)
 
 **Ripperdoc (`VisitedRipper()`):**
@@ -259,7 +243,7 @@ SetStrainData(neuralStrain, strainThreshold, strainGuaranteed, immunoblockerActi
 ```
 
 Displays `RX 2/5` next to psycho level when prescription is active.
-Strain bar shows `STRAIN 45/60` with blue→yellow→red color coding.
+Strain bar shows `STRAIN 45/60` with blue→yellow→red color coding. The strain bar and icon are visible at all stages, including stage 0.
 
 ### Persistence
 
@@ -267,9 +251,24 @@ Strain bar shows `STRAIN 45/60` with blue→yellow→red color coding.
 
 ## System 5: Non-Linear Runtime Drain
 
-Three sub-systems that make sustained Sandevistan use increasingly costly.
+Four sub-systems that make sustained Sandevistan use increasingly costly.
 
-### 5a: Accelerating Drain
+### 5a: Dilation Cap by Stage
+
+The psycho curve acts as a **cap** on maximum dilation, not a boost. Each stage limits how much time dilation V can achieve, regardless of perk or cyberware bonuses:
+
+| Stage | maxTS | minTS | Dilation Cap |
+|-------|-------|-------|-------------|
+| 0 | 0.10 | 0.10 | 90% (fixed) |
+| 1 | 0.10 | 0.08 | 90–92% |
+| 2 | 0.08 | 0.06 | 92–94% |
+| 3 | 0.06 | 0.04 | 94–96% |
+| 4 | 0.04 | 0.02 | 96–98% |
+| 5 | 0.02 | 0.01 | 98–99% |
+
+Stage 0 is a hard cap at 90% regardless of the Sandy's native timeScale. Higher stages unlock progressively more extreme dilation — greater power at the cost of accelerating psychosis.
+
+### 5b: Accelerating Drain
 
 Drain accelerates the longer V stays in dilation:
 
@@ -293,7 +292,7 @@ runTime -= dt * drainRate
 | 180s | 3.8× | Nearly 4× drain |
 | 240s | 6.2× | Brutally expensive |
 
-### 5b: Session Fatigue
+### 5c: Session Fatigue
 
 Each Sandy activation past the safe daily limit reduces dilation effectiveness:
 
@@ -311,7 +310,7 @@ timeScale += penalty  -- higher timeScale = less dilation
 
 Resets on sleep.
 
-### 5c: Max Runtime Degradation
+### 5d: Max Runtime Degradation
 
 Each Sandy session permanently reduces max runtime:
 
@@ -361,7 +360,6 @@ Actual interval = random within range × `1 / microEpisodeFrequency`.
 
 Micro-episodes are suppressed when:
 - V is in menu or braindance
-- Comedown is active (body already in recovery)
 - Last Breath is active (its own systems handle everything)
 - Immunoblocker is active (Doc's medication)
 - DF immunosuppressant is active
@@ -371,8 +369,68 @@ Micro-episodes are suppressed when:
 
 - Timer decrements in `displayTick` phase 3 (every ~1s)
 - On fire: `FireMicroEpisode()` → weighted random → apply effect → set cleanup timer
-- Brief VFX effects auto-removed after duration via cleanup timers in comedown tick
+- Brief VFX effects auto-removed after duration via cleanup timers
 - Sandy flash auto-stops via separate timer
+
+## System 7: Hallucinations & Auto-Attack
+
+Advanced psychosis symptoms that manifest at higher stages, representing loss of perception and motor control.
+
+### Hallucinations (Stage 3–5)
+
+Phantom NPCs spawn near V during Sandy use via `exEntitySpawner`. These hallucinations appear as hostile targets but despawn after 2–8 seconds — V may waste ammo or expose position attacking ghosts.
+
+| Stage | Behavior |
+|-------|----------|
+| 3 | Occasional phantoms, long despawn (up to 8s) |
+| 4 | More frequent, shorter despawn window |
+| 5 | Near-constant, blending with real enemies |
+
+### Auto-Attack (Stage 4–5)
+
+V's weapon fires involuntarily via `QuestForceShoot`, reflecting loss of motor control. The attack fires the currently equipped weapon without player input.
+
+| Stage | Chance per tick |
+|-------|-----------------|
+| 4 | 15% |
+| 5 | 35% |
+
+### Safety ON/OFF
+
+Safety is an automatic system, not a user toggle. The Sandy's internal limiters determine Safety state:
+
+| Stage | Safety State | Behavior |
+|-------|-------------|----------|
+| 0–4 | Safety ON | Automatic — limiters active, Sandy deactivates when runtime expires |
+| 5 | Safety OFF | Automatic — limiters fail, Sandy stays active during strain episodes |
+
+At stage 5 Safety OFF:
+- `TriggerStrainEpisode` does not call `EndSandevistan` — the Sandy stays active through episodes
+- `Calculate_SandevistanCharge` returns 100% — the engine reports full charge regardless of actual runtime
+- The Sandy cannot be safely shut down
+
+## System 8: Blackout (Overuse Exhaustion)
+
+When V pushes Sandy use far beyond safe limits (3× safe daily activations), the body shuts down involuntarily.
+
+### Trigger
+
+`ExhaustionCheck()` fires when `sessionActivations > 3 × effectiveSafeActivations`.
+
+### Effect
+
+V blacks out — teleported to a safe location with a time skip of 4–8 hours. Possible destinations:
+- V's apartment
+- Viktor Vektor's clinic
+- A random alley
+
+### Lore
+
+This mirrors David's blackouts in the anime — moments where the body simply refused to continue. The blackout is not a stun or a freeze; V loses time entirely.
+
+### Blackwall Kill (Combat Effect)
+
+The Blackwall Kill combat effect uses real Phantom Liberty effects: `HauntedBlackwallForceKill` + `QuickHack.BlackWallHack`. These are applied during Last Breath's Ticking Time Bomb sequence for authentic Blackwall visuals.
 
 ## Cross-System Interactions
 
@@ -383,40 +441,59 @@ Micro-episodes are suppressed when:
                   │ episode triggers               │
                   ▼                                │
           ┌──────────────┐                  ┌─────┴──────┐
-          │ Psycho Level │                  │ Comedown   │
-          │ (1→5)        │                  │ (+1/5s)    │
-          └──────┬───────┘                  └────────────┘
-                 │ increases                      ▲
-                 ▼                                │
-          ┌──────────────┐                  ┌─────┴──────┐
-          │ Micro-       │                  │ Sandy Use  │
-          │ Episodes     │                  │ + Kills    │
-          └──────────────┘                  └────────────┘
-                 ▲ suppresses                     ▲ blocks
-                 │                                │
-          ┌──────┴───────┐                  ┌─────┴──────┐
-          │ Immunoblocker│─── drains ──────►│ Strain     │
-          │ + DF Immuno  │                  │ Pool       │
-          └──────────────┘                  └────────────┘
-                                                  ▲
-                                                  │ drains
-          ┌──────────────┐                  ┌─────┴──────┐
-          │ Doc          │─── drains ──────►│ Sleep /    │
-          │ Prescription │                  │ Ripper     │
-          └──────────────┘                  └────────────┘
+          │ Psycho Level │                  │ Sandy Use  │
+          │ (0→5)        │                  │ + Kills    │
+          └──────┬───────┘                  │ + Low RT   │
+                 │ increases                └────────────┘
+                 ▼                                ▲
+          ┌──────────────┐                        │
+          │ Micro-       │                  ┌─────┴──────┐
+          │ Episodes     │                  │ Strain     │
+          └──────────────┘                  │ Pool       │
+                 ▲ suppresses               └────────────┘
+                 │                                ▲
+          ┌──────┴───────┐                        │ drains
+          │ Immunoblocker│─── drains ─────────────┘
+          │ + DF Immuno  │
+          └──────────────┘
+                                            ┌────────────┐
+          ┌──────────────┐                  │ Sleep /    │
+          │ Doc          │─── drains ──────►│ Ripper     │
+          │ Prescription │                  └────────────┘
+          └──────────────┘
+
+          ┌──────────────┐     ┌──────────────┐
+          │ Hallucinations│     │ Auto-Attack  │
+          │ (Stage 3-5)  │     │ (Stage 4-5)  │
+          └──────────────┘     └──────────────┘
+                 ▲                     ▲
+                 │ unlocked by         │
+                 └────────┬────────────┘
+                   ┌──────┴───────┐
+                   │ Psycho Level │
+                   └──────────────┘
+                          ▲
+                          │ triggers at 3×
+                   ┌──────┴───────┐
+                   │ Blackout     │
+                   │ (Exhaustion) │
+                   └──────────────┘
 ```
 
 | Interaction | Behavior |
 |-------------|----------|
 | Neural Strain triggers episodes | Dice roll above threshold → MartinezFury + psycho level++ |
-| Kills add strain (faction-based) | Redscript hook → DSPHUDSystem bridge → CET Lua |
-| Comedown adds strain | +1 every 5s — recovery still stresses the system |
+| Kills add strain (faction-based) | Redscript hook → DSPHUDSystem bridge → CET Lua, per-faction configurable values |
+| Low runtime adds strain | <10% runtime → +0.5/s, 0% runtime → +1.0/s |
 | Immunoblocker reduces + drains strain | -0.08/0.18/0.35/s per tier, reduces accumulation 80% (full) or 50% (partial), suppresses micro-episodes |
 | DF Immunosuppressant drains strain | -0.08/s drain (weaker, doesn't block accumulation) |
-| Comedown suppresses micro-episodes | Body is already in recovery — no stacking |
-| Session fatigue extends comedown | More runtime used → longer comedown duration |
+| Runtime penalties scale with runtime | High runtime = stamina boost, low runtime = speed/armor/stamina penalties |
+| Hallucinations spawn phantoms | Stage 3–5, phantom NPCs via exEntitySpawner, despawn after 2–8s |
+| Auto-Attack fires weapon | Stage 4–5, QuestForceShoot involuntary fire at 15%/35% chance |
+| Safety OFF at stage 5 | Sandy stays active through episodes, charge reports 100% |
+| Blackout on extreme overuse | 3× safe activations → teleport to safe location + 4–8h time skip |
 | Prescription resets micro-episode timer | Level change = new frequency bracket |
-| Last Breath bypasses ALL six systems | Its own decay handles everything, sets strain=0 |
+| Last Breath bypasses ALL eight systems | Its own decay handles everything, sets strain=0 |
 | Sleep resets session fatigue + recovers runtime degradation + drains strain | Fresh start each day |
 | Ripper fully restores runtime degradation + drains strain | "Good as new" visit |
 
@@ -430,27 +507,17 @@ All parameters with their cfg key names:
 | `strainPerActivation` | int | 5 | Base strain per Sandy activation |
 | `strainPerOveruseBonus` | int | 3 | Extra strain per activation beyond safe limit |
 | `strainPerMinuteActive` | int | 2 | Strain per minute of Sandy use |
-| `strainPerSecSafetyOff` | float | 0.15 | Strain per second with Safety OFF |
-| `strainPerKillBase` | int | 3 | Base kill strain (overridden by faction cost) |
-| `strainPerComedown5s` | int | 1 | Strain every 5s during comedown |
+| `strainPerSecSafetyOff` | float | 0.15 | Strain per second with Safety OFF (stage 5) |
+| `strainPerKillBase` | int | 3 | Base kill strain (overridden by per-faction config) |
+| `strainPerSecLowRuntime` | float | 0.5 | Strain per second when runtime <10% |
+| `strainPerSecZeroRuntime` | float | 1.0 | Strain per second when runtime is 0% |
 | `strainDrainSafeArea` | float | 0.05 | Drain per second in safe areas |
 | `strainDrainSleep` | int | 40 | Drain on sleep (scaled by hours/8) |
 | `strainDrainRipper` | int | 25 | Drain per ripperdoc visit |
-| `strainDrainImmunoblocker` | table | {0.08, 0.18, 0.35} | Drain per second per tier: Common, Uncommon, Rare |
+| `strainDrainImmunoblocker` | table | {0.08, 0.18, 0.35} | Drain per second per tier: Rare, Epic, Legendary |
 | `strainDrainDFImmuno` | float | 0.08 | Drain per second with DF Immunosuppressant |
 | `strainBuildupMultiplier` | float | 1.0 | Global multiplier for all strain accumulation |
 | `strainRecoveryMultiplier` | float | 1.0 | Global multiplier for all strain drain |
-
-### Comedown
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `enableComedown` | bool | true | Master toggle |
-| `comedownBaseDuration` | float | 5.0 | Minimum duration (seconds) |
-| `comedownMaxDuration` | float | 20.0 | Maximum duration (seconds) |
-| `comedownScalingThreshold` | float | 60 | Runtime threshold for max duration |
-| `comedownBlockSandy` | bool | true | Block Sandy during comedown |
-| `comedownPsychoMultiplier` | float | 1.5 | Duration multiplier at psycho 3+ |
-| `comedownTremorAtPsycho` | bool | true | Camera shake during comedown at psycho 3+ |
 
 ### Prescription
 | Key | Type | Default | Description |
@@ -483,7 +550,7 @@ All parameters with their cfg key names:
 | File | Purpose |
 |------|---------|
 | `init.lua` | Core game loop, all system orchestration: `Running()`, `Start()`, `End()`, `Rested()`, `VisitedRipper()`, `TimeDilationCalculator()`, `displayTick` phases, VFX progression (stages 0-5), config defaults |
-| `martinez.lua` | TweakDB factory: all status effects (Fury, Comedown, VFX warnings Light/Medium/Heavy, Sluggish, Immunoblocker 3 tiers), Sandevistan item, vendor records |
+| `martinez.lua` | TweakDB factory: all status effects (Fury, VFX warnings Light/Medium/Heavy, Sluggish, Immunoblocker 3 tiers), Sandevistan item, vendor records |
 | `loreEffects.lua` | Sensory effects: `UpdateTremor()` (stages 1-5), `UpdateFOVPulse()`, `UpdateTerminalClarity()`, `Heartbeat()` (stage 2+), `Nosebleed()`, `ExhaustionCheck()`, `RandomNosebleed()` (stage 2+), `GetEffectiveMaxRuntime()` |
 | `strain.lua` | Neural Strain accumulation/drain: `AddStrain()` (with buildup multiplier), `DrainStrain()`, `GetStrainThreshold()`, `GetStrainGuaranteed()`, dice roll logic |
 | `psychosis.lua` | Cyberpsychosis episode handling: `FireMicroEpisode()`, `PsychoOutburst()`, `FrightenNPCs()`, psycho level transitions |
@@ -502,20 +569,20 @@ All parameters with their cfg key names:
 ## Verification Checklist
 
 1. Toggle each `enable*` flag off → system fully bypassed, no side effects
-2. Psycho level 0 → no comedown penalties, no micro-episodes, no prescription
+2. Psycho level 0 → no micro-episodes, no prescription; runtime-based penalties still apply
 3. Save/load persistence for prescription state (`prescribedDoses`, `completedDoses`, `maxRuntimeDegraded`, `neuralStrain`)
 4. Menu/braindance immunity for all effects
 5. Last Breath compatibility (all systems properly bypassed, strain=0)
 6. Dark Future compat (immunosuppressant strain drain or graceful no-op)
 7. Performance: no per-frame table allocations in hot paths
 8. CET→redscript: all setters under 6 params (max is `SetContext` at 6)
-9. Neural Strain accumulates from Sandy use, Safety OFF, kills, comedown
+9. Neural Strain accumulates from Sandy use, Safety OFF, kills, low/zero runtime
 10. Neural Strain drains in safe areas, with Immunoblocker, with DF Immunosuppressant
 11. Dice roll triggers episodes unpredictably above threshold
 12. Guaranteed episode at max strain (can't game the system indefinitely)
-13. Kill tracking works with faction-based costs (redscript hook)
-14. Immunoblocker purchasable at ripperdocs, reduces strain accumulation + counts as dose
-15. HUD strain bar visible, color-coded, hidden when strain=0
+13. Kill tracking works with per-faction configurable costs (redscript hook, packed Int32)
+14. Immunoblocker purchasable at VendorsXL vendors (Arroyo + Kabuki), reduces strain accumulation + counts as dose
+15. HUD strain bar and icon visible at all stages including stage 0
 16. Immunoblocker suppresses micro-episodes
 17. WannabeEdgerunner co-existence (multiple @wrapMethod on RewardKiller chains correctly)
 18. PsychoWarningEffect_Heavy (3-layer VFX) applied at stage 4
@@ -525,3 +592,12 @@ All parameters with their cfg key names:
 22. RandomNosebleed fires independently at stage 2+, suppressed by Immunoblocker
 23. strainBuildupMultiplier scales all strain accumulation in AddStrain()
 24. strainRecoveryMultiplier scales all strain drain (sleep, ripper, immunoblocker, safe area, DF immuno)
+25. Stage 0 dilation capped at 90% regardless of perk bonuses
+26. MaxRuntime scales by stage (100%→90%→80%→65%→50%→35%)
+27. Sandy reactivation always allowed — no cooldown or reactivation block
+28. Safety ON (stage 0–4) / Safety OFF (stage 5) transitions automatically
+29. Stage 5 Safety OFF: Sandy stays active during strain episodes, charge reports 100%
+30. Hallucinations spawn phantom NPCs at stage 3–5, despawn after 2–8s
+31. Auto-Attack fires weapon involuntarily at stage 4 (15%) and 5 (35%)
+32. Blackout triggers at 3× safe activations — teleport + time skip
+33. Blackwall Kill uses real Phantom Liberty effects (HauntedBlackwallForceKill + QuickHack.BlackWallHack)

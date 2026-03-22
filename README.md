@@ -4,23 +4,22 @@ Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every game
 
 ## Features
 
-- **Lore-accurate defaults** — Safety OFF from the start, like David in Edgerunners
+- **Lore-accurate defaults** — Safety ON/OFF is automatic based on psycho stage (stage 5+ = limiters fail)
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- 50 in-game settings across 14 subcategories, plus underlying config parameters
-- Native Settings UI tab: "Martinez Sandy+"
+- In-game settings via Native Settings UI tab: "Martinez Sandy+"
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
-- EdgeRunner perk gate configurable — require perk for full dilation or unlock from day 1
 - No health brake by default — David never had an auto-stop
+- Progressive dilation — stage 0 starts at 90%, power increases with psychosis (up to 99.35% at stage 6)
 - Config persists across sessions via `config.json`
-- **Lore-accurate gameplay systems** — neural strain, immunoblocker items, enhanced comedown, graduated recovery, non-linear drain, micro-episodes (see below)
+- **Lore-accurate gameplay systems** — neural strain, runtime as body endurance, immunoblocker items, hallucinations, auto-attack, blackout, graduated recovery, non-linear drain, micro-episodes (see below)
 
 ### Custom HUD
 
 A visual HUD overlay showing real-time Sandy status:
-- **Runtime bar** — color-coded green/yellow/red with time dilation percentage
-- **Status line** — activation count, contextual status (Safety Off, Comedown, Recovering)
-- **Psycho bar** — only visible when cyberpsychosis is active, with level and RX progress
-- **Strain bar** — Neural Strain level with blue/yellow/red color coding, hidden when safe
+- **Runtime bar** — color-coded green/yellow/red with time dilation percentage (represents body endurance, not battery)
+- **Status line** — activation count, contextual status (stage info, overuse count)
+- **Psycho bar** — visible when cyberpsychosis is active, with level and RX progress
+- **Strain bar** — Neural Strain level with BrainMelt icon, blue/yellow/red color coding, visible at all stages when strain > 0
 
 ### Progressive Cyberpsychosis
 
@@ -32,13 +31,11 @@ A 5-level system inspired by David Martinez's descent in Edgerunners:
 | 1 | Unstable | None | Subtle tremor (0.001), micro-episodes every 5-10 min |
 | 2 | Glitching | Subtle glitch | Persistent `hacking_glitch_low`, heartbeat, tremor, random nosebleeds |
 | 3 | Losing It | Medium distortion | Persistent glitch + drugged VFX, stronger tremor |
-| 4 | On The Edge | Heavy distortion | 3-layer VFX (glitch+drugged+blackwall), 15% movement penalty, manic laughter |
-| 5 | Cyberpsycho | Full psychosis | 5 simultaneous VFX, 15% movement penalty, immunities, last stand |
+| 4 | On The Edge | Heavy distortion | 3-layer VFX, 15% movement penalty, manic laughter, **auto-attack** (involuntary), hallucinations |
+| 5 | Cyberpsycho | Full psychosis | 5 simultaneous VFX, 15% movement penalty, Safety OFF automatic, Sandy stays active during episodes |
 | 6 | Last Breath | All VFX removed → ramp | **Permanent death** — Second Heart revival triggers final stand |
 
-**Safety OFF at Level 5 (David's Last Stand):** V experiences full psychosis VFX (glitch, braindance, drugged, blackwall) but the Sandevistan still works — pushing through like David did. Neural Strain episodes come fast and unpredictable at this level — death is near-inevitable.
-
-**Safety ON at Level 5:** Sandy is blocked, Kiroshi optics disabled, V must sleep or recover in a safe area.
+**Safety is automatic:** Stages 0-4 have Safety ON (limiters active). At stage 5, Safety OFF engages automatically — the limiters fail and V can't stop, like David in Episode 10. Sandy stays active during psycho episodes at stage 5. Death is near-inevitable.
 
 #### Psychosis Combat Effects (Level 5+)
 
@@ -47,7 +44,7 @@ At high psychosis levels and during Last Breath, V's cyberware malfunctions offe
 | Effect | Range | What Happens | Visual |
 |--------|-------|-------------|--------|
 | **Ticking Time Bomb** | 20m AoE | EMP wave radiates outward from V, stunning enemies | Electrical arcs on V (epicenter) + staggered stun wave expanding by distance |
-| **Blackwall Kill** | 25m AoE | Blackwall corruption spreads to nearby enemies | Cyberware malfunction → BrainMelt death animation → lingering black corruption on corpses (EP1 VFX, with fallback) |
+| **Blackwall Kill** | 25m AoE | Blackwall corruption spreads to nearby enemies | `HauntedBlackwallForceKill` + `BlackWallHack` — real Phantom Liberty Blackwall effects |
 
 ### Last Breath (Stage VI — Requires Second Heart)
 
@@ -84,15 +81,16 @@ Six interconnected systems that make gameplay feel like David's experience in Ed
 
 #### Neural Strain (Episode Trigger)
 
-An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Safety OFF, and comedown — episodes strike unpredictably once strain crosses the threshold for the current psycho level.
+An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Safety OFF, and low runtime — episodes strike unpredictably once strain crosses the threshold for the current psycho level.
 
 | Strain Source | Amount | Note |
 |---------------|--------|------|
 | Sandy activation | +5 base | +3 per overuse beyond safe limit |
 | Sandy active | +2/min | Continuous accumulation |
-| Safety OFF | +0.15/s | Constant while limiters off |
-| Kill (Sandy active) | +2 to +8 | Faction-based: civilian=8, NCPD=5, corpo=3, gang=2 |
-| Comedown | +1/5s | Recovery still stresses the system |
+| Safety OFF | +0.15/s | Automatic at stage 5 |
+| Kill (Sandy active) | +2 to +8 | Faction-based (configurable): civilian=8, NCPD=5, corpo=3, gang=2 |
+| Low runtime (<10%) | +0.5/s | Body exhausted, Sandy stresses it more |
+| Zero runtime (0%) | +1.0/s | Death wish — body screams |
 
 | Drain Source | Amount | Note |
 |--------------|--------|------|
@@ -115,26 +113,76 @@ When strain exceeds the threshold, a dice roll fires each second: `chance = (str
 
 #### Immunoblocker (Consumable Item)
 
-Doc's prescribed medication — *"Nine times your customary dosage."* Purchased from ripperdoc TRADE tabs, reduces strain accumulation and drains existing strain while active. Effectiveness depends on tier vs psycho level: full (80% block + full drain), partial (50% block + full drain), or ineffective (0% block + 25% drain). Also suppresses micro-episodes and counts as a prescription treatment dose. Each tier has a custom inventory icon and lore-accurate pricing.
+Doc's prescribed medication — *"Nine times your customary dosage."* Reduces strain accumulation and drains existing strain while active. Effectiveness depends on tier vs psycho level: full (80% reduction + full drain), partial (50% reduction + full drain), or ineffective (0% reduction + 25% drain). Also suppresses micro-episodes and counts as a prescription treatment dose. Each tier has a custom inventory icon.
 
-| Tier | Name | Duration | Price | Drain | €$/strain | Availability |
-|------|------|----------|-------|-------|-----------|-------------|
-| Common | Immunoblocker | 180s (3 min) | 3,000€$ | 0.08/s (14.4 total) | €$208 | Always present |
-| Uncommon | Immunoblocker — High Dosage | 360s (6 min) | 12,000€$ | 0.18/s (64.8 total) | €$185 | Commonly present |
-| Rare | Military-Grade Immunoblocker | 600s (10 min) | 50,000€$ | 0.35/s (210 total) | €$238 | Uncommonly present |
+| Tier | Name | Quality | Duration | Price | Drain | Availability |
+|------|------|---------|----------|-------|-------|-------------|
+| Common | Immunoblocker | Rare (blue) | 180s (3 min) | 6,000€$ | 0.08/s | Always present |
+| Uncommon | Immunoblocker — High Dosage | Epic (purple) | 360s (6 min) | 24,000€$ | 0.18/s | Commonly present |
+| Rare | Military-Grade Immunoblocker | Legendary (gold) | 600s (10 min) | 100,000€$ | 0.35/s | Uncommonly present |
 
-Available at 5 ripperdocs: Viktor (Watson), Cassius Ryder (Kabuki), Arroyo, Heywood, Japantown. Pacifica excluded (no TRADE tab vendor in-game).
+Sold exclusively through street vendors (VendorsXL): Arroyo punk dealer (all 3 tiers) and Kabuki street kid (Common + Uncommon only). Prices and kill strain per faction are configurable via in-game Settings UI.
 
-#### Enhanced Comedown
+#### Runtime as Body Endurance
 
-Deactivating the Sandy has real consequences. V suffers stat penalties (40% slower, 70% less stamina regen, 50% less armor), visual distortion, and can't reactivate during comedown.
+Runtime represents how much V's body can take — not a battery charge. V can always reactivate the Sandy (no cooldown — David never had one in Edgerunners). The cost is progressive physical deterioration:
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| Duration | 5–20s | Scales with runtime used (threshold: 60s) |
-| Psycho multiplier | ×1.5 | Duration extended at psycho 3+ (up to 30s) |
-| Sandy blocked | Yes | Can't reactivate during comedown |
-| Tremor | Yes (psycho 3+) | Camera shake during comedown at high psycho |
+| Runtime % | Stamina | Speed | Armor | Tremor | Strain/s | Nosebleed |
+|-----------|---------|-------|-------|--------|----------|-----------|
+| 60–100% | ×1.5 boost | Normal | Normal | Stage-based only | — | — |
+| 30–60% | Normal | Normal | Normal | Stage-based only | — | — |
+| 10–30% | Normal | Normal | Normal | +0.003 | +0.15/s | On activation |
+| 0–10% | ×0.5 | ×0.6 | ×0.5 | +0.006 | +0.5/s | On activation |
+| 0% | ×0.5 | ×0.6 | ×0.5 | +0.006 | +1.0/s | On activation |
+
+MaxRuntime degrades with psychosis — the body endures less at higher stages:
+
+| Stage | MaxRuntime | With 300s base |
+|-------|-----------|---------------|
+| 0 | 100% | 300s |
+| 1 | 90% | 270s |
+| 2 | 80% | 240s |
+| 3 | 65% | 195s |
+| 4 | 50% | 150s |
+| 5 | 35% | 105s |
+
+Stage 4-5 also applies a permanent ×0.85 stamina regen debuff even outside Sandy.
+
+#### Hallucinations (Stage 3-5)
+
+V sees things that aren't real. Phantom NPCs spawn 5-15m from V, appear briefly with ghost VFX, then vanish.
+
+| Stage | Frequency | Despawn time | Intensity |
+|-------|-----------|-------------|-----------|
+| 3 | Every 3-5 min | 3-5s | Subtle — *"Thought I saw..."* |
+| 4 | Every 1-3 min | 5-8s | Unsettling — *"They're watching me..."* |
+| 5 | Every 30-60s | 2-4s | Constant — *"THEY'RE EVERYWHERE"* |
+
+Suppressed by immunoblocker (full/partial effectiveness).
+
+#### Auto-Attack (Stage 4-5)
+
+V involuntarily attacks nearby NPCs during Sandy — loss of control. The Sandy detects an NPC in front of V and fires/attacks automatically.
+
+| Stage | Chance per second | Cooldown | Effect |
+|-------|------------------|----------|--------|
+| 4 | 15% | 30s | Weapon fires at NPC, red outline 2s, NPC becomes hostile |
+| 5 | 35% | 30s | Same but more frequent — *"THEY WERE LOOKING AT ME"* |
+
+Only triggers during Sandy active, with weapon equipped, NPC within 15m.
+
+#### Blackout (Overuse Exhaustion)
+
+At 3× safe daily activations, V collapses and wakes up hours later at a random safe location. Replaces the old stun mechanic with a full blackout sequence.
+
+| Step | What happens |
+|------|-------------|
+| 1 | Sandy deactivates, screen darkens (*"Body gives out... everything goes dark"*) |
+| 2 | Teleport to: apartment (60%), Viktor's clinic (30%), random alley (10%) |
+| 3 | Time advances 4-8 hours, sleep recovery applied |
+| 4 | Wake up with 50-70% health, groggy VFX, location-specific message |
+
+Stage 5 Safety OFF: no blackout — V fights through to death (David doesn't pass out at stage 5).
 
 #### Doc Prescription (Graduated Recovery)
 
@@ -173,7 +221,7 @@ Random involuntary symptoms between major psycho episodes. Unpredictable and cum
 | Sandy flash | 3 | Involuntary Sandy activation (1–2s), auto-stops |
 | Medium glitch | 4 | Glitch + drugged VFX (1.5–3s) |
 
-Frequency: every 5–10min at level 1, every 5–15s at level 5. Suppressed during comedown, Last Breath, menu/braindance, and while DF immunosuppressant is active.
+Frequency: every 5–10min at level 1, every 5–15s at level 5. Suppressed during Last Breath, menu/braindance, and while immunoblocker or DF immunosuppressant is active.
 
 ### On-Screen Notifications
 
@@ -188,9 +236,12 @@ Contextual notifications use V's inner monologue and Doc's voice — no HUD-styl
 | Overuse (lvl 3) | `Doc would lose it if he saw me now...` | David losing grip |
 | Overuse (lvl 4) | `NOBODY SETS MY LIMITS` | Full psycho |
 | Low runtime | `Running on fumes... should stop soon` | Warning |
-| Comedown start | `World snaps back... everything aches` | Physical |
-| Comedown blocked | `Body's not responding... need to wait it out` | Helpless |
+| Deactivation | `World snaps back... everything aches` | Physical |
 | Psycho level up | `CYBERPSYCHOSIS III — LOSING GRIP ON REALITY` | System warning |
+| Hallucination | `They're watching me...` / `THEY'RE EVERYWHERE` | Paranoia |
+| Auto-attack | `What did I just do...` / `THEY WERE LOOKING AT ME` | Loss of control |
+| Blackout | `Body gives out... everything goes dark` | Collapse |
+| Blackout wakeup | `Woke up at Viktor's... how did I get here?` | Disorientation |
 | Sleep recovery | `Slept it off a little... but the buzzing's still there` | Partial relief |
 | Sleep cured | `Head's clear... feels like me again` | Relief |
 | Sleep recharge | `Sandy feels charged... spine's humming again` | Fresh start |
@@ -213,7 +264,9 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **Heartbeat** | Psycho lvl 2+ idle, or Sandy active with low health | Tension audio during David's deterioration |
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
 | **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 4–8min at lvl 2, 30–60s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
-| **Exhaustion collapse** | Sandy activation at 3× safe daily limit | David passes out after 8 uses in Ep 2 |
+| **Blackout collapse** | Sandy activation at 3× safe daily limit → teleport to safe location + time skip | David passes out after 8 uses in Ep 2 |
+| **Hallucinations** | Phantom NPCs appear and vanish at psycho lvl 3-5 | David seeing things in Eps 8-10 |
+| **Auto-attack** | Involuntary weapon fire at nearby NPCs at psycho lvl 4-5 | David losing control in Ep 10 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
 | **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
@@ -281,7 +334,7 @@ Time dilation degrades as runtime depletes — higher psychosis stages degrade f
 
 | Stage | Dilation Range | Curve | Behavior |
 |-------|---------------|-------|----------|
-| 0 Normal | 90% (fixed) | — | No degradation |
+| 0 Normal | 90% (capped) | — | Capped at 90% regardless of perk — Sandy works, not at full potential |
 | 1 Unstable | 92.5% → 90% | exp 1.5 | Nearly linear |
 | 2 Glitching | 93.5% → 90% | exp 1.8 | Slight acceleration |
 | 3 Losing It | 95% → 90% | exp 2.0 | Quadratic drop |
@@ -327,13 +380,7 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 | Health Brake Threshold | 15–80% | 50 | Health % to trigger brake |
 | Minimum Required Health | 5–50% | 15 | Absolute minimum health threshold |
 
-### Safety Limiters Off
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Runtime Drain Multiplier | 0–10 | 4 | Extra runtime drain with safety off |
-| V Can Die (Safety Off) | on/off | on | Allow death with safety off |
-| Kill Threshold | 1–15% | 2 | Health % that triggers death |
-| Safety Off Time Dilation | 92.5%–99.5% | 97.5% | Time dilation boost when limiters are off |
+> **Safety ON/OFF** is automatic — stages 0-4 have Safety ON, stage 5+ has Safety OFF. Not configurable.
 
 ### Recharge & Recovery
 | Setting | Range | Default | Description |
@@ -361,16 +408,7 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 
 > Individual strain values (per-activation, per-kill, drain rates, etc.) are preconfigured with lore-accurate defaults. Advanced users can tune them via `config.json`.
 
-### Comedown (Deactivation Debuff)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Comedown | on/off | on | Apply debuff after deactivating Sandy |
-| Base Duration | 1–10 sec | 5.0 | Minimum comedown after short use |
-| Max Duration | 3–20 sec | 20.0 | Maximum comedown after prolonged use |
-| Scaling Threshold | 10–300 sec | 60 | Runtime used before comedown reaches max |
-| Block Sandy During Comedown | on/off | on | Prevent reactivation during comedown |
-| Psycho Duration Multiplier | 1.0–3.0 | 1.5 | Duration multiplier at psycho level 3+ |
-| Tremor During Comedown (Psycho 3+) | on/off | on | Camera shake during comedown at psycho 3+ |
+> **Comedown** has been removed. Penalties are now runtime-based — V's body deteriorates progressively during Sandy use, not after. No reactivation block (lore-accurate: David never had a cooldown).
 
 ### Doc Prescription (Graduated Recovery)
 | Setting | Range | Default | Description |
@@ -405,32 +443,44 @@ Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each
 ```
 Activate Sandy → strain accumulates (+5 base, +3 per overuse)
   ├─ Sandy active: +2/min strain
-  ├─ Safety OFF: +0.15/s strain
-  ├─ Kills during Sandy: +2 to +8 strain (faction-based)
-  └─ Comedown: +1/5s strain
+  ├─ Safety OFF (stage 5): +0.15/s strain
+  ├─ Kills during Sandy: +2 to +8 strain (faction-based, configurable)
+  ├─ Low runtime (<10%): +0.5/s strain (body exhausted)
+  └─ Zero runtime (0%): +1.0/s strain (death wish)
 
 Strain exceeds threshold → dice roll each second:
   ├─ chance = (strain - threshold) / 200
-  ├─ Success → EPISODE: MartinezFury + psychoLevel++ + strain resets to 0
+  ├─ Stages 0-4: EPISODE → Sandy shuts down + Safety ON + psychoLevel++
+  ├─ Stage 5 Safety OFF: EPISODE → Sandy stays active + FrightenNPCs
   └─ Strain hits guaranteed cap → forced episode (can't avoid)
 
-Strain drain:
-  ├─ Safe areas: -0.05/s (Sandy must be off)
-  ├─ Immunoblocker: -0.08/0.18/0.35/s per tier + reduces accumulation 80% (full) or 50% (partial)
-  ├─ DF Immunosuppressant: -0.08/s (doesn't reduce accumulation)
-  ├─ Sleep: -40 (scaled by hours)
-  └─ Ripperdoc: -25
+Runtime-based penalties (during Sandy active):
+  ├─ >30%: stamina ×1.5 (body energized)
+  ├─ 10-30%: tremor + nosebleed + strain +0.15/s
+  ├─ <10%: stamina ×0.5, speed ×0.6, armor ×0.5, strain +0.5/s
+  └─ 0%: strain +1.0/s (pushing past all limits)
+
+MaxRuntime scales by stage: 100% → 90% → 80% → 65% → 50% → 35%
+
+Overuse exhaustion (3× safe activations):
+  ├─ Stages 0-4: BLACKOUT → teleport to safe location + time skip 4-8h
+  └─ Stage 5: no blackout — death path (David fights to the end)
+
+Psychosis features by stage:
+  ├─ Stage 3+: Hallucinations (phantom NPCs spawn and vanish)
+  ├─ Stage 4+: Auto-attack (involuntary weapon fire at nearby NPCs)
+  └─ Stage 5: Safety OFF automatic, Sandy stays on during episodes
 
 Death at level 5 + Second Heart:
   └─ Last Breath (Stage VI)
-      ├─ Peace (20s): VFX cleared, max dilation, song plays
-      ├─ Decay (~225s): VFX ramp, dilation drops, delusional messages
+      ├─ Peace (20s): VFX cleared, max dilation 99.35%, song plays
+      ├─ Decay (~225s): VFX ramp, dilation drops, Blackwall kills
       └─ Runtime = 0 → permanent death (DAVID MARTINEZ — FLATLINED)
 
 Recovery (levels 1–5) — Graduated:
   ├─ Sleep: -1 psycho level max + drains strain + partial treatment dose
   ├─ Visit Viktor: -1 level + drains strain + treatment dose + runtime recharge
-  ├─ Immunoblocker: reduces strain accumulation + drains strain + counts as treatment dose
+  ├─ Immunoblocker: reduces strain accumulation + drains strain + counts as dose
   ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
   ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
   └─ HUD shows prescription progress: "RX completed/total"
@@ -459,7 +509,7 @@ David Sandevistan Plus automatically detects Dark Future's consumable status eff
 
 No configuration needed — if Dark Future is installed and V takes these consumables, the effects apply automatically. If Dark Future is not installed, these checks are safely skipped.
 
-Our **Immunoblocker** is stronger than DF's Immunosuppressant: it reduces strain accumulation by 80% (full) or 50% (partial) and drains at 0.08–0.35/s depending on tier. Both can be active simultaneously without conflict.
+Our **Immunoblocker** is stronger than DF's Immunosuppressant: it reduces strain accumulation by 80% (full) or 50% (partial) and drains at 0.08–0.35/s depending on tier. Available exclusively from street vendors (Arroyo + Kabuki). Both can be active simultaneously without conflict.
 
 ## Credits
 
