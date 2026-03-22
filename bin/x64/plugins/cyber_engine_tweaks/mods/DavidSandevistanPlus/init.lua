@@ -655,8 +655,12 @@ dsp = {
 		self.RequiredHealth = RequiredHealth
 	 end)
 	,Start = (function(self)
-		if self.martinez == nil then return end
-		if not self:IsWearingSandevistan() then return end
+		if self.martinez == nil then print('[DSP] Start: martinez nil!') return end
+		local isWearing = self:IsWearingSandevistan()
+		if not isWearing then print('[DSP] Start: IsWearing='..tostring(isWearing)..' — not our Sandy, skipping') return end
+		-- Last Breath: Sandy is auto-managed, don't count reactivations
+		if self.lastBreath then return end
+		print('[DSP] Start: IsWearing=true, dailyActivations='..tostring(self.dailyActivations))
 
 		-- Block reactivation during comedown
 		if self.comedownTimer and self.comedownTimer > 0 and self.cfg.comedownBlockSandy then
