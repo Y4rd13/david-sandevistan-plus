@@ -2379,6 +2379,7 @@ registerForEvent('onUpdate', function(dt)
     dsp:UpdateFOVPulse(dt)
     dsp:UpdateTerminalClarity(dt)
     dsp:UpdateLastBreath(dt)
+    dsp:UpdateBlackout(dt)
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt

@@ -135,20 +135,164 @@ function loreEffects.attach(dsp)
 		end
 	 end)
 
+	-- Blackout wakeup locations
+	local blackoutLocations = {
+		{ name = "apartment", pos = { x = -1204.0, y = 1842.0, z = 115.0 }, yaw = 180,  chance = 0.6,
+		  messages = {
+			"Home... don't remember coming back",
+			"Woke up in bed... how long was I out?",
+			"Back at the apartment... everything's blurry",
+		  }},
+		{ name = "viktor", pos = { x = -1554.434, y = 1239.794, z = 11.520 }, yaw = 0, chance = 0.3,
+		  messages = {
+			"Viktor's clinic... he must have found me",
+			"Woke up at Doc's... head's splitting",
+			"\"You collapsed again, kid.\" ...sorry, Doc",
+		  }},
+		{ name = "alley", pos = { x = -1286.9, y = -1686.1, z = 44.2 }, yaw = 90, chance = 0.1,
+		  messages = {
+			"Woke up in an alley... no idea how I got here",
+			"Cold concrete... how long was I out?",
+			"Some alley... everything hurts",
+		  }},
+	}
+
+	local function selectBlackoutLocation()
+		local roll = math.random()
+		local cumulative = 0
+		for _, loc in ipairs(blackoutLocations) do
+			cumulative = cumulative + loc.chance
+			if roll <= cumulative then return loc end
+		end
+		return blackoutLocations[1]
+	end
+
 	dsp.ExhaustionCheck = (function(self)
 		-- Exhaustion collapse: David passes out after 8 uses in Ep 2
-		-- Trigger at 3x safe activations — forced deactivation + stagger
+		-- Trigger at 3x safe activations
 		if not self.cfg.enableCyberpsychosis then return end
 		local threshold = self:getEffectiveSafeActivations() * 3
 		if self.dailyActivations < threshold then return end
 		if not self.isRunning then return end
 
+		-- Stage 5 Safety OFF: no blackout — death path (David doesn't pass out, he fights to the end)
+		if self.CyberPsychoWarnings >= 5 and not self.SafetyOn then
+			return -- handled by TriggerStrainEpisode → KillV
+		end
+
+		-- Stages 0-4 (or stage 5 Safety ON): blackout sequence
 		self.sps:EndSandevistan()
-		self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun')
-		self.bbs:SendWarning("Body gives out... pushed too far today", 4.0)
-		-- Force a brief cooldown by draining some runtime
-		self.runTime = math.max(self.runTime - 30, 0)
-		self:SaveGame("ExhaustionCollapse")
+		self:RemoveAllPsychoVFX()
+		self:StopHeartbeat()
+		self:RemoveRuntimeStamina()
+		self.runTime = 0
+
+		-- Pre-blackout VFX + message
+		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		self.bbs:SendWarning("Body gives out... everything goes dark", 4.0)
+		print('[DSP] ExhaustionCheck: blackout triggered at stage '..tostring(self.CyberPsychoWarnings))
+
+		-- Start blackout sequence (managed via onUpdate timer)
+		local location = selectBlackoutLocation()
+		local hoursSkipped = math.random(4, 8)
+		self.blackoutState = {
+			phase = 'darken',
+			elapsed = 0,
+			location = location,
+			hoursSkipped = hoursSkipped,
+		}
+	 end)
+
+	-- Blackout sequence phases (called from onUpdate)
+	dsp.UpdateBlackout = (function(self, dt)
+		if not self.blackoutState then return end
+		local bs = self.blackoutState
+		bs.elapsed = bs.elapsed + dt
+
+		if bs.phase == 'darken' then
+			-- Phase 1: screen goes dark (0.5s after trigger)
+			if bs.elapsed >= 0.5 then
+				local V = Game.GetPlayer()
+				if not V or not IsDefined(V) then return end
+				Game.GetStatusEffectSystem():ApplyStatusEffect(V:GetEntityID(),
+					TweakDBID.new('BaseStatusEffect.CyberwareInstallationAnimationBlackout'))
+				bs.phase = 'teleport'
+				bs.elapsed = 0
+			end
+
+		elseif bs.phase == 'teleport' then
+			-- Phase 2: teleport + time skip (1.0s after blackout)
+			if bs.elapsed >= 1.0 then
+				local V = Game.GetPlayer()
+				if not V or not IsDefined(V) then return end
+				local loc = bs.location
+
+				-- Clear wanted level
+				pcall(function()
+					local ps = Game.GetScriptableSystemsContainer():Get(CName.new('PreventionSystem'))
+					if ps then ps:ChangeHeatStage(EPreventionHeatStage.Heat_0, CName.new('BLACKOUT')) end
+				end)
+
+				-- Teleport
+				pcall(function()
+					Game.GetTeleportationFacility():Teleport(V,
+						Vector4.new(loc.pos.x, loc.pos.y, loc.pos.z, 1.0),
+						EulerAngles.new(0, 0, loc.yaw))
+				end)
+
+				-- Advance time
+				pcall(function()
+					local ts = Game.GetTimeSystem()
+					local now = ts:GetGameTimeStamp()
+					ts:SetGameTimeBySeconds(math.floor(now + bs.hoursSkipped * 3600))
+				end)
+
+				bs.phase = 'wakeup'
+				bs.elapsed = 0
+			end
+
+		elseif bs.phase == 'wakeup' then
+			-- Phase 3: wake up (2.0s after teleport)
+			if bs.elapsed >= 2.0 then
+				local V = Game.GetPlayer()
+				if not V or not IsDefined(V) then
+					self.blackoutState = nil
+					return
+				end
+
+				-- Apply sleep recovery
+				pcall(function()
+					self:Rested(bs.hoursSkipped)
+				end)
+
+				-- Restore player state
+				pcall(function()
+					GameTimeUtils.FastForwardPlayerState(V)
+				end)
+
+				-- Remove blackout (eyes open)
+				Game.GetStatusEffectSystem():RemoveStatusEffect(V:GetEntityID(),
+					TweakDBID.new('BaseStatusEffect.CyberwareInstallationAnimationBlackout'))
+
+				-- Brief groggy VFX
+				self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+
+				-- Reduce health (didn't rest properly)
+				pcall(function()
+					local healthPct = math.random(50, 70)
+					self.sps:damage(100 - healthPct)
+				end)
+
+				-- Wakeup message
+				local loc = bs.location
+				local msg = loc.messages[math.random(#loc.messages)]
+				self.bbs:SendWarning(msg, 5.0)
+
+				print('[DSP] Blackout: woke up at '..loc.name..' after '..tostring(bs.hoursSkipped)..'h')
+				self:SaveGame("BlackoutWakeup")
+				self.blackoutState = nil
+			end
+		end
 	 end)
 
 	dsp.RandomNosebleed = (function(self)
