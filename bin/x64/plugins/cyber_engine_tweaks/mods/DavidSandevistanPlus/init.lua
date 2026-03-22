@@ -249,6 +249,15 @@ dsp = {
 	,DamagePerTick = -1
 	,CyberPsychoWarnings = -1
 	,dailyActivations = 0
+	-- Activity tracking for sleep multiplier (reset on sleep)
+	,activities = {
+		lover = false,      -- visited romantic partner
+		social = false,     -- social interaction (dance, drink, rollercoaster)
+		pet = false,        -- pet Nibbles/cat/iguana
+		shower = false,     -- used shower
+		apartment = false,  -- apartment amenity (coffee, guitar, incense, etc.)
+	}
+	,activityCount = 0
 	,sandyStartRuntime = 0
 	,lowRuntimeWarned = false
 	,comedownTimer = nil
@@ -501,10 +510,14 @@ dsp = {
 				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
 			end
 			self.CyberPsychoWarnings = newLevel
-			-- Drain strain on sleep (scaled by hours)
+			-- Drain strain on sleep (scaled by hours + activity multiplier)
 			local recovMult = self.cfg.strainRecoveryMultiplier or 1.0
-			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult
+			local sleepMult = self:GetSleepMultiplier()
+			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult * sleepMult
 			self.neuralStrain = math.max((self.neuralStrain or 0) - strainDrain, 0)
+			if self.activityCount > 0 then
+				print('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
+			end
 			if newLevel > 0 then
 				local remaining = self.prescribedDoses - self.completedDoses
 				local partialRecovery = {
@@ -539,6 +552,7 @@ dsp = {
 		self.dailyActivations = 0
 		self.sessionActivations = 0
 		self.blackoutToday = false  -- reset blackout daily flag on sleep
+		self:ResetActivities()     -- reset activity tracking for next day
 		self.cheatedDeath = false
 		if self.lastBreath then
 			self:StopLastBreathSong()
@@ -1399,6 +1413,16 @@ dsp = {
 								self.runTime = self.runTime + 1
 								if self.runTime > self.MaxRuntime then self.runTime = self.MaxRuntime end
 							end
+							-- Apartment activity: register after 30s in safe area (not club, not running Sandy)
+							if self.PlayerInSafeArea and not self.InDaClub and not self.isRunning then
+								self.safeAreaTime = (self.safeAreaTime or 0) + 5
+								if self.safeAreaTime >= 30 then
+									self:RegisterActivity('apartment')
+									self.safeAreaTime = 0
+								end
+							else
+								self.safeAreaTime = 0
+							end
 						end
 						if self.VIsDead then self:RemoveDeadV() end
 						if not self.lastBreath then
@@ -2165,6 +2189,57 @@ dsp.RemoveRuntimeStamina = (function(self)
 	self.currentStaminaState = nil
  end)
 
+-- ============================================================
+-- ACTIVITY TRACKING: Human connections reduce strain on sleep
+-- ============================================================
+
+-- Register an activity (called from observers)
+dsp.RegisterActivity = (function(self, activityName)
+	if not self.activities then return end
+	if self.activities[activityName] == false then
+		self.activities[activityName] = true
+		self.activityCount = (self.activityCount or 0) + 1
+
+		-- Immediate strain drain per activity
+		local immediateStrain = { lover = 5, social = 3, pet = 2, shower = 5, apartment = 2 }
+		local drain = immediateStrain[activityName] or 2
+		self.neuralStrain = math.max((self.neuralStrain or 0) - drain, 0)
+
+		-- Immediate runtime restore per activity
+		local immediateRuntime = { lover = 0.10, shower = 0.05 }
+		local rtRestore = immediateRuntime[activityName] or 0
+		if rtRestore > 0 then
+			local effectiveMax = self:GetEffectiveMaxRuntime()
+			self.runTime = math.min(self.runTime + effectiveMax * rtRestore, effectiveMax)
+		end
+
+		-- Message
+		local activityMessages = {
+			lover = { "Feels good to be close to someone...", "For a moment, the buzzing stops", "This is what matters..." },
+			social = { "Good to be around people...", "Almost feels normal", "The world isn't all chrome and blood" },
+			pet = { "Hey little choom...", "Simple things... they help", "At least someone doesn't judge" },
+			shower = { "Hot water... clears the head a bit", "Feels human again... for a sec", "Washed off the day" },
+			apartment = { "Home... small comforts", "Quiet moment", "Breathing room" },
+		}
+		local msgs = activityMessages[activityName]
+		if msgs then self.bbs:SendMessage(msgs[math.random(#msgs)], 3.0) end
+
+		print('[DSP] Activity registered: '..activityName..' (count='..tostring(self.activityCount)..' strain=-'..tostring(drain)..')')
+	end
+ end)
+
+-- Reset all activities (called from Rested)
+dsp.ResetActivities = (function(self)
+	self.activities = { lover = false, social = false, pet = false, shower = false, apartment = false }
+	self.activityCount = 0
+ end)
+
+-- Get sleep multiplier based on activities done
+dsp.GetSleepMultiplier = (function(self)
+	local count = self.activityCount or 0
+	return 1.0 + (count * 0.3)  -- 1.0 to 2.5 (0 to 5 activities)
+ end)
+
 -- Psycho stamina debuff: ×0.85 at stage 4-5 (even outside Sandy)
 dsp.UpdatePsychoStamina = (function(self)
 	if self.CyberPsychoWarnings >= 4 then
@@ -2271,6 +2346,39 @@ registerForEvent('onInit', function()
 		local VendorName = GetLocalizedText(VDM:GetVendorName())
 		dsp:VisitedRipper(VendorName)
 	end)
+
+	-- ============================================================
+	-- ACTIVITY OBSERVERS: detect human interactions for sleep multiplier
+	-- ============================================================
+
+	-- Shower: detect shower status effect
+	ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
+		if not dsp.cfg.enableCyberpsychosis then return end
+		local ok, effectID = pcall(function() return evt.staticData:GetID() end)
+		if not ok or not effectID then return end
+		local idStr = tostring(effectID)
+		-- Shower effect
+		if idStr:find('Shower') or idStr:find('shower') or idStr:find('Refreshed') then
+			dsp:RegisterActivity('shower')
+		end
+		-- Pet interaction (Nibbles gives a buff)
+		if idStr:find('PetInteraction') or idStr:find('nibbles') or idStr:find('Nibbles') then
+			dsp:RegisterActivity('pet')
+		end
+	end)
+
+	-- Social: detect entering clubs/bars (InDaClub flag)
+	ObserveAfter('PlayerPuppet', 'OnEnterSafeZone', function(this)
+		-- Clubs count as social activity
+		if dsp.InDaClub then
+			dsp:RegisterActivity('social')
+		end
+	end)
+
+	-- Apartment: detect apartment interactions via safe area + not in club
+	-- (V is in safe area in their apartment — register after some time)
+	-- Simple heuristic: if V enters safe area and stays >30s, register apartment
+	-- This is handled via a timer in the displayTick
 	
 	-- Combat death at psycho 5: trigger Last Breath when Second Heart revives V
 	-- OnDeath fires when V dies from any cause — if at psycho 5, mark for Last Breath
