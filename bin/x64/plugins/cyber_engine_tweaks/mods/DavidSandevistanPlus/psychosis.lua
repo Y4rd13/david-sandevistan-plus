@@ -545,14 +545,15 @@ function psychosis.attach(dsp)
 			target:QueueEvent(evt)
 		end)
 
-		-- Force shoot/attack
+		-- Force shoot via AIWeapon.Fire (same method as Wannabe Edgerunner)
 		pcall(function()
-			local bb = V:GetPlayerStateMachineBlackboard()
-			bb:SetBool(Game.GetAllBlackboardDefs().PlayerStateMachine.QuestForceShoot, true)
+			local weapon = V:GetActiveWeapon()
+			if weapon and IsDefined(weapon) then
+				local simTime = EngineTime.ToFloat(Game.GetSimTime())
+				local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
+				AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
+			end
 		end)
-
-		-- Stop shooting after 0.4s (managed in onUpdate)
-		self.autoAttackStopTime = now + 0.4
 
 		-- VFX on V
 		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
@@ -586,19 +587,8 @@ function psychosis.attach(dsp)
 		return true
 	 end)
 
-	-- Stop forced shooting (called from onUpdate)
-	dsp.UpdateAutoAttack = (function(self)
-		if self.autoAttackStopTime and os.clock() >= self.autoAttackStopTime then
-			pcall(function()
-				local V = Game.GetPlayer()
-				if V and IsDefined(V) then
-					local bb = V:GetPlayerStateMachineBlackboard()
-					bb:SetBool(Game.GetAllBlackboardDefs().PlayerStateMachine.QuestForceShoot, false)
-				end
-			end)
-			self.autoAttackStopTime = nil
-		end
-	 end)
+	-- UpdateAutoAttack: no-op — AIWeapon.Fire() is a single shot, no stop needed
+	dsp.UpdateAutoAttack = (function(self) end)
 
 	-- Per-second check for low runtime auto-attack (stage 3+, runtime <10%)
 	dsp.CheckLowRuntimeAutoAttack = (function(self)
