@@ -589,18 +589,27 @@ function psychosis.attach(dsp)
 			target:QueueEvent(evt)
 		end)
 
-		-- Phase 1: Draw weapon (like Wannabe Edgerunner — DrawItemRequest)
-		pcall(function()
-			local es = V:GetEquipmentSystem()
-			local drawReq = DrawItemRequest.new()
-			local espd = EquipmentSystem.GetData(V)
-			drawReq.itemID = espd:GetItemInEquipSlot(gamedataEquipmentArea.WeaponWheel, 0)
-			drawReq.owner = V
-			es:QueueRequest(drawReq)
-		end)
-
-		-- Phase 2: Fire after 2s delay (weapon needs time to draw)
-		self.autoAttackFireTime = os.clock() + 2.0
+		-- Draw weapon if not already equipped, then fire
+		local weapon = V:GetActiveWeapon()
+		if weapon and IsDefined(weapon) then
+			-- Already armed — fire immediately
+			pcall(function()
+				local simTime = EngineTime.ToFloat(Game.GetSimTime())
+				local triggerMode = weapon:GetWeaponRecord():PrimaryTriggerMode():Type()
+				AIWeapon.Fire(V, weapon, simTime, 1.0, triggerMode)
+			end)
+		else
+			-- No weapon — draw first, fire after 2s
+			pcall(function()
+				local es = V:GetEquipmentSystem()
+				local drawReq = DrawItemRequest.new()
+				local espd = EquipmentSystem.GetData(V)
+				drawReq.itemID = espd:GetItemInEquipSlot(gamedataEquipmentArea.WeaponWheel, 0)
+				drawReq.owner = V
+				es:QueueRequest(drawReq)
+			end)
+			self.autoAttackFireTime = os.clock() + 2.0
+		end
 
 		-- VFX on V
 		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
