@@ -192,14 +192,6 @@ martinez.ImmunoblockerVFX_Common         = 'BaseStatusEffect.MartinezImmunoblock
 martinez.ImmunoblockerVFX_Uncommon       = 'BaseStatusEffect.MartinezImmunoblocker_Uncommon_VFX'
 martinez.ImmunoblockerVFX_Rare           = 'BaseStatusEffect.MartinezImmunoblocker_Rare_VFX'
 
-martinez.ImmunoblockerVendors = {
-	'Vendors.wat_lch_medicstore_01',    -- Viktor Vektor, Watson (TRADE tab)
-	'Vendors.wat_kab_medicstore_01',    -- Cassius Ryder, Kabuki (TRADE tab)
-	'Vendors.std_arr_medicstore_01',    -- Arroyo ripperdoc (TRADE tab)
-	'Vendors.hey_spr_medicstore_01',    -- Heywood ripperdoc (TRADE tab)
-	'Vendors.wbr_jpn_medicstore_01',    -- Japantown ripperdoc (TRADE tab)
-}
-
 martinez.HeartbeatEffect                = 'BaseStatusEffect.MartinezSandevistan_Heartbeat'
 martinez.HeartbeatEffect_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Heartbeat_SFX1'
 

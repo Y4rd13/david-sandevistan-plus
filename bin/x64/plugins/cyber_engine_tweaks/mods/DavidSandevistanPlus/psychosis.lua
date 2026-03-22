@@ -3,6 +3,20 @@ local psychosis = {}
 -- Data tables (module-local, not on dsp)
 local psychoSafeMultiplier = { [0] = 1, [1] = 1.7, [2] = 2.3, [3] = 3, [4] = 4 }
 
+-- Hallucination spawn intervals by stage (seconds)
+local hallucinationIntervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
+
+-- Helper: schedule next PsychoMessage based on context
+local function scheduleNextPsychoMsg(self, now, isLastBreath)
+	if isLastBreath then
+		self.nextPsychoMsgTime = now + math.random(4, 8)
+	elseif self.CyberPsychoWarnings >= 5 then
+		self.nextPsychoMsgTime = now + math.random(8, 18)
+	else
+		self.nextPsychoMsgTime = now + math.random(15, 35)
+	end
+end
+
 local psychoMessages_lv4 = {
 	"I CAN STILL GO",
 	"JUST ONE MORE TIME",
@@ -272,13 +286,7 @@ function psychosis.attach(dsp)
 		local isLastBreath = (self.lastBreath ~= nil and self.lastBreath.phase == "decay")
 
 		if self.nextPsychoMsgTime == nil then
-			if isLastBreath then
-				self.nextPsychoMsgTime = now + math.random(4, 8)
-			elseif self.CyberPsychoWarnings >= 5 then
-				self.nextPsychoMsgTime = now + math.random(8, 18)
-			else
-				self.nextPsychoMsgTime = now + math.random(15, 35)
-			end
+			scheduleNextPsychoMsg(self, now, isLastBreath)
 			return
 		end
 
@@ -298,13 +306,7 @@ function psychosis.attach(dsp)
 			pcall(function() V:SetWarningMessage(msg) end)
 		end
 
-		if isLastBreath then
-			self.nextPsychoMsgTime = now + math.random(4, 8)
-		elseif self.CyberPsychoWarnings >= 5 then
-			self.nextPsychoMsgTime = now + math.random(8, 18)
-		else
-			self.nextPsychoMsgTime = now + math.random(15, 35)
-		end
+		scheduleNextPsychoMsg(self, now, isLastBreath)
 	 end)
 
 	dsp.GetPrescription = (function(self, level)
@@ -445,8 +447,7 @@ function psychosis.attach(dsp)
 
 		-- Schedule next hallucination
 		if self.nextHallucinationTime == nil then
-			local intervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
-			local range = intervals[self.CyberPsychoWarnings] or {180, 300}
+			local range = hallucinationIntervals[self.CyberPsychoWarnings] or {180, 300}
 			self.nextHallucinationTime = now + range[1] + math.random() * (range[2] - range[1])
 			return
 		end
@@ -500,8 +501,7 @@ function psychosis.attach(dsp)
 		end
 
 		-- Reset timer
-		local intervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
-		local range = intervals[self.CyberPsychoWarnings] or {180, 300}
+		local range = hallucinationIntervals[self.CyberPsychoWarnings] or {180, 300}
 		self.nextHallucinationTime = now + range[1] + math.random() * (range[2] - range[1])
 	 end)
 

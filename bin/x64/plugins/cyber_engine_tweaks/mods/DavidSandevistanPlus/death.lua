@@ -6,15 +6,20 @@ function death.attach(dsp)
 	dsp.lastBreathPeaceTime = 20  -- 5s wait + 5s ramp + 10s peak, then decay
 	dsp.lastBreathRuntime = 245   -- seconds of runtime for the last stand (matches song duration 4:05)
 
-	dsp.KillV = (function(self)
-		-- Terminal clarity: David snaps out of psychosis right before death (Ep 10)
-		-- Remove all VFX for a brief moment of lucidity before flatline
+	-- Helper: full psycho VFX/SFX cleanup (used by KillV, RemoveDeadV, Bridge phase)
+	dsp.FullPsychoCleanup = (function(self)
 		self:RemoveAllPsychoVFX()
 		self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
 		self.tremor.intensity = 0
 		self:StopHeartbeat()
 		self.nextLaughTime = nil
+	 end)
+
+	dsp.KillV = (function(self)
+		-- Terminal clarity: David snaps out of psychosis right before death (Ep 10)
+		-- Remove all VFX for a brief moment of lucidity before flatline
+		self:FullPsychoCleanup()
 		local V = Game.GetPlayer()
 		if V and IsDefined(V) then
 			pcall(function() V:SetWarningMessage("DAVID... IT'S TIME TO STOP") end)
@@ -83,15 +88,10 @@ function death.attach(dsp)
 			}
 
 			-- Remove ALL effects — moment of peace
-			self:RemoveAllPsychoVFX()
-			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
-			self:StatusEffect_CheckAndRemove(self.martinez.BleedingStatusEffect)
+			self:FullPsychoCleanup()
 			self:StatusEffect_CheckAndRemove('BaseStatusEffect.MinorBleeding')
 			self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
 			self.MinorBleedingOn = false
-			self.tremor.intensity = 0
-			self:StopHeartbeat()
-			self.nextLaughTime = nil
 			self.nextPsychoMsgTime = nil
 			self.comedownTimer = nil
 			self.comedownTremor = false
@@ -112,12 +112,14 @@ function death.attach(dsp)
 	 end)
 
 	dsp.PlayLastBreathSong = (function(self)
+		if not self.hud then return false end
 		self.hud:PlaySong()
 		print('[DSP] LastBreath song: Audioware play requested')
 		return true
 	 end)
 
 	dsp.StopLastBreathSong = (function(self)
+		if not self.hud then return end
 		self.hud:StopSong()
 		print('[DSP] LastBreath song: Audioware stop requested')
 	 end)
@@ -336,9 +338,8 @@ function death.attach(dsp)
 				if not self.lastBreath.bridgeStarted then
 					self.lastBreath.bridgeStarted = true
 					-- Strip EVERYTHING — mirror the peace phase
-					self:RemoveAllPsychoVFX()
+					self:FullPsychoCleanup()
 					self:StatusEffect_CheckAndRemove(self.martinez.CyberpsychoSafetyOffEffect)
-					self.tremor.intensity = 0
 					-- Block PsychoMessage() re-scheduling during bridge (huge future value)
 					self.nextPsychoMsgTime = now + 9999
 					self.lastBreath.nextVLaugh = nil

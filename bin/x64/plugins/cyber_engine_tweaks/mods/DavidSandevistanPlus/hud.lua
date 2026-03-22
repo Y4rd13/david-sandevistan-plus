@@ -104,23 +104,4 @@ hud.StopSong = (function(self)
 	end
 end)
 
-----------------------------------------------------------------
--- Visibility control
-----------------------------------------------------------------
-
-hud.SetVisible = (function(self, vis)
-	if self.system then
-		pcall(function() self.system:SetVisible(vis) end)
-	end
-end)
-
-----------------------------------------------------------------
--- Rebuild (CET reinit path)
-----------------------------------------------------------------
-
-hud.Rebuild = (function(self)
-	self.system = nil
-	self:Init(self.DSP)
-end)
-
 return hud

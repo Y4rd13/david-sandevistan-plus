@@ -119,7 +119,7 @@ local function loadConfig(cfg)
 		file:close()
 		if ok and type(loaded) == "table" then
 			for k, v in pairs(loaded) do
-				if cfg[k] ~= nil then cfg[k] = v end
+				if cfg[k] ~= nil and type(v) == type(cfg[k]) then cfg[k] = v end
 			end
 		end
 	end
@@ -168,7 +168,6 @@ dsp = {
 		strainPerKillCorpo = 3,          -- kill strain: corporate security
 		strainPerKillNCPD = 5,           -- kill strain: NCPD / NetWatch
 		strainPerKillCivilian = 8,       -- kill strain: civilians / unaffiliated (highest)
-		strainPerComedown5s = 1,         -- strain per 5s of comedown
 		strainDrainSafeArea = 0.05,      -- strain/sec drain in safe areas
 		strainDrainSleep = 40,           -- strain drained per sleep (scaled by hours)
 		strainDrainRipper = 25,          -- strain drained per ripperdoc visit
@@ -184,15 +183,6 @@ dsp = {
 
 		-- Safety Off
 		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
-
-		-- Comedown (Enhanced)
-		enableComedown = true,           -- apply debuff after deactivating sandevistan
-		comedownBaseDuration = 5.0,      -- base duration in seconds (enhanced: was 3.0)
-		comedownMaxDuration = 20.0,      -- max duration after long sandy use (enhanced: was 8.0)
-		comedownRuntimeThreshold = 60,   -- seconds of sandy use before comedown starts scaling
-		comedownBlockSandy = true,       -- can't reactivate during comedown
-		comedownPsychoMultiplier = 1.5,  -- duration multiplier at psycho 3+
-		comedownTremorAtPsycho = true,   -- tremor during comedown at psycho 3+
 
 		-- Perk Gates
 		requireEdgeRunnerPerk = true,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
@@ -240,7 +230,6 @@ dsp = {
 	,MaxRuntime = -1
 	,runTime = -1
 	,neuralStrain = 0
-	,strainComedownAccum = 0  -- accumulator for comedown strain (fires every 5s)
 	,strainActiveAccum = 0    -- accumulator for Sandy-active strain (fires every 60s)
 	,PsychoMessageWaiting = false
 	,HealthBrake = -1
@@ -402,7 +391,7 @@ dsp = {
 		return false
 	 end)
 	,IsWearingSandevistan = (function(self)
-		output = self:GetSandevistanIndex()
+		local output = self:GetSandevistanIndex()
 		    if output == nil   then return nil
 		elseif output == false then return false
 		end
@@ -445,32 +434,26 @@ dsp = {
 			return
 		end
 		-- Progressive psycho VFX by level (MartinezFury is timed/automatic, these are persistent)
+		self:RemoveAllPsychoVFX()
 		if (self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl)) then
-			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings <= 1 then
-			self:RemoveAllPsychoVFX()
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings == 2 then
-			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings == 3 then
-			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings == 4 then
-			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Heavy)
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings >= 5 and (not self.SafetyOn) then
-			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:HideNamePlates()
 		elseif self.CyberPsychoWarnings >= 5 then
-			self:RemoveAllPsychoVFX()
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoStatusEffect)
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:HideNamePlates()
@@ -1671,10 +1654,9 @@ dsp = {
 			bbs:BlackBoardSet('UI_InterfaceOptions','ObjectMarkersEnabled',object_markers)
 		 end)
 		,getPlayerLevel = (function(self)
-			local PlayerLevel = 0
 			local V = Game.GetPlayer()
-			if V == nil then return PlayerLevel end -- game loading
-			
+			if not IsDefined(V) then return 0 end
+
 			local VEntity = V:GetEntityID()
 			local SS = Game.GetStatsSystem()
 			
@@ -1683,24 +1665,18 @@ dsp = {
 			return PlayerLevel
 		 end)
 		,getHealth = (function(self,percent)
-			local HealthRaw = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			HealthRaw = SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Health,percent)
-			
-			return HealthRaw
+			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Health,percent)
 		 end)
 		,getHealthFromPercent = (function(self,percentage)
-			local HealthRaw = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			HealthRaw = SPS:ToPoints(VEntity,gamedataStatPoolType.Health,percentage)
-
-			return HealthRaw
+			return SPS:ToPoints(VEntity,gamedataStatPoolType.Health,percentage)
 		 end)
 		,IsWearingCyberDeck = (function(self)
 			local V = Game.GetPlayer()
@@ -1710,45 +1686,36 @@ dsp = {
 			return ES.IsCyberdeckEquipped(V)
 		 end)
 		,getRAM = (function(self)
-			local MemoryRaw = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			MemoryRaw = SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Memory,false)
-			
-			return MemoryRaw
+			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Memory,false)
 		 end)
 		,getAdrenaline = (function(self)
-			local AdrenalinePercent = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			AdrenalinePercent = SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Overshield,true)
-			return AdrenalinePercent
+			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Overshield,true)
 		 end)
 		,getOverclock = (function(self)
-			local OverclockRAW = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			OverclockRAW = SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.CyberdeckOverclock,false)
-			return OverclockRAW
+			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.CyberdeckOverclock,false)
 		 end)
 		,getSandevistanCharge = (function(self)
-			local SandevistanPercent = 0
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
-			
-			SandevistanPercent = SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,true)
-			
-			return SandevistanPercent
+			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,true)
 		 end)
 		,damage = (function(self,percentage)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			local PercentOfHealth = math.floor(self:getHealthFromPercent(percentage)) * (-1)
@@ -1756,12 +1723,14 @@ dsp = {
 		 end)
 		,UseRAM = (function(self,RAMToUse)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestChangingStatPoolValue(VEntity,gamedataStatPoolType.Memory,-RAMToUse,V, false, false)
 		 end)
 		,UseAdrenaline = (function(self,percentage)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			local PercentOfHealth = math.floor(self:getHealthFromPercent(percentage)) * (-1)
@@ -1769,12 +1738,14 @@ dsp = {
 		 end)
 		,UseOverclock = (function(self,DurationToUse)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestChangingStatPoolValue(VEntity,gamedataStatPoolType.CyberdeckOverclock,-DurationToUse,V, false, false)
 		 end)
 		,AddAdrenaline = (function(self,Boosted)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			local Adrenaline = self:getHealth(false) * 0.125
@@ -1783,18 +1754,21 @@ dsp = {
 		 end)
 		,OverclockCharge = (function(self,remainingCharge)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestSettingStatPoolValue(VEntity,gamedataStatPoolType.CyberdeckOverclock,remainingCharge,V,true)
 		 end)
 		,SandevistanCharge = (function(self,remainingCharge)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestSettingStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,remainingCharge,V,true)
 		 end)
 		,EndSandevistan = (function(self)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
 			if dsp.isRunning then
@@ -2061,6 +2035,7 @@ dsp = {
 		 end)
 		,MoneyTransfer = (function(self,title,message)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			V:SetWarningMessage(title..'\n'..message, "Money")
 		 end)
 		,ShardPopup = (function(self,title,message)
@@ -2071,6 +2046,7 @@ dsp = {
 		 end)
 		,PlayShortEffect = function(self,EffectName)
 			local V = Game.GetPlayer()
+			if not IsDefined(V) then return end
 			local WEBB = worldEffectBlackboard.new()
 			GameObjectEffectHelper.StartEffectEvent(V, EffectName, false, WEBB)
 		 end

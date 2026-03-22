@@ -39,11 +39,10 @@ local defaults = {
 	strainPerKillCorpo = 3,
 	strainPerKillNCPD = 5,
 	strainPerKillCivilian = 8,
-	strainPerComedown5s = 1,
 	strainDrainSafeArea = 0.05,
 	strainDrainSleep = 40,
 	strainDrainRipper = 25,
-	strainDrainImmunoblocker = 0.1,
+	strainDrainImmunoblocker = { 0.08, 0.18, 0.35 },
 	immunoblockerPriceCommon = 6000,
 	immunoblockerPriceUncommon = 24000,
 	immunoblockerPriceRare = 100000,
@@ -51,13 +50,6 @@ local defaults = {
 	strainBuildupMultiplier = 1.0,
 	strainRecoveryMultiplier = 1.0,
 	safetyOffTimeDilation = 975,
-	enableComedown = true,
-	comedownBaseDuration = 5.0,
-	comedownMaxDuration = 20.0,
-	comedownRuntimeThreshold = 60,
-	comedownBlockSandy = true,
-	comedownPsychoMultiplier = 1.5,
-	comedownTremorAtPsycho = true,
 	enablePrescription = true,
 	maxPsychoRecoveryPerSleep = 1,
 	ripperRecoveryLevels = 1,
@@ -92,14 +84,12 @@ local gameplayKeys = {
 	"dailySafeActivations",
 	"strainPerActivation", "strainPerOveruseBonus", "strainPerMinuteActive",
 	"strainPerSecSafetyOff", "strainPerKillGang", "strainPerKillCorpo",
-	"strainPerKillNCPD", "strainPerKillCivilian", "strainPerComedown5s",
+	"strainPerKillNCPD", "strainPerKillCivilian",
 	"strainDrainSafeArea", "strainDrainSleep", "strainDrainRipper",
-	"strainDrainImmunoblocker", "strainDrainDFImmuno",
+	"strainDrainDFImmuno",
 	"immunoblockerPriceCommon", "immunoblockerPriceUncommon", "immunoblockerPriceRare",
 	"strainBuildupMultiplier", "strainRecoveryMultiplier",
 	"safetyOffTimeDilation",
-	"enableComedown", "comedownBaseDuration", "comedownMaxDuration", "comedownRuntimeThreshold",
-	"comedownBlockSandy", "comedownPsychoMultiplier", "comedownTremorAtPsycho",
 	"enablePrescription", "maxPsychoRecoveryPerSleep", "ripperRecoveryLevels",
 	"enableNonLinearDrain", "drainExponent", "drainAccelStartSec",
 	"enableSessionFatigue", "sessionFatiguePenalty", "maxSessionFatiguePenalty",
@@ -118,7 +108,9 @@ local function loadConfig()
 		local ok, loaded = pcall(json.decode, file:read("*a"))
 		file:close()
 		if ok and type(loaded) == "table" then
-			for k, v in pairs(loaded) do cfg[k] = v end
+			for k, v in pairs(loaded) do
+				if cfg[k] ~= nil and type(v) == type(cfg[k]) then cfg[k] = v end
+			end
 		end
 	end
 	cfg.timeDilationNoPerk = tonumber(cfg.timeDilationNoPerk) or defaults.timeDilationNoPerk
@@ -770,7 +762,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catIB,
 		"Common Price",
-		"Price for Immunoblocker (Common tier). (Default: 3000)\n"
+		"Price for Immunoblocker (Common tier). (Default: 6000)\n"
 			.. "Duration: 3 min, drain: 0.08/s.\n"
 			.. "Requires game restart to update vendor prices.",
 		500, 20000, 500,
@@ -784,7 +776,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catIB,
 		"Uncommon Price",
-		"Price for Immunoblocker — High Dosage (Uncommon tier). (Default: 12000)\n"
+		"Price for Immunoblocker — High Dosage (Uncommon tier). (Default: 24000)\n"
 			.. "Duration: 6 min, drain: 0.18/s.\n"
 			.. "Requires game restart to update vendor prices.",
 		1000, 50000, 1000,
@@ -798,7 +790,7 @@ local function initUI()
 	nativeSettings.addRangeInt(
 		catIB,
 		"Rare Price",
-		"Price for Military-Grade Immunoblocker (Rare tier). (Default: 50000)\n"
+		"Price for Military-Grade Immunoblocker (Rare tier). (Default: 100000)\n"
 			.. "Duration: 10 min, drain: 0.35/s.\n"
 			.. "Requires game restart to update vendor prices.",
 		5000, 200000, 5000,
