@@ -13,8 +13,9 @@ function strain.attach(dsp)
 		return guaranteed[self.CyberPsychoWarnings] or 100
 	 end)
 
-	-- Stage-based strain multiplier: body resists more at low stages, less at high
-	local stageStrainMult = { [0]=0.5, [1]=0.5, [2]=1.0, [3]=1.2, [4]=1.5, [5]=2.0 }
+	-- Stage-based strain multiplier: body resists at low stages, normal at high
+	-- Thresholds already decrease per stage (60→50→40→30→20→10), no need to amplify
+	local stageStrainMult = { [0]=0.5, [1]=0.5, [2]=0.75, [3]=1.0, [4]=1.0, [5]=1.0 }
 
 	dsp.AddStrain = (function(self, amount)
 		if not self.cfg.enableCyberpsychosis then return end
