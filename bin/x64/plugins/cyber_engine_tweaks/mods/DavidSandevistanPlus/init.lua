@@ -1393,6 +1393,8 @@ dsp = {
 					self.lowRuntimeAttackAccum = 0
 					self:CheckLowRuntimeAutoAttack()
 				end
+				-- Poll activity quest fact from redscript LocKey tracker
+				self:CheckActivityQuestFact()
 				-- Auto-injector cooldown decrement (~1/sec)
 				if self.autoInjectorCooldown > 0 then
 					self.autoInjectorCooldown = self.autoInjectorCooldown - 1
@@ -2349,36 +2351,49 @@ registerForEvent('onInit', function()
 
 	-- ============================================================
 	-- ACTIVITY OBSERVERS: detect human interactions for sleep multiplier
+	-- Phase 1: CET status effect observers (fallback)
+	-- Phase 2: Redscript LocKey matching via DSPActivityTracker.reds
 	-- ============================================================
 
-	-- Shower: detect shower status effect
+	-- Phase 2: Poll quest fact set by DSPActivityTracker.reds (checked in displayTick)
+	-- Activity types: 1=shower, 2=pet, 3=apartment, 4=social, 5=lover
+	local activityNames = { [1]='shower', [2]='pet', [3]='apartment', [4]='social', [5]='lover' }
+
+	dsp.CheckActivityQuestFact = (function(self)
+		pcall(function()
+			local QS = Game.GetQuestsSystem()
+			if not QS then return end
+			local activity = QS:GetFactStr("dsp_activity_detected")
+			if activity > 0 then
+				local name = activityNames[activity]
+				if name then
+					self:RegisterActivity(name)
+				end
+				QS:SetFactStr("dsp_activity_detected", 0)  -- consume the fact
+			end
+		end)
+	 end)
+
+	-- Phase 1 fallback: CET status effect observers
 	ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
 		if not dsp.cfg.enableCyberpsychosis then return end
 		local ok, effectID = pcall(function() return evt.staticData:GetID() end)
 		if not ok or not effectID then return end
 		local idStr = tostring(effectID)
-		-- Shower effect
 		if idStr:find('Shower') or idStr:find('shower') or idStr:find('Refreshed') then
 			dsp:RegisterActivity('shower')
 		end
-		-- Pet interaction (Nibbles gives a buff)
 		if idStr:find('PetInteraction') or idStr:find('nibbles') or idStr:find('Nibbles') then
 			dsp:RegisterActivity('pet')
 		end
 	end)
 
-	-- Social: detect entering clubs/bars (InDaClub flag)
+	-- Social: detect entering clubs
 	ObserveAfter('PlayerPuppet', 'OnEnterSafeZone', function(this)
-		-- Clubs count as social activity
 		if dsp.InDaClub then
 			dsp:RegisterActivity('social')
 		end
 	end)
-
-	-- Apartment: detect apartment interactions via safe area + not in club
-	-- (V is in safe area in their apartment — register after some time)
-	-- Simple heuristic: if V enters safe area and stays >30s, register apartment
-	-- This is handled via a timer in the displayTick
 	
 	-- Combat death at psycho 5: trigger Last Breath when Second Heart revives V
 	-- OnDeath fires when V dies from any cause — if at psycho 5, mark for Last Breath
