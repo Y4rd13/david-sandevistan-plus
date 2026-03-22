@@ -591,7 +591,17 @@ function psychosis.attach(dsp)
 			target:QueueEvent(evt)
 		end)
 
-		-- Force shoot via AIWeapon.Fire (same method as Wannabe Edgerunner)
+		-- Force draw weapon + shoot via AIWeapon.Fire (same method as Wannabe Edgerunner)
+		pcall(function()
+			local es = Game.GetScriptableSystemsContainer():Get(CName.new('EquipmentSystem'))
+			if es then
+				local pd = es:GetPlayerData(V)
+				if pd then
+					pd:SetLastUsedStruct(gamedataEquipmentArea.WeaponWheel)
+					pd:UpdateEquipAreaActiveIndex(gamedataEquipmentArea.WeaponWheel, 0)
+				end
+			end
+		end)
 		pcall(function()
 			local weapon = V:GetActiveWeapon()
 			if weapon and IsDefined(weapon) then
