@@ -163,6 +163,19 @@ function death.attach(dsp)
 			if elapsed >= self.lastBreathPeaceTime then
 				self.lastBreath.phase = "decay"
 				self.lastBreath.elapsed = 0
+
+				-- Apply combat buffs (David was a machine in Ep 10)
+				self:StatusEffect_CheckAndApply(self.martinez.PsychosisCombatBuff)
+
+				-- Start cycled SFX (edgerunner perk sound — "at the limit")
+				pcall(function()
+					local V = Game.GetPlayer()
+					if V and IsDefined(V) then
+						local sfxEvt = SoundPlayEvent.new()
+						sfxEvt.soundName = "ui_gmpl_perk_edgerunner"
+						V:QueueEvent(sfxEvt)
+					end
+				end)
 			end
 
 		elseif self.lastBreath.phase == "decay" then
@@ -250,6 +263,10 @@ function death.attach(dsp)
 				-- Blackwall intervals
 				if self.lastBreath.nextBlackwallTime and now >= self.lastBreath.nextBlackwallTime then
 					self:BlackwallKill()
+					-- Also corrupt civilians nearby (cyberware malfunction)
+					if math.random() < 0.3 then
+						self:BlackwallCivilianCorruption()
+					end
 					self.lastBreath.nextBlackwallTime = now + math.random(25, 40)
 				end
 			end
@@ -305,6 +322,9 @@ function death.attach(dsp)
 				self.tremor.intensity = 0.010
 				if self.lastBreath.nextBlackwallTime and now >= self.lastBreath.nextBlackwallTime then
 					self:BlackwallKill()
+					if math.random() < 0.4 then
+						self:BlackwallCivilianCorruption()
+					end
 					self.lastBreath.nextBlackwallTime = now + math.random(12, 20)
 				end
 			end
@@ -371,6 +391,10 @@ function death.attach(dsp)
 				end
 				if self.lastBreath.nextBlackwallTime and now >= self.lastBreath.nextBlackwallTime then
 					self:BlackwallKill()
+					-- Final Chorus: highest corruption chance — V is beyond all control
+					if math.random() < 0.6 then
+						self:BlackwallCivilianCorruption()
+					end
 					self.lastBreath.nextBlackwallTime = now + math.random(6, 10)
 				end
 			end
@@ -546,6 +570,45 @@ function death.attach(dsp)
 
 		if killCount > 0 then
 			self.bbs:SendWarning("BLACKWALL PROTOCOL — "..tostring(killCount).." FLATLINED", 3.0)
+		end
+	 end)
+
+	-- Blackwall civilian corruption: V's cyberware malfunctions and corrupts nearby civilians
+	-- Only during Last Breath decay phase — random chance, 15m range
+	dsp.BlackwallCivilianCorruption = (function(self)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+
+		local vPos = V:GetWorldPosition()
+		local SEE = Game.GetStatusEffectSystem()
+		local corruptCount = 0
+
+		-- Find nearby NPCs using targeting system (searches visible entities)
+		pcall(function()
+			local searchQuery = TSQ_ALL.new()
+			searchQuery.maxDistance = 15.0
+			local target = Game.GetTargetingSystem():GetLookAtObject(V, false, false)
+			if target and IsDefined(target) and target:IsNPC() then
+				local npc = target
+				local npcEID = npc:GetEntityID()
+				-- Don't re-corrupt dead NPCs
+				if not npc:IsDead() then
+					SEE:ApplyStatusEffect(npcEID, TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
+					SEE:ApplyStatusEffect(npcEID, TweakDBID.new('QuickHack.BlackWallHack'))
+					corruptCount = 1
+				end
+			end
+		end)
+
+		if corruptCount > 0 then
+			-- VFX on V
+			self:StatusEffect_CheckAndApply(self.martinez.BlackwallKillEffect)
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_shortcircuit"
+				V:QueueEvent(evt)
+			end)
+			print('[DSP] Last Breath: Blackwall civilian corruption')
 		end
 	 end)
 end
