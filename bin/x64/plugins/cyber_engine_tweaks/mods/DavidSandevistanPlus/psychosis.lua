@@ -135,8 +135,8 @@ function psychosis.attach(dsp)
 							painSfx.soundName = "ono_v_pain_short"
 						end
 						V:QueueEvent(painSfx)
-						-- VFX: personal_link_glitch (neural connection distortion)
-						GameObjectEffectHelper.StartEffectEvent(V, CName.new('personal_link_glitch'), false, worldEffectBlackboard.new())
+						-- VFX: johnny_sickness_blackout (digital distortion cascade)
+						GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
 					end
 				end)
 				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
