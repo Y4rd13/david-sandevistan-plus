@@ -123,7 +123,9 @@ function psychosis.attach(dsp)
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
 			if self.cfg.enableCyberpsychosis then
-				-- Pre-Psychosis VFX: pain + glitch BEFORE stage change (1.5s delay before episode)
+				-- Pre-Psychosis: johnny_sickness_blackout + fx_damage_high VFX (2s status effect)
+				-- Then 1.5s later the actual episode fires via pendingEpisode
+				self:StatusEffect_CheckAndApply(self.martinez.PrePsychosisEffect)
 				pcall(function()
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
@@ -134,10 +136,8 @@ function psychosis.attach(dsp)
 							painSfx.soundName = "ono_v_pain_short"
 						end
 						V:QueueEvent(painSfx)
-						GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
 					end
 				end)
-				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
 
 				-- Delay the actual episode by 1.5s so pre-psychosis VFX plays first
 				self.pendingEpisode = {

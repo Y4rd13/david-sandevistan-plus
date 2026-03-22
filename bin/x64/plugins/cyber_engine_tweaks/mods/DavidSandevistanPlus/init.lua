@@ -412,6 +412,7 @@ dsp = {
 		self:StatusEffect_CheckAndRemove(self.martinez.BlackwallKillEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychosisCombatBuff)
+		self:StatusEffect_CheckAndRemove(self.martinez.PrePsychosisEffect)
 		self:StopHeartbeat()
 		-- Stop cycled SFX
 		pcall(function()

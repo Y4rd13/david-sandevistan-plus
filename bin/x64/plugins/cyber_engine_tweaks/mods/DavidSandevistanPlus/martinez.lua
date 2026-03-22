@@ -108,6 +108,13 @@ martinez.NosebleedEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_
 martinez.NosebleedEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SMG'
 martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SM1'
 
+-- Pre-Psychosis VFX effect (johnny_sickness_blackout + fx_damage_high, 2s duration)
+martinez.PrePsychosisEffect              = 'BaseStatusEffect.MartinezSandevistan_PrePsychosis'
+martinez.PrePsychosisEffect_SMG          = 'BaseStatusEffect.MartinezSandevistan_PrePsychosis_SMG'
+martinez.PrePsychosisEffect_SM1          = 'BaseStatusEffect.MartinezSandevistan_PrePsychosis_SM1'
+martinez.PrePsychosisEffect_FX1          = 'BaseStatusEffect.MartinezSandevistan_PrePsychosis_FX1'
+martinez.PrePsychosisEffect_FX2          = 'BaseStatusEffect.MartinezSandevistan_PrePsychosis_FX2'
+
 -- Psychosis combat buffs (during MartinezFury episodes — David was STRONGER during psychosis)
 martinez.PsychosisCombatBuff             = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff'
 martinez.PsychosisCombatBuff_LP          = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_LP'
@@ -1004,6 +1011,39 @@ function martinez.CreateSandevistan(self)
 		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
 		,{self.StaminaDrain_LP} ,nil ,false ,false ,nil ,false ,false ,false
 		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
+
+	-- PrePsychosisEffect: 2s duration, johnny_sickness_blackout + fx_damage_high VFX
+	self:CreateConstantStatModifier(self.PrePsychosisEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 2.0 })
+	self:CreateStatModifierGroup(self.PrePsychosisEffect_SMG, { false, false, {}, false, {self.PrePsychosisEffect_SM1}, -1, nil })
+	self:CloneRecord(self.PrePsychosisEffect_FX1, VFX_SuperHacked)
+	TweakDB:SetFlat(self.PrePsychosisEffect_FX1..'.name', 'johnny_sickness_blackout')
+	self:CloneRecord(self.PrePsychosisEffect_FX2, VFX_SuperHacked)
+	TweakDB:SetFlat(self.PrePsychosisEffect_FX2..'.name', 'fx_damage_high')
+	self:CreateStatusEffect(self.PrePsychosisEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PrePsychosisEffect_FX1, self.PrePsychosisEffect_FX2} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.PrePsychosisEffect_SMG --duration (2s)
+		,false --dynamicDuration
+		,{'Debuff'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,SandevistanIcon --uiData
 	})
 
 	-- PsychosisCombatBuff: +50% speed, +100% armor, ×10 health regen (David was STRONGER during psychosis)
