@@ -416,6 +416,7 @@ dsp = {
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
 		if self.martinez == nil then return end
+		self:UpdatePsychoStamina()
 
 		if (not self:IsWearingSandevistan()) and (not self.SafetyOn) then
 			self.SafetyOn = true
@@ -774,6 +775,7 @@ dsp = {
 		if self.lastBreath then return end
 
 		self.isRunning = false
+		self:RemoveRuntimeStamina()
 		if self.martinez == nil then return end
 		if not self:IsWearingSandevistan() then return end
 
@@ -1171,7 +1173,8 @@ dsp = {
 
 				self:CalcDamage()
 				self:TimeDilationEffects()
-				
+				self:UpdateRuntimeStamina()
+
 				local DamagePerTick = self.DamagePerTick
 				local RequiredHealth = self.RequiredHealth
 				
@@ -2154,6 +2157,49 @@ dsp.UpdateImmunoblockerPrices = (function(self)
 	end
 	print('[DSP] Immunoblocker prices updated: ' .. self.cfg.immunoblockerPriceCommon .. '/' .. self.cfg.immunoblockerPriceUncommon .. '/' .. self.cfg.immunoblockerPriceRare)
  end)
+-- Runtime-based stamina management (applied during Sandy, removed on End)
+dsp.currentStaminaState = nil  -- nil, 'boost', 'drain'
+
+dsp.UpdateRuntimeStamina = (function(self)
+	if not self.isRunning then return end
+	local rtPct = self:GetRuntimePercent()
+	local newState = nil
+	if rtPct > 30 then
+		newState = 'boost'    -- body energized by Sandy
+	elseif rtPct > 10 then
+		newState = nil        -- normal stamina (no modifier)
+	else
+		newState = 'drain'    -- body exhausted
+	end
+	if newState ~= self.currentStaminaState then
+		-- Remove previous
+		self:StatusEffect_CheckAndRemove(self.martinez.StaminaBoost)
+		self:StatusEffect_CheckAndRemove(self.martinez.StaminaDrain)
+		-- Apply new
+		if newState == 'boost' then
+			self:StatusEffect_CheckAndApply(self.martinez.StaminaBoost)
+		elseif newState == 'drain' then
+			self:StatusEffect_CheckAndApply(self.martinez.StaminaDrain)
+		end
+		self.currentStaminaState = newState
+	end
+ end)
+
+dsp.RemoveRuntimeStamina = (function(self)
+	self:StatusEffect_CheckAndRemove(self.martinez.StaminaBoost)
+	self:StatusEffect_CheckAndRemove(self.martinez.StaminaDrain)
+	self.currentStaminaState = nil
+ end)
+
+-- Psycho stamina debuff: ×0.85 at stage 4-5 (even outside Sandy)
+dsp.UpdatePsychoStamina = (function(self)
+	if self.CyberPsychoWarnings >= 4 then
+		self:StatusEffect_CheckAndApply(self.martinez.PsychoStaminaDebuff)
+	else
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoStaminaDebuff)
+	end
+ end)
+
 require('./psychosis.lua').attach(dsp)
 require('./death.lua').attach(dsp)
 

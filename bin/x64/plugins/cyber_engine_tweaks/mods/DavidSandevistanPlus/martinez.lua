@@ -117,6 +117,20 @@ martinez.ComedownEffect_SM3             = 'BaseStatusEffect.MartinezSandevistan_
 martinez.ComedownEffect_FX1             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX1'
 martinez.ComedownEffect_FX2             = 'BaseStatusEffect.MartinezSandevistan_Comedown_FX2'
 
+-- Runtime-based stamina modifiers (applied/removed in Running tick)
+martinez.StaminaBoost                    = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost'
+martinez.StaminaBoost_LP                 = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost_LP'
+martinez.StaminaBoost_SMG                = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost_SMG'
+martinez.StaminaBoost_SM1                = 'BaseStatusEffect.MartinezSandevistan_StaminaBoost_SM1'
+martinez.StaminaDrain                    = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain'
+martinez.StaminaDrain_LP                 = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_LP'
+martinez.StaminaDrain_SMG                = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_SMG'
+martinez.StaminaDrain_SM1                = 'BaseStatusEffect.MartinezSandevistan_StaminaDrain_SM1'
+martinez.PsychoStaminaDebuff             = 'BaseStatusEffect.MartinezSandevistan_PsychoStaminaDebuff'
+martinez.PsychoStaminaDebuff_LP          = 'BaseStatusEffect.MartinezSandevistan_PsychoStaminaDebuff_LP'
+martinez.PsychoStaminaDebuff_SMG         = 'BaseStatusEffect.MartinezSandevistan_PsychoStaminaDebuff_SMG'
+martinez.PsychoStaminaDebuff_SM1         = 'BaseStatusEffect.MartinezSandevistan_PsychoStaminaDebuff_SM1'
+
 martinez.ImmunoblockerEffect_Common      = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common'
 martinez.ImmunoblockerEffect_Common_SMG  = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common_SMG'
 martinez.ImmunoblockerEffect_Common_SM1  = 'BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common_SM1'
@@ -956,6 +970,39 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.ComedownEffect_FX2,VFX_SuperHacked)
 	TweakDB:SetFlat(self.ComedownEffect_FX1..'.name', 'burnout_glitch')
 	TweakDB:SetFlat(self.ComedownEffect_FX2..'.name', 'hacking_glitch_low')
+
+	-- StaminaBoost: ×1.5 stamina regen while Sandy active + runtime >30%
+	self:CreateConstantStatModifier(self.StaminaBoost_SM1, { 'Multiplier', 'BaseStats.StaminaRegenRate', 1.5 })
+	self:CreateLogicPackage(self.StaminaBoost_LP, { '', {}, {}, {}, '' , false, {}, { self.StaminaBoost_SM1 } })
+	self:CreateStatModifierGroup(self.StaminaBoost_SMG, { false, false, {}, false, { self.StaminaBoost_SM1 }, -1, nil })
+	self:CreateStatusEffect(self.StaminaBoost,{
+		 '' ,{} ,{} ,'' ,{} ,self.StaminaBoost_SMG ,false
+		,{'Buff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
+		,{self.StaminaBoost_LP} ,nil ,false ,false ,nil ,false ,false ,false
+		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
+
+	-- StaminaDrain: ×0.5 stamina regen while Sandy active + runtime <10%
+	self:CreateConstantStatModifier(self.StaminaDrain_SM1, { 'Multiplier', 'BaseStats.StaminaRegenRate', 0.5 })
+	self:CreateLogicPackage(self.StaminaDrain_LP, { '', {}, {}, {}, '' , false, {}, { self.StaminaDrain_SM1 } })
+	self:CreateStatModifierGroup(self.StaminaDrain_SMG, { false, false, {}, false, { self.StaminaDrain_SM1 }, -1, nil })
+	self:CreateStatusEffect(self.StaminaDrain,{
+		 '' ,{} ,{} ,'' ,{} ,self.StaminaDrain_SMG ,false
+		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
+		,{self.StaminaDrain_LP} ,nil ,false ,false ,nil ,false ,false ,false
+		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
+
+	-- PsychoStaminaDebuff: ×0.85 stamina regen at stage 4-5 (even outside Sandy)
+	self:CreateConstantStatModifier(self.PsychoStaminaDebuff_SM1, { 'Multiplier', 'BaseStats.StaminaRegenRate', 0.85 })
+	self:CreateLogicPackage(self.PsychoStaminaDebuff_LP, { '', {}, {}, {}, '' , false, {}, { self.PsychoStaminaDebuff_SM1 } })
+	self:CreateStatModifierGroup(self.PsychoStaminaDebuff_SMG, { false, false, {}, false, { self.PsychoStaminaDebuff_SM1 }, -1, nil })
+	self:CreateStatusEffect(self.PsychoStaminaDebuff,{
+		 '' ,{} ,{} ,'' ,{} ,self.PsychoStaminaDebuff_SMG ,false
+		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
+		,{self.PsychoStaminaDebuff_LP} ,nil ,false ,false ,nil ,false ,false ,false
+		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
 
 	-- TickingTimeBombEffect: EMP VFX burst on V (4s), Stage 5-6 ability
 	self:CreateStatusEffect(self.TickingTimeBombEffect,{
