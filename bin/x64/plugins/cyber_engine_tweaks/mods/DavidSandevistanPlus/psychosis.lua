@@ -165,9 +165,13 @@ function psychosis.attach(dsp)
 		else
 			self:StatusEffect_CheckAndApply(self.martinez.MartinezFury_Level5)
 		end
+
+		-- Combat buffs during psychosis (David was STRONGER: +50% speed, +100% armor, ×10 health regen)
+		self:StatusEffect_CheckAndApply(self.martinez.PsychosisCombatBuff)
+
 		-- Psychosis SFX + VFX (like Wannabe Edgerunner)
+		local V = Game.GetPlayer()
 		pcall(function()
-			local V = Game.GetPlayer()
 			if V and IsDefined(V) then
 				-- Panic scream
 				local screamEvt = SoundPlayEvent.new()
@@ -177,11 +181,38 @@ function psychosis.attach(dsp)
 				GameObjectEffectHelper.StartEffectEvent(V, CName.new('johnny_sickness_blackout'), false, worldEffectBlackboard.new())
 			end
 		end)
-		local V = Game.GetPlayer() -- Simulate a gunshot event so enemies agro and NPCs run away
-		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 50.0)
-		if self:GetHeatLevel() > 0 then
-			self:NCPDIsWatching() -- Come find V !
+
+		-- Force draw weapon (like Wannabe Edgerunner)
+		pcall(function()
+			if V and IsDefined(V) then
+				local es = Game.GetScriptableSystemsContainer():Get(CName.new('EquipmentSystem'))
+				if es then
+					local pd = es:GetPlayerData(V)
+					if pd then
+						pd:SetLastUsedStruct(gamedataEquipmentArea.WeaponWheel)
+						pd:UpdateEquipAreaActiveIndex(gamedataEquipmentArea.WeaponWheel, 0)
+					end
+				end
+			end
+		end)
+
+		-- Cycled SFX: ui_gmpl_perk_edgerunner (edgerunner perk sound, plays during episode)
+		pcall(function()
+			if V and IsDefined(V) then
+				local sfxEvt = SoundPlayEvent.new()
+				sfxEvt.soundName = "ui_gmpl_perk_edgerunner"
+				V:QueueEvent(sfxEvt)
+			end
+		end)
+
+		-- Simulate a gunshot event so enemies agro and NPCs run away
+		if V and IsDefined(V) then
+			StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 50.0)
 		end
+		if self:GetHeatLevel() > 0 then
+			self:NCPDIsWatching()
+		end
+
 		-- Auto-attack chance during stage change: 40/60/80% by stage
 		local stageAttackChance = { [3]=0.40, [4]=0.60, [5]=0.80 }
 		self:TryAutoAttack(stageAttackChance[self.CyberPsychoWarnings] or 0.40, false)

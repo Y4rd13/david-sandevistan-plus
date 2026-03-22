@@ -108,6 +108,14 @@ martinez.NosebleedEffect_FX1            = 'BaseStatusEffect.MartinezSandevistan_
 martinez.NosebleedEffect_SMG            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SMG'
 martinez.NosebleedEffect_SM1            = 'BaseStatusEffect.MartinezSandevistan_Nosebleed_SM1'
 
+-- Psychosis combat buffs (during MartinezFury episodes — David was STRONGER during psychosis)
+martinez.PsychosisCombatBuff             = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff'
+martinez.PsychosisCombatBuff_LP          = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_LP'
+martinez.PsychosisCombatBuff_SMG         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SMG'
+martinez.PsychosisCombatBuff_SM1         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM1'
+martinez.PsychosisCombatBuff_SM2         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM2'
+martinez.PsychosisCombatBuff_SM3         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM3'
+
 martinez.ComedownEffect                 = 'BaseStatusEffect.MartinezSandevistan_Comedown'
 martinez.ComedownEffect_LP              = 'BaseStatusEffect.MartinezSandevistan_Comedown_LP'
 martinez.ComedownEffect_SMG             = 'BaseStatusEffect.MartinezSandevistan_Comedown_SMG'
@@ -995,6 +1003,19 @@ function martinez.CreateSandevistan(self)
 		 '' ,{} ,{} ,'' ,{} ,self.StaminaDrain_SMG ,false
 		,{'Debuff'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
 		,{self.StaminaDrain_LP} ,nil ,false ,false ,nil ,false ,false ,false
+		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
+	})
+
+	-- PsychosisCombatBuff: +50% speed, +100% armor, ×10 health regen (David was STRONGER during psychosis)
+	self:CreateConstantStatModifier(self.PsychosisCombatBuff_SM1, { 'Multiplier', 'BaseStats.MaxSpeed', 1.5 })
+	self:CreateConstantStatModifier(self.PsychosisCombatBuff_SM2, { 'Multiplier', 'BaseStats.Armor', 2.0 })
+	self:CreateConstantStatModifier(self.PsychosisCombatBuff_SM3, { 'Multiplier', 'BaseStats.HealthInCombatRegenRate', 10.0 })
+	self:CreateLogicPackage(self.PsychosisCombatBuff_LP, { '', {}, {}, {}, '' , false, {}, { self.PsychosisCombatBuff_SM1, self.PsychosisCombatBuff_SM2, self.PsychosisCombatBuff_SM3 } })
+	self:CreateStatModifierGroup(self.PsychosisCombatBuff_SMG, { false, false, {}, false, { self.PsychosisCombatBuff_SM1, self.PsychosisCombatBuff_SM2, self.PsychosisCombatBuff_SM3 }, -1, nil })
+	self:CreateStatusEffect(self.PsychosisCombatBuff,{
+		 '' ,{} ,{} ,'' ,{} ,self.PsychosisCombatBuff_SMG ,false
+		,{'Buff','Regeneration'} ,{} ,false ,false ,'RTDB.StatusEffect_inline0'
+		,{self.PsychosisCombatBuff_LP} ,nil ,false ,false ,nil ,false ,false ,false
 		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
 	})
 

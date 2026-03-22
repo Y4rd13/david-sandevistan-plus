@@ -411,7 +411,17 @@ dsp = {
 		self:StatusEffect_CheckAndRemove(self.martinez.TickingTimeBombEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.BlackwallKillEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychosisCombatBuff)
 		self:StopHeartbeat()
+		-- Stop cycled SFX
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				local stopEvt = SoundStopEvent.new()
+				stopEvt.soundName = "ui_gmpl_perk_edgerunner"
+				V:QueueEvent(stopEvt)
+			end
+		end)
 	 end)
 	,DisableSandevistan = (function(self,source)
 		if type(source) ~= 'string' then source = '' end
