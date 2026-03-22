@@ -17,7 +17,9 @@ function strain.attach(dsp)
 	-- Thresholds already decrease per stage (60→50→40→30→20→10), no need to amplify
 	local stageStrainMult = { [0]=0.5, [1]=0.5, [2]=0.75, [3]=1.0, [4]=1.0, [5]=1.0 }
 
-	dsp.AddStrain = (function(self, amount)
+	-- AddStrain: raw=true bypasses stage multiplier (kills, runtime stress — psychological/physical, not tolerance)
+	-- AddStrain: raw=false applies stage multiplier (Sandy activation, overuse — body tolerance)
+	dsp.AddStrain = (function(self, amount, raw)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
@@ -25,9 +27,11 @@ function strain.attach(dsp)
 		local immunoReduction = { full = 0.8, partial = 0.5 }
 		local reduction = immunoReduction[eff] or 0
 		local effective = amount * (1 - reduction)
-		-- Stage multiplier: stages 0-1 resist strain, stages 3-5 amplify it
-		local stageMult = stageStrainMult[self.CyberPsychoWarnings] or 1.0
-		local mult = (self.cfg.strainBuildupMultiplier or 1.0) * stageMult
+		-- Stage multiplier only for tolerance-based strain (Sandy use), not for kills/runtime
+		local mult = self.cfg.strainBuildupMultiplier or 1.0
+		if not raw then
+			mult = mult * (stageStrainMult[self.CyberPsychoWarnings] or 1.0)
+		end
 		self.neuralStrain = self.neuralStrain + (effective * mult)
 		local guaranteed = self:GetStrainGuaranteed()
 		if self.neuralStrain > guaranteed then self.neuralStrain = guaranteed end

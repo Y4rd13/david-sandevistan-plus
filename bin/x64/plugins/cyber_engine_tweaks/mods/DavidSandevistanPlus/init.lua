@@ -701,7 +701,7 @@ dsp = {
 			self.dailyActivations = self.dailyActivations + 1
 			local effectiveSafe = self:getEffectiveSafeActivations()
 
-			-- Base activation strain
+			-- Base activation strain (tolerance-based: affected by stage multiplier)
 			self:AddStrain(self.cfg.strainPerActivation)
 
 			-- Extra strain per overuse activation
@@ -1279,9 +1279,9 @@ dsp = {
 
 					-- Strain accumulation sources (blocked by effective/partial immunoblocker)
 					if immunoEff ~= 'full' and immunoEff ~= 'partial' then
-						-- Safety OFF: +0.15/sec
+						-- Safety OFF: +0.15/sec (raw: physical stress, not tolerance)
 						if not self.SafetyOn then
-							self:AddStrain(self.cfg.strainPerSecSafetyOff)
+							self:AddStrain(self.cfg.strainPerSecSafetyOff, true)
 						end
 						-- Comedown strain removed — penalties are runtime-based now
 						-- Sandy active: +2 per 60s (accumulated)
@@ -1309,18 +1309,18 @@ dsp = {
 								+ ncpd * self.cfg.strainPerKillNCPD
 								+ civilian * self.cfg.strainPerKillCivilian
 							if killStrain > 0 then
-								self:AddStrain(killStrain)
+								self:AddStrain(killStrain, true)  -- raw: psychological impact, not tolerance
 							end
 						end
-						-- Low runtime strain: body is exhausted, Sandy stresses it more
+						-- Low runtime strain: body is exhausted (raw: physical stress, not tolerance)
 						if self.isRunning then
 							local rtPct = self:GetRuntimePercent()
 							if rtPct <= 0 then
-								self:AddStrain(1.0)      -- massive strain at 0% — death wish
+								self:AddStrain(1.0, true)      -- massive strain at 0% — death wish
 							elseif rtPct < 10 then
-								self:AddStrain(0.5)      -- heavy strain
+								self:AddStrain(0.5, true)      -- heavy strain
 							elseif rtPct < 30 then
-								self:AddStrain(0.15)     -- noticeable strain
+								self:AddStrain(0.15, true)     -- noticeable strain
 							end
 						end
 					end
