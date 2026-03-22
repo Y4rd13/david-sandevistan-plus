@@ -527,6 +527,7 @@ dsp = {
 
 		self.dailyActivations = 0
 		self.sessionActivations = 0
+		self.blackoutToday = false  -- reset blackout daily flag on sleep
 		self.cheatedDeath = false
 		if self.lastBreath then
 			self:StopLastBreathSong()

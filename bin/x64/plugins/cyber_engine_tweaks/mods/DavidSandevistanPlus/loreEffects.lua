@@ -135,37 +135,58 @@ function loreEffects.attach(dsp)
 		end
 	 end)
 
-	-- Blackout wakeup locations
+	-- Blackout wakeup locations with type (ripper vs apartment)
 	local blackoutLocations = {
-		{ name = "apartment", pos = { x = -1204.0, y = 1842.0, z = 115.0 }, yaw = 180,  chance = 0.6,
+		{ name = "apartment", type = "apartment",
+		  pos = { x = -1204.0, y = 1842.0, z = 115.0 }, yaw = 180,
+		  strainDrain = 15, runtimeRestore = 0.25, healthRange = {40, 60}, hoursRange = {6, 10},
+		  treatmentDose = 0.5,
 		  messages = {
-			"Home... don't remember coming back",
-			"Woke up in bed... how long was I out?",
+			"Home... crashed hard, head's pounding",
+			"Woke up in bed... don't remember coming back",
 			"Back at the apartment... everything's blurry",
 		  }},
-		{ name = "viktor", pos = { x = -1554.434, y = 1239.794, z = 11.520 }, yaw = 0, chance = 0.3,
+		{ name = "viktor", type = "ripper",
+		  pos = { x = -1554.434, y = 1239.794, z = 11.520 }, yaw = 0,
+		  strainDrain = 25, runtimeRestore = 0.50, healthRange = {60, 70}, hoursRange = {4, 6},
+		  treatmentDose = 1.0,
 		  messages = {
-			"Viktor's clinic... he must have found me",
+			"Viktor's clinic... he patched me up again",
 			"Woke up at Doc's... head's splitting",
 			"\"You collapsed again, kid.\" ...sorry, Doc",
 		  }},
-		{ name = "alley", pos = { x = -1286.9, y = -1686.1, z = 44.2 }, yaw = 90, chance = 0.1,
+		{ name = "kabuki_ripper", type = "ripper",
+		  pos = { x = -993.03, y = 1487.29, z = 25.90 }, yaw = -300,
+		  strainDrain = 25, runtimeRestore = 0.50, healthRange = {60, 70}, hoursRange = {4, 6},
+		  treatmentDose = 1.0,
 		  messages = {
-			"Woke up in an alley... no idea how I got here",
-			"Cold concrete... how long was I out?",
-			"Some alley... everything hurts",
+			"Some clinic in Kabuki... who brought me here?",
+			"Woke up at a ripper's... don't remember the ride",
+			"Kabuki... the doc says I was out cold",
 		  }},
 	}
 
-	local function selectBlackoutLocation()
-		local roll = math.random()
-		local cumulative = 0
+	-- Find nearest blackout location within maxDist meters
+	local function findNearestBlackoutLocation(vPos, maxDist)
+		local nearest = nil
+		local nearestDist = maxDist + 1
 		for _, loc in ipairs(blackoutLocations) do
-			cumulative = cumulative + loc.chance
-			if roll <= cumulative then return loc end
+			local dx = vPos.x - loc.pos.x
+			local dy = vPos.y - loc.pos.y
+			local dist = math.sqrt(dx*dx + dy*dy)
+			if dist < nearestDist then
+				nearestDist = dist
+				nearest = loc
+			end
 		end
-		return blackoutLocations[1]
+		if nearestDist <= maxDist then return nearest end
+		return nil
 	end
+
+	-- Blackout chance by stage
+	local blackoutChance = { [0]=0.9, [1]=0.7, [2]=0.4, [3]=0.15 }
+
+	dsp.blackoutToday = false  -- reset on sleep
 
 	dsp.ExhaustionCheck = (function(self)
 		-- Exhaustion collapse: David passes out after 8 uses in Ep 2
@@ -175,31 +196,59 @@ function loreEffects.attach(dsp)
 		if self.dailyActivations < threshold then return end
 		if not self.isRunning then return end
 
-		-- Stage 5 Safety OFF: no blackout — death path (David doesn't pass out, he fights to the end)
-		if self.CyberPsychoWarnings >= 5 and not self.SafetyOn then
-			return -- handled by TriggerStrainEpisode → KillV
-		end
+		-- Stage 4-5: no blackout — psychosis/death path
+		if self.CyberPsychoWarnings >= 4 then return end
 
-		-- Stages 0-4 (or stage 5 Safety ON): blackout sequence
+		-- Already blacked out today
+		if self.blackoutToday then return end
+
+		-- Stage-based chance
+		local chance = blackoutChance[self.CyberPsychoWarnings] or 0
+		if math.random() > chance then return end
+
+		-- Pre-blackout VFX (like Wannabe Edgerunner)
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "ONO_V_LongPain"
+				V:QueueEvent(evt)
+			end
+		end)
+		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+
+		-- End Sandy
 		self.sps:EndSandevistan()
 		self:RemoveAllPsychoVFX()
 		self:StopHeartbeat()
 		self:RemoveRuntimeStamina()
 		self.runTime = 0
 
-		-- Pre-blackout VFX + message
-		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
-		self.bbs:SendWarning("Body gives out... everything goes dark", 4.0)
-		print('[DSP] ExhaustionCheck: blackout triggered at stage '..tostring(self.CyberPsychoWarnings))
+		-- Check distance to nearest safe location (200m max)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		local vPos = V:GetWorldPosition()
+		local location = findNearestBlackoutLocation(vPos, 200)
 
-		-- Start blackout sequence (managed via onUpdate timer)
-		local location = selectBlackoutLocation()
-		local hoursSkipped = math.random(4, 8)
+		if not location then
+			-- Too far from any safe location: stun only, no teleport
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun')
+			self.bbs:SendWarning("Body gives out... can't move...", 4.0)
+			print('[DSP] ExhaustionCheck: too far for blackout, stun only')
+			return
+		end
+
+		-- Close enough: full blackout sequence
+		self.blackoutToday = true
+		self.bbs:SendWarning("Body gives out... everything goes dark", 4.0)
+		print('[DSP] ExhaustionCheck: blackout to '..location.name..' at stage '..tostring(self.CyberPsychoWarnings))
+
 		self.blackoutState = {
 			phase = 'darken',
 			elapsed = 0,
 			location = location,
-			hoursSkipped = hoursSkipped,
+			hoursSkipped = math.random(location.hoursRange[1], location.hoursRange[2]),
 		}
 	 end)
 
@@ -221,11 +270,18 @@ function loreEffects.attach(dsp)
 			end
 
 		elseif bs.phase == 'teleport' then
-			-- Phase 2: teleport + time skip (1.0s after blackout)
+			-- Phase 2: teleport (1.0s after blackout)
 			if bs.elapsed >= 1.0 then
 				local V = Game.GetPlayer()
 				if not V or not IsDefined(V) then return end
 				local loc = bs.location
+
+				-- Fast travel glitch VFX (like Wannabe Edgerunner)
+				pcall(function()
+					local evt = SoundPlayEvent.new()
+					evt.soundName = "fast_travel_glitch"
+					V:QueueEvent(evt)
+				end)
 
 				-- Clear wanted level
 				pcall(function()
@@ -240,13 +296,6 @@ function loreEffects.attach(dsp)
 						EulerAngles.new(0, 0, loc.yaw))
 				end)
 
-				-- Advance time
-				pcall(function()
-					local ts = Game.GetTimeSystem()
-					local now = ts:GetGameTimeStamp()
-					ts:SetGameTimeBySeconds(math.floor(now + bs.hoursSkipped * 3600))
-				end)
-
 				bs.phase = 'wakeup'
 				bs.elapsed = 0
 			end
@@ -259,15 +308,42 @@ function loreEffects.attach(dsp)
 					self.blackoutState = nil
 					return
 				end
+				local loc = bs.location
 
-				-- Apply sleep recovery
-				pcall(function()
-					self:Rested(bs.hoursSkipped)
-				end)
+				-- Location-specific recovery
+				-- Strain drain: ripper drains more than apartment
+				self.neuralStrain = math.max((self.neuralStrain or 0) - loc.strainDrain, 0)
+
+				-- Runtime restore: ripper restores more
+				local effectiveMax = self:GetEffectiveMaxRuntime()
+				self.runTime = math.min(self.runTime + effectiveMax * loc.runtimeRestore, effectiveMax)
+
+				-- Treatment dose: ripper = 1 full dose, apartment = 0.5
+				if self.prescribedDoses > 0 then
+					self.completedDoses = math.min((self.completedDoses or 0) + loc.treatmentDose, self.prescribedDoses)
+				end
+
+				-- Apartment can reduce psycho level (like sleep)
+				if loc.type == "apartment" and self.CyberPsychoWarnings > 0 then
+					local maxRecovery = self.cfg.maxPsychoRecoveryPerSleep or 1
+					self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - maxRecovery, 0)
+					self:SyncSafetyWithStage()
+				end
+
+				-- Reset daily activations (V rested)
+				self.dailyActivations = 0
+				self.sessionActivations = 0
 
 				-- Restore player state
 				pcall(function()
 					GameTimeUtils.FastForwardPlayerState(V)
+				end)
+
+				-- Advance game time
+				pcall(function()
+					local ts = Game.GetTimeSystem()
+					local now = ts:GetGameTimeStamp()
+					ts:SetGameTimeBySeconds(math.floor(now + bs.hoursSkipped * 3600))
 				end)
 
 				-- Remove blackout (eyes open)
@@ -277,18 +353,17 @@ function loreEffects.attach(dsp)
 				-- Brief groggy VFX
 				self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 
-				-- Reduce health (didn't rest properly)
+				-- Health based on location type
 				pcall(function()
-					local healthPct = math.random(50, 70)
+					local healthPct = math.random(loc.healthRange[1], loc.healthRange[2])
 					self.sps:damage(100 - healthPct)
 				end)
 
 				-- Wakeup message
-				local loc = bs.location
 				local msg = loc.messages[math.random(#loc.messages)]
 				self.bbs:SendWarning(msg, 5.0)
 
-				print('[DSP] Blackout: woke up at '..loc.name..' after '..tostring(bs.hoursSkipped)..'h')
+				print('[DSP] Blackout: woke up at '..loc.name..' ('..loc.type..') after '..tostring(bs.hoursSkipped)..'h, strain=-'..tostring(loc.strainDrain))
 				self:SaveGame("BlackoutWakeup")
 				self.blackoutState = nil
 			end

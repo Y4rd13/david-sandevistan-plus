@@ -123,6 +123,19 @@ function psychosis.attach(dsp)
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
 			if self.cfg.enableCyberpsychosis then
+				-- Pre-Psychosis VFX: pain + glitch before stage change (like Wannabe Edgerunner)
+				pcall(function()
+					local V = Game.GetPlayer()
+					if V and IsDefined(V) then
+						Game.GetStatusEffectSystem():ApplyStatusEffect(V:GetEntityID(),
+							TweakDBID.new('BaseStatusEffect.intrusioncore_ep1'))
+						local evt = SoundPlayEvent.new()
+						evt.soundName = "ONO_V_LongPain"
+						V:QueueEvent(evt)
+					end
+				end)
+				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+
 				if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
 				local psychoMessages = {
 					[1] = { msg = "CYBERPSYCHOSIS I \xe2\x80\x94 NEURAL INSTABILITY DETECTED", dur = 4.0 },

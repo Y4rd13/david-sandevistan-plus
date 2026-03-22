@@ -13,6 +13,9 @@ function strain.attach(dsp)
 		return guaranteed[self.CyberPsychoWarnings] or 100
 	 end)
 
+	-- Stage-based strain multiplier: body resists more at low stages, less at high
+	local stageStrainMult = { [0]=0.5, [1]=0.5, [2]=1.0, [3]=1.2, [4]=1.5, [5]=2.0 }
+
 	dsp.AddStrain = (function(self, amount)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.lastBreath then return end
@@ -21,7 +24,9 @@ function strain.attach(dsp)
 		local immunoReduction = { full = 0.8, partial = 0.5 }
 		local reduction = immunoReduction[eff] or 0
 		local effective = amount * (1 - reduction)
-		local mult = self.cfg.strainBuildupMultiplier or 1.0
+		-- Stage multiplier: stages 0-1 resist strain, stages 3-5 amplify it
+		local stageMult = stageStrainMult[self.CyberPsychoWarnings] or 1.0
+		local mult = (self.cfg.strainBuildupMultiplier or 1.0) * stageMult
 		self.neuralStrain = self.neuralStrain + (effective * mult)
 		local guaranteed = self:GetStrainGuaranteed()
 		if self.neuralStrain > guaranteed then self.neuralStrain = guaranteed end
