@@ -153,9 +153,9 @@ function psychosis.attach(dsp)
 					end
 				end)
 
-				-- Delay the actual episode by 5s (matches PrePsychosisEffect duration)
+				-- Delay the actual episode by 8s (matches johnny_sickness_blackout raw VFX duration)
 				self.pendingEpisode = {
-					timer = 5.0,
+					timer = 8.0,
 					forcePsycho = forcePsycho,
 				}
 				return  -- episode fires later via UpdatePendingEpisode

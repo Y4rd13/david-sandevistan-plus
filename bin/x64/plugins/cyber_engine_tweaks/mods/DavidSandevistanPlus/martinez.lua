@@ -1011,8 +1011,8 @@ function martinez.CreateSandevistan(self)
 		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
 	})
 
-	-- PrePsychosisEffect: 2s duration, johnny_sickness_blackout + fx_damage_high VFX
-	self:CreateConstantStatModifier(self.PrePsychosisEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 5.0 })
+	-- PrePsychosisEffect: 8s duration, johnny_sickness_blackout + fx_damage_high VFX
+	self:CreateConstantStatModifier(self.PrePsychosisEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 8.0 })
 	self:CreateStatModifierGroup(self.PrePsychosisEffect_SMG, { false, false, {}, false, {self.PrePsychosisEffect_SM1}, -1, nil })
 	self:CloneRecord(self.PrePsychosisEffect_FX1, VFX_SuperHacked)
 	TweakDB:SetFlat(self.PrePsychosisEffect_FX1..'.name', 'johnny_sickness_blackout')
