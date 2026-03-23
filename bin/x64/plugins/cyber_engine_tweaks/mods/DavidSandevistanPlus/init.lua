@@ -1280,6 +1280,15 @@ dsp = {
 				self.CachedInMenu = self.bbs:InGameMenu() -- only check InGameMenu once per second
 				self.CachedBrainDance = self.bbs:InBrainDance() -- only check InBrainDance once per second
 				self.VIsInControl = self.sps:InControl()
+				-- Stop edgerunner SFX when MartinezFury expires
+				if self.furyEdgerunnerActive then
+					local hasFury = self:StatusEffect_CheckOnly(self.martinez.MartinezFury)
+						or self:StatusEffect_CheckOnly(self.martinez.MartinezFury_Level5)
+					if not hasFury then
+						pcall(function() Game.GetAudioSystem():Stop(CName.new("ui_gmpl_perk_edgerunner")) end)
+						self.furyEdgerunnerActive = false
+					end
+				end
 				if self.CachedInMenu or self.CachedBrainDance then return end
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end

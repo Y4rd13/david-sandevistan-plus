@@ -201,10 +201,9 @@ function psychosis.attach(dsp)
 		-- Combat buffs during psychosis (David was STRONGER: +50% speed, +100% armor, ×10 health regen)
 		self:StatusEffect_CheckAndApply(self.martinez.PsychosisCombatBuff)
 
-		-- Force PsychoLaugh to fire immediately (applies perk_edgerunner_player VFX)
-		-- and set short interval so it re-triggers naturally during the 12s fury
-		self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
-		self.nextLaughTime = os.clock() + math.random(3, 5)
+		-- Edgerunner SFX via AudioSystem (15s, not entity-bound so it won't get cut)
+		pcall(function() Game.GetAudioSystem():Play(CName.new("ui_gmpl_perk_edgerunner")) end)
+		self.furyEdgerunnerActive = true
 
 		-- Psychosis SFX (johnny_sickness_blackout already fired in pre-psychosis)
 		local V = Game.GetPlayer()
