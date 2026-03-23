@@ -120,4 +120,20 @@ hud.StopVoiceLine = (function(self)
 	end
 end)
 
+----------------------------------------------------------------
+-- Subtitles — native game subtitle display (redscript bridge)
+----------------------------------------------------------------
+
+hud.ShowSubtitle = (function(self, text, speakerName, duration)
+	if self.system then
+		pcall(function() self.system:ShowSubtitle(text, speakerName or "V", duration or 3.0) end)
+	end
+end)
+
+hud.HideSubtitle = (function(self)
+	if self.system then
+		pcall(function() self.system:HideSubtitle() end)
+	end
+end)
+
 return hud

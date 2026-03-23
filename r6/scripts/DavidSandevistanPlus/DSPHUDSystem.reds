@@ -509,6 +509,47 @@ public class DSPHUDSystem extends ScriptableSystem {
         }
     }
 
+    // ---------------------------------------------------------------
+    // Subtitles — native game subtitle display
+    // ---------------------------------------------------------------
+
+    private let m_subtitleCounter: Int32;
+
+    public func ShowSubtitle(text: String, speakerName: String, duration: Float) -> Void {
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+
+        // Hide previous subtitle if active
+        if this.m_subtitleCounter > 0 {
+            this.HideSubtitle();
+        }
+
+        this.m_subtitleCounter += 1;
+
+        let line: scnDialogLineData;
+        line.id = CreateCRUID(Cast<Uint64>(this.m_subtitleCounter));
+        line.text = text;
+        line.speaker = player;
+        line.speakerName = speakerName;
+        line.type = scnDialogLineType.Regular;
+        line.duration = duration;
+        line.isPersistent = false;
+
+        let board: ref<IBlackboard> = GameInstance.GetBlackboardSystem(this.GetGameInstance()).Get(GetAllBlackboardDefs().UIGameData);
+        board.SetVariant(GetAllBlackboardDefs().UIGameData.ShowDialogLine, ToVariant([line]), true);
+
+        // Auto-hide after duration
+        let callback = new DSPHideSubtitleCallback();
+        callback.system = this;
+        GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, duration, false);
+    }
+
+    public func HideSubtitle() -> Void {
+        if this.m_subtitleCounter <= 0 { return; }
+        let board: ref<IBlackboard> = GameInstance.GetBlackboardSystem(this.GetGameInstance()).Get(GetAllBlackboardDefs().UIGameData);
+        board.SetVariant(GetAllBlackboardDefs().UIGameData.HideDialogLine, ToVariant([CreateCRUID(Cast<Uint64>(this.m_subtitleCounter))]), true);
+    }
+
     public func SetVisible(visible: Bool) -> Void {
         if this.m_initialized && IsDefined(this.m_widgetSlot) {
             this.m_widgetSlot.SetVisible(visible);
@@ -796,5 +837,16 @@ public class DSPHUDSystem extends ScriptableSystem {
             return IntToString(mins) + "m" + secStr + "s";
         }
         return IntToString(totalSecs) + "s";
+    }
+}
+
+// Callback to auto-hide subtitle after duration
+public class DSPHideSubtitleCallback extends DelayCallback {
+    public let system: wref<DSPHUDSystem>;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.HideSubtitle();
+        }
     }
 }

@@ -295,11 +295,15 @@ function psychosis.attach(dsp)
 			msgs = psychoMessages_lv4
 		end
 		local entry = msgs[math.random(1, #msgs)]
-		local V = Game.GetPlayer()
-		if V and IsDefined(V) then
-			pcall(function() V:SetWarningMessage(entry.msg) end)
+		if entry.voice then
+			self.voice:Play(entry.voice, self.hud)
+			self.hud:ShowSubtitle(entry.msg, "V", 3.0)
+		else
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				pcall(function() V:SetWarningMessage(entry.msg) end)
+			end
 		end
-		if entry.voice then self.voice:Play(entry.voice, self.hud) end
 
 		scheduleNextPsychoMsg(self, now, isLastBreath)
 	 end)

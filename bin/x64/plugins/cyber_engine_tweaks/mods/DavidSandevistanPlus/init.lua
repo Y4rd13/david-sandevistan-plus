@@ -2021,24 +2021,32 @@ dsp = {
 		,StartSandevistan = (function(self)
 		 end)
 		,SendMessage = (function(self,message,duration,voiceId)
-			local MSG = SimpleScreenMessage.new()
-			local BBS = Game.GetBlackboardSystem()
-			local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
-			MSG.message = message
-			MSG.isShown = true
-			MSG.duration = duration
-			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.OnscreenMessage, ToVariant(MSG), true)
-			if voiceId then dsp.voice:Play(voiceId, dsp.hud) end
+			if voiceId then
+				dsp.voice:Play(voiceId, dsp.hud)
+				dsp.hud:ShowSubtitle(message, "V", duration or 3.0)
+			else
+				local MSG = SimpleScreenMessage.new()
+				local BBS = Game.GetBlackboardSystem()
+				local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
+				MSG.message = message
+				MSG.isShown = true
+				MSG.duration = duration
+				UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.OnscreenMessage, ToVariant(MSG), true)
+			end
 		 end)
 		,SendWarning = (function(self,message,duration,voiceId)
-			local MSG = SimpleScreenMessage.new()
-			local BBS = Game.GetBlackboardSystem()
-			local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
-			MSG.message = message
-			MSG.isShown = true
-			MSG.duration = duration or 3.0
-			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.WarningMessage, ToVariant(MSG), true)
-			if voiceId then dsp.voice:Play(voiceId, dsp.hud) end
+			if voiceId then
+				dsp.voice:Play(voiceId, dsp.hud)
+				dsp.hud:ShowSubtitle(message, "V", duration or 3.0)
+			else
+				local MSG = SimpleScreenMessage.new()
+				local BBS = Game.GetBlackboardSystem()
+				local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
+				MSG.message = message
+				MSG.isShown = true
+				MSG.duration = duration or 3.0
+				UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.WarningMessage, ToVariant(MSG), true)
+			end
 		 end)
 		,MoneyTransfer = (function(self,title,message)
 			local V = Game.GetPlayer()
