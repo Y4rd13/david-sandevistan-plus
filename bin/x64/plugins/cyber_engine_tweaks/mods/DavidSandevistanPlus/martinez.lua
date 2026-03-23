@@ -518,7 +518,7 @@ function martinez.CreateSandevistan(self)
 	-- New FuryRage Buff
 	self:CreateStatusEffect(self.MartinezFury,{
 		 '' --AIData
-		,{self.MartinezFury_SFX1} --SFX
+		,{} --SFX (ui_gmpl_perk_edgerunner now handled by cycled SFX loop in psychosis.lua)
 		,{self.MartinezFury_FX1,self.MartinezFury_FX2} --VFX
 		,'' --additionalParam
 		,{} --debugTags
@@ -555,7 +555,7 @@ function martinez.CreateSandevistan(self)
 	-- New FuryRage Buff without Darkness
 	self:CreateStatusEffect(self.MartinezFury_Level5,{
 		 '' --AIData
-		,{self.MartinezFury_Level5_SFX1} --SFX
+		,{} --SFX (ui_gmpl_perk_edgerunner now handled by cycled SFX loop)
 		,{self.MartinezFury_Level5_FX1} --VFX
 		,'' --additionalParam
 		,{} --debugTags

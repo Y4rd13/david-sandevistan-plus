@@ -201,6 +201,10 @@ function psychosis.attach(dsp)
 		-- Combat buffs during psychosis (David was STRONGER: +50% speed, +100% armor, ×10 health regen)
 		self:StatusEffect_CheckAndApply(self.martinez.PsychosisCombatBuff)
 
+		-- Looping edgerunner SFX during fury (plays every 12s, stopped when fury ends)
+		self.hud:StartCycledSfx("ui_gmpl_perk_edgerunner", 12.0)
+		self.furyEdgerunnerSfxActive = true
+
 		-- Psychosis SFX (johnny_sickness_blackout already fired in pre-psychosis)
 		local V = Game.GetPlayer()
 		pcall(function()

@@ -510,6 +510,50 @@ public class DSPHUDSystem extends ScriptableSystem {
     }
 
     // ---------------------------------------------------------------
+    // Cycled SFX — looping SFX via DelayCallbacks (like Wannabe Edgerunner)
+    // ---------------------------------------------------------------
+
+    private let m_cycledSfxDelayId: DelayID;
+    private let m_cycledSfxActive: Bool;
+
+    public func StartCycledSfx(sfxName: CName, interval: Float) -> Void {
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        // Play immediately
+        GameObject.PlaySoundEvent(player, sfxName);
+        // Schedule next play
+        this.m_cycledSfxActive = true;
+        let callback = new DSPCycledSfxCallback();
+        callback.system = this;
+        callback.sfxName = sfxName;
+        callback.interval = interval;
+        this.m_cycledSfxDelayId = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, interval, true);
+    }
+
+    public func StopCycledSfx(sfxName: CName) -> Void {
+        if !this.m_cycledSfxActive { return; }
+        this.m_cycledSfxActive = false;
+        GameInstance.GetDelaySystem(this.GetGameInstance()).CancelDelay(this.m_cycledSfxDelayId);
+        let player = GetPlayer(this.GetGameInstance());
+        if IsDefined(player) {
+            GameObject.StopSoundEvent(player, sfxName);
+        }
+    }
+
+    public func OnCycledSfxCallback(sfxName: CName, interval: Float) -> Void {
+        if !this.m_cycledSfxActive { return; }
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        GameObject.PlaySoundEvent(player, sfxName);
+        // Schedule next
+        let callback = new DSPCycledSfxCallback();
+        callback.system = this;
+        callback.sfxName = sfxName;
+        callback.interval = interval;
+        this.m_cycledSfxDelayId = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, interval, true);
+    }
+
+    // ---------------------------------------------------------------
     // Subtitles — native game subtitle display
     // ---------------------------------------------------------------
 
@@ -847,6 +891,19 @@ public class DSPHideSubtitleCallback extends DelayCallback {
     public func Call() -> Void {
         if IsDefined(this.system) {
             this.system.HideSubtitle();
+        }
+    }
+}
+
+// Callback to re-play SFX in a loop (like Wannabe Edgerunner's cycled SFX)
+public class DSPCycledSfxCallback extends DelayCallback {
+    public let system: wref<DSPHUDSystem>;
+    public let sfxName: CName;
+    public let interval: Float;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.OnCycledSfxCallback(this.sfxName, this.interval);
         }
     }
 }
