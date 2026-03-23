@@ -52,28 +52,188 @@ local psychoMessages_lv5 = {
 }
 
 -- Stage 6 messages: delusional, Lucy-focused, can't recognize self (Ep 10)
-local psychoMessages_lastBreath = {
-	{ msg = "LUCY...",                      voice = "lastbreath_01" },
-	{ msg = "LUCY... WAIT FOR ME",          voice = "lastbreath_02" },
-	{ msg = "LUCY... I CAN SEE THE MOON",   voice = "lastbreath_03" },
-	{ msg = "LUCY... I PROMISED",            voice = "lastbreath_04" },
-	{ msg = "WHERE ARE YOU?",                voice = "lastbreath_05" },
-	{ msg = "WHO AM I?",                     voice = "lastbreath_06" },
-	{ msg = "WHO'S DAVID?",                  voice = "lastbreath_07" },
-	{ msg = "IS THAT... ME?",                voice = "lastbreath_08" },
-	{ msg = "I CAN'T FEEL MY HANDS",         voice = "lastbreath_09" },
-	{ msg = "MY BODY WON'T STOP",            voice = "lastbreath_10" },
-	{ msg = "I'M STILL RUNNING",             voice = "lastbreath_11" },
-	{ msg = "I CAN'T STOP RUNNING",          voice = "lastbreath_12" },
-	{ msg = "EVERYTHING IS SO BEAUTIFUL",     voice = "lastbreath_13" },
-	{ msg = "ALMOST THERE... ALMOST...",      voice = "lastbreath_14" },
-	{ msg = "MOM... GLORIA... I'M SORRY",     voice = "lastbreath_15" },
-	{ msg = "MAINE... I UNDERSTAND NOW",      voice = "lastbreath_16" },
-	{ msg = "THE MOON... SO CLOSE",           voice = "lastbreath_17" },
-	{ msg = "I PROMISED I'D TAKE YOU",        voice = "lastbreath_18" },
-	{ msg = "DON'T CRY... LUCY...",           voice = "lastbreath_19" },
-	{ msg = "I CAN SEE EVERYTHING",           voice = "lastbreath_20" },
+-- Last Breath contextual voice lines
+-- ctx: tags that determine when this line is eligible
+-- decayWeight: 0.0-1.0, minimum decay progress before line becomes eligible
+-- weight: base selection weight (higher = more likely)
+local lastBreathLines = {
+	-- LUCY (emotional core, heavier in late decay)
+	{ msg = "LUCY...",                    voice = "lastbreath_01", ctx = {"lucy","generic"},  decayWeight = 0.0, weight = 2 },
+	{ msg = "LUCY... WAIT FOR ME",        voice = "lastbreath_02", ctx = {"lucy","running"},  decayWeight = 0.2, weight = 2 },
+	{ msg = "LUCY... I CAN SEE THE MOON", voice = "lastbreath_03", ctx = {"lucy","moon"},     decayWeight = 0.4, weight = 3 },
+	{ msg = "LUCY... I PROMISED",          voice = "lastbreath_04", ctx = {"lucy","generic"},  decayWeight = 0.3, weight = 2 },
+	{ msg = "I PROMISED I'D TAKE YOU",    voice = "lastbreath_18", ctx = {"lucy","moon"},     decayWeight = 0.6, weight = 3 },
+	{ msg = "DON'T CRY... LUCY...",       voice = "lastbreath_19", ctx = {"lucy"},            decayWeight = 0.7, weight = 3 },
+	-- IDENTITY CRISIS (internal, no env requirement)
+	{ msg = "WHERE ARE YOU?",             voice = "lastbreath_05", ctx = {"identity","generic"}, decayWeight = 0.2, weight = 1 },
+	{ msg = "WHO AM I?",                  voice = "lastbreath_06", ctx = {"identity"},        decayWeight = 0.4, weight = 2 },
+	{ msg = "WHO'S DAVID?",              voice = "lastbreath_07", ctx = {"identity"},        decayWeight = 0.5, weight = 2 },
+	{ msg = "IS THAT... ME?",            voice = "lastbreath_08", ctx = {"identity"},        decayWeight = 0.5, weight = 2 },
+	-- PHYSICAL (body failing)
+	{ msg = "I CAN'T FEEL MY HANDS",     voice = "lastbreath_09", ctx = {"physical"},        decayWeight = 0.3, weight = 1 },
+	{ msg = "MY BODY WON'T STOP",        voice = "lastbreath_10", ctx = {"physical","running"}, decayWeight = 0.2, weight = 1 },
+	-- RUNNING (movement-aware)
+	{ msg = "I'M STILL RUNNING",          voice = "lastbreath_11", ctx = {"running"},          decayWeight = 0.1, weight = 1 },
+	{ msg = "I CAN'T STOP RUNNING",       voice = "lastbreath_12", ctx = {"running"},          decayWeight = 0.3, weight = 2 },
+	-- EUPHORIA (transcendent, late decay)
+	{ msg = "EVERYTHING IS SO BEAUTIFUL",  voice = "lastbreath_13", ctx = {"euphoria","generic"}, decayWeight = 0.5, weight = 2 },
+	{ msg = "ALMOST THERE... ALMOST...",   voice = "lastbreath_14", ctx = {"euphoria","running"}, decayWeight = 0.7, weight = 2 },
+	{ msg = "I CAN SEE EVERYTHING",        voice = "lastbreath_20", ctx = {"euphoria"},        decayWeight = 0.8, weight = 3 },
+	-- GRIEF (regret toward the dead)
+	{ msg = "MOM... GLORIA... I'M SORRY",  voice = "lastbreath_15", ctx = {"grief","generic"}, decayWeight = 0.3, weight = 2 },
+	{ msg = "MAINE... I UNDERSTAND NOW",   voice = "lastbreath_16", ctx = {"grief"},           decayWeight = 0.4, weight = 2 },
+	-- MOON (nighttime + outdoors, very late)
+	{ msg = "THE MOON... SO CLOSE",        voice = "lastbreath_17", ctx = {"moon"},            decayWeight = 0.8, weight = 3 },
 }
+
+-- Context detectors
+local lastBreathContextDetectors = {
+	moon = function(self)
+		local ok, result = pcall(function()
+			local gt = Game.GetTimeSystem():GetGameTime()
+			local hour = GameTime.Hours(gt)
+			if hour < 20 and hour >= 5 then return false end
+			-- Outdoors check: raycast up for ceiling
+			local V = Game.GetPlayer()
+			if not V or not IsDefined(V) then return false end
+			local pos = V:GetWorldPosition()
+			local upTarget = Vector4.new(pos.x, pos.y, pos.z + 50.0, 1.0)
+			local hit = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(pos, upTarget, "Static", false, false)
+			return not hit.result
+		end)
+		return ok and result
+	end,
+	running = function(self)
+		local ok, result = pcall(function()
+			local V = Game.GetPlayer()
+			if not V or not IsDefined(V) then return true end
+			local vel = V:GetLinearVelocity()
+			return math.sqrt(vel.x * vel.x + vel.y * vel.y) > 5.0
+		end)
+		if not ok then return true end
+		return result
+	end,
+	generic = function() return true end,
+	identity = function() return true end,
+	lucy = function() return true end,
+	physical = function() return true end,
+	grief = function() return true end,
+	euphoria = function() return true end,
+}
+
+-- Context weight multipliers
+local function lastBreathContextMultiplier(ctx, self)
+	if ctx == "moon" then return 4.0 end
+	if ctx == "running" then
+		local ok, speed = pcall(function()
+			local V = Game.GetPlayer()
+			local vel = V:GetLinearVelocity()
+			return math.sqrt(vel.x * vel.x + vel.y * vel.y)
+		end)
+		if ok and speed > 8.0 then return 3.0 end
+		if ok and speed > 5.0 then return 2.0 end
+		return 1.0
+	end
+	if ctx == "lucy" then
+		local de = self.lastBreath and self.lastBreath.elapsed or 0
+		local total = self.lastBreath and self.lastBreath.totalRuntime or 245
+		local progress = de / total
+		if progress > 0.7 then return 3.0 end
+		if progress > 0.4 then return 2.0 end
+		return 1.0
+	end
+	if ctx == "physical" then
+		local mult = 1.0
+		local health = pcall(function() return Game.GetPlayer():GetHealth() end) or 100
+		if health < 30 then mult = mult + 1.5 end
+		if self.tremor and self.tremor.intensity > 0.008 then mult = mult + 1.0 end
+		return mult
+	end
+	if ctx == "euphoria" then
+		local de = self.lastBreath and self.lastBreath.elapsed or 0
+		if de >= 171 and de < 187 then return 4.0 end
+		if de >= 221 then return 3.0 end
+		return 1.0
+	end
+	if ctx == "grief" then
+		local de = self.lastBreath and self.lastBreath.elapsed or 0
+		if de >= 96 and de < 126 then return 3.0 end
+		if de >= 171 and de < 187 then return 2.5 end
+		return 1.0
+	end
+	return 1.0
+end
+
+local LB_HISTORY_SIZE = 8
+
+local function ContextualLastBreathLine(self)
+	local de = self.lastBreath and self.lastBreath.elapsed or 0
+	local total = self.lastBreath and self.lastBreath.totalRuntime or 245
+	local decayProgress = math.min(de / total, 1.0)
+
+	-- Detect active contexts
+	local active = {}
+	for name, detect in pairs(lastBreathContextDetectors) do
+		active[name] = detect(self)
+	end
+
+	-- Build eligible pool
+	local pool = {}
+	local totalWeight = 0
+	local history = self.lastBreathVoiceSet or {}
+
+	for _, line in ipairs(lastBreathLines) do
+		if decayProgress >= line.decayWeight and not history[line.voice] then
+			local bestMult = 0
+			local anyActive = false
+			for _, ctx in ipairs(line.ctx) do
+				if active[ctx] then
+					anyActive = true
+					local mult = lastBreathContextMultiplier(ctx, self)
+					if mult > bestMult then bestMult = mult end
+				end
+			end
+			if anyActive then
+				local ew = line.weight * bestMult
+				table.insert(pool, { line = line, ew = ew })
+				totalWeight = totalWeight + ew
+			end
+		end
+	end
+
+	-- Fallback: clear history if pool empty
+	if #pool == 0 then
+		self.lastBreathVoiceHistory = {}
+		self.lastBreathVoiceSet = {}
+		return ContextualLastBreathLine(self)
+	end
+
+	-- Weighted random pick
+	local roll = math.random() * totalWeight
+	local cum = 0
+	for _, entry in ipairs(pool) do
+		cum = cum + entry.ew
+		if roll <= cum then
+			-- Record in history
+			if not self.lastBreathVoiceHistory then
+				self.lastBreathVoiceHistory = {}
+				self.lastBreathVoiceSet = {}
+			end
+			table.insert(self.lastBreathVoiceHistory, entry.line.voice)
+			self.lastBreathVoiceSet[entry.line.voice] = true
+			if #self.lastBreathVoiceHistory > LB_HISTORY_SIZE then
+				local evicted = table.remove(self.lastBreathVoiceHistory, 1)
+				local still = false
+				for _, v in ipairs(self.lastBreathVoiceHistory) do
+					if v == evicted then still = true; break end
+				end
+				if not still then self.lastBreathVoiceSet[evicted] = nil end
+			end
+			return entry.line
+		end
+	end
+	return pool[#pool].line
+end
 
 local prescriptionTable = {
 	[0] = { 0, 0 },
@@ -296,15 +456,14 @@ function psychosis.attach(dsp)
 
 		if now < self.nextPsychoMsgTime then return end
 
-		local msgs
+		local entry
 		if isLastBreath then
-			msgs = psychoMessages_lastBreath
+			entry = ContextualLastBreathLine(self)
 		elseif self.CyberPsychoWarnings >= 5 then
-			msgs = psychoMessages_lv5
+			entry = psychoMessages_lv5[math.random(1, #psychoMessages_lv5)]
 		else
-			msgs = psychoMessages_lv4
+			entry = psychoMessages_lv4[math.random(1, #psychoMessages_lv4)]
 		end
-		local entry = msgs[math.random(1, #msgs)]
 		if entry.voice then
 			self.voice:Play(entry.voice, self.hud)
 			self.hud:ShowSubtitle(entry.msg, "V", 3.0)

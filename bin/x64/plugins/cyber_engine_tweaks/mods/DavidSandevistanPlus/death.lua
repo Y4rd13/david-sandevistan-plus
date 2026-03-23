@@ -63,6 +63,10 @@ function death.attach(dsp)
 			self.CyberPsychoWarnings = 5
 			self.neuralStrain = 0  -- No more strain — death comes from runtime
 
+			-- Reset contextual voice line history for Last Breath
+			self.lastBreathVoiceHistory = {}
+			self.lastBreathVoiceSet = {}
+
 			-- Initialize Last Breath state
 			self.runTime = math.max(self.runTime, self.lastBreathRuntime)
 			local rt = self.runTime
