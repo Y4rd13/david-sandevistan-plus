@@ -18,61 +18,61 @@ local function scheduleNextPsychoMsg(self, now, isLastBreath)
 end
 
 local psychoMessages_lv4 = {
-	"I CAN STILL GO",
-	"JUST ONE MORE TIME",
-	"I'M FINE... I'M FINE",
-	"DOC SAID THREE TIMES...",
-	"I CAN HANDLE IT",
-	"I'M BUILT DIFFERENT",
-	"NOBODY SETS MY LIMITS",
-	"I PROMISED I'D MAKE IT",
-	"CAN'T STOP NOW",
-	"DAVID... IT'S TIME TO STOP",
+	{ msg = "I CAN STILL GO",             voice = "psycho4_01" },
+	{ msg = "JUST ONE MORE TIME",          voice = "psycho4_02" },
+	{ msg = "I'M FINE... I'M FINE",        voice = "psycho4_03" },
+	{ msg = "DOC SAID THREE TIMES...",     voice = "psycho4_04" },
+	{ msg = "I CAN HANDLE IT",            voice = "psycho4_05" },
+	{ msg = "I'M BUILT DIFFERENT",         voice = "psycho4_06" },
+	{ msg = "NOBODY SETS MY LIMITS",       voice = "psycho4_07" },
+	{ msg = "I PROMISED I'D MAKE IT",      voice = "psycho4_08" },
+	{ msg = "CAN'T STOP NOW",             voice = "psycho4_09" },
+	{ msg = "DAVID... IT'S TIME TO STOP",  voice = "psycho4_10" },
 }
 
 local psychoMessages_lv5 = {
-	"THEY CAN'T KEEP UP WITH ME",
-	"LUCY...",
-	"MAINE... IS THAT YOU?",
-	"I'M NOT DONE YET",
-	"MOM... GLORIA?",
-	"MY BODY MOVES ON ITS OWN",
-	"EVERYTHING IS SO SLOW",
-	"THE CHROME... IT SINGS",
-	"WHO'S IN THE MIRROR?",
-	"NINE TIMES THE DOSE...",
-	"BETTER IN METAL THAN SKIN",
-	"KEEP RUNNING DAVID",
-	"GLIDING ALONG THE EDGE",
-	"YOU'LL END UP LIKE MAINE",
-	"THE MOON... I CAN SEE IT",
-	"DAVID MARTINEZ DIED HERE",
-	"DAVID... IT'S TIME TO STOP",
-	"DAVID... IT'S TIME TO STOP",
+	{ msg = "THEY CAN'T KEEP UP WITH ME",  voice = "psycho5_01" },
+	{ msg = "LUCY...",                      voice = "psycho5_02" },
+	{ msg = "MAINE... IS THAT YOU?",        voice = "psycho5_03" },
+	{ msg = "I'M NOT DONE YET",            voice = "psycho5_04" },
+	{ msg = "MOM... GLORIA?",              voice = "psycho5_05" },
+	{ msg = "MY BODY MOVES ON ITS OWN",    voice = "psycho5_06" },
+	{ msg = "EVERYTHING IS SO SLOW",        voice = "psycho5_07" },
+	{ msg = "THE CHROME... IT SINGS",       voice = "psycho5_08" },
+	{ msg = "WHO'S IN THE MIRROR?",         voice = "psycho5_09" },
+	{ msg = "NINE TIMES THE DOSE...",       voice = "psycho5_10" },
+	{ msg = "BETTER IN METAL THAN SKIN",    voice = "psycho5_11" },
+	{ msg = "KEEP RUNNING DAVID",           voice = "psycho5_12" },
+	{ msg = "GLIDING ALONG THE EDGE",       voice = "psycho5_13" },
+	{ msg = "YOU'LL END UP LIKE MAINE",     voice = "psycho5_14" },
+	{ msg = "THE MOON... I CAN SEE IT",     voice = "psycho5_15" },
+	{ msg = "DAVID MARTINEZ DIED HERE",     voice = "psycho5_16" },
+	{ msg = "DAVID... IT'S TIME TO STOP",   voice = "psycho4_10" },
+	{ msg = "DAVID... IT'S TIME TO STOP",   voice = "psycho4_10" },
 }
 
 -- Stage 6 messages: delusional, Lucy-focused, can't recognize self (Ep 10)
 local psychoMessages_lastBreath = {
-	"LUCY...",
-	"LUCY... WAIT FOR ME",
-	"LUCY... I CAN SEE THE MOON",
-	"LUCY... I PROMISED",
-	"WHERE ARE YOU?",
-	"WHO AM I?",
-	"WHO'S DAVID?",
-	"IS THAT... ME?",
-	"I CAN'T FEEL MY HANDS",
-	"MY BODY WON'T STOP",
-	"I'M STILL RUNNING",
-	"I CAN'T STOP RUNNING",
-	"EVERYTHING IS SO BEAUTIFUL",
-	"ALMOST THERE... ALMOST...",
-	"MOM... GLORIA... I'M SORRY",
-	"MAINE... I UNDERSTAND NOW",
-	"THE MOON... SO CLOSE",
-	"I PROMISED I'D TAKE YOU",
-	"DON'T CRY... LUCY...",
-	"I CAN SEE EVERYTHING",
+	{ msg = "LUCY...",                      voice = "lastbreath_01" },
+	{ msg = "LUCY... WAIT FOR ME",          voice = "lastbreath_02" },
+	{ msg = "LUCY... I CAN SEE THE MOON",   voice = "lastbreath_03" },
+	{ msg = "LUCY... I PROMISED",            voice = "lastbreath_04" },
+	{ msg = "WHERE ARE YOU?",                voice = "lastbreath_05" },
+	{ msg = "WHO AM I?",                     voice = "lastbreath_06" },
+	{ msg = "WHO'S DAVID?",                  voice = "lastbreath_07" },
+	{ msg = "IS THAT... ME?",                voice = "lastbreath_08" },
+	{ msg = "I CAN'T FEEL MY HANDS",         voice = "lastbreath_09" },
+	{ msg = "MY BODY WON'T STOP",            voice = "lastbreath_10" },
+	{ msg = "I'M STILL RUNNING",             voice = "lastbreath_11" },
+	{ msg = "I CAN'T STOP RUNNING",          voice = "lastbreath_12" },
+	{ msg = "EVERYTHING IS SO BEAUTIFUL",     voice = "lastbreath_13" },
+	{ msg = "ALMOST THERE... ALMOST...",      voice = "lastbreath_14" },
+	{ msg = "MOM... GLORIA... I'M SORRY",     voice = "lastbreath_15" },
+	{ msg = "MAINE... I UNDERSTAND NOW",      voice = "lastbreath_16" },
+	{ msg = "THE MOON... SO CLOSE",           voice = "lastbreath_17" },
+	{ msg = "I PROMISED I'D TAKE YOU",        voice = "lastbreath_18" },
+	{ msg = "DON'T CRY... LUCY...",           voice = "lastbreath_19" },
+	{ msg = "I CAN SEE EVERYTHING",           voice = "lastbreath_20" },
 }
 
 local prescriptionTable = {
@@ -153,9 +153,9 @@ function psychosis.attach(dsp)
 					end
 				end)
 
-				-- Delay the actual episode by 1.5s so pre-psychosis VFX plays first
+				-- Delay the actual episode by 3s so pre-psychosis VFX builds tension
 				self.pendingEpisode = {
-					timer = 1.5,
+					timer = 3.0,
 					forcePsycho = forcePsycho,
 				}
 				return  -- episode fires later via UpdatePendingEpisode
@@ -223,14 +223,8 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		-- Cycled SFX: ui_gmpl_perk_edgerunner (edgerunner perk sound, plays during episode)
-		pcall(function()
-			if V and IsDefined(V) then
-				local sfxEvt = SoundPlayEvent.new()
-				sfxEvt.soundName = "ui_gmpl_perk_edgerunner"
-				V:QueueEvent(sfxEvt)
-			end
-		end)
+		-- ui_gmpl_perk_edgerunner SFX now handled by MartinezFury status effect
+		-- (plays for full 12s duration, stops on deactivate)
 
 		-- Simulate a gunshot event so enemies agro and NPCs run away
 		if V and IsDefined(V) then
@@ -240,9 +234,9 @@ function psychosis.attach(dsp)
 			self:NCPDIsWatching()
 		end
 
-		-- Auto-attack chance during stage change: 40/60/80% by stage
-		local stageAttackChance = { [3]=0.40, [4]=0.60, [5]=0.80 }
-		self:TryAutoAttack(stageAttackChance[self.CyberPsychoWarnings] or 0.40, false)
+		-- Auto-attack chance during stage change: 15/40/60/80% by stage
+		local stageAttackChance = { [2]=0.15, [3]=0.40, [4]=0.60, [5]=0.80 }
+		self:TryAutoAttack(stageAttackChance[self.CyberPsychoWarnings] or 0.15, false)
 
 		-- Reset strain after episode fires (accumulation starts fresh)
 		self.neuralStrain = 0
@@ -300,11 +294,12 @@ function psychosis.attach(dsp)
 		else
 			msgs = psychoMessages_lv4
 		end
-		local msg = msgs[math.random(1, #msgs)]
+		local entry = msgs[math.random(1, #msgs)]
 		local V = Game.GetPlayer()
 		if V and IsDefined(V) then
-			pcall(function() V:SetWarningMessage(msg) end)
+			pcall(function() V:SetWarningMessage(entry.msg) end)
 		end
+		if entry.voice then self.voice:Play(entry.voice, self.hud) end
 
 		scheduleNextPsychoMsg(self, now, isLastBreath)
 	 end)
@@ -407,9 +402,21 @@ function psychosis.attach(dsp)
 	}
 
 	local hallucinationMessages = {
-		[3] = { "Did someone just...?", "Thought I saw...", "Shadows moving... just my eyes" },
-		[4] = { "They're watching me...", "Who's there?!", "Can't trust what I see anymore" },
-		[5] = { "THEY'RE EVERYWHERE", "GET OUT OF MY HEAD", "Lucy...? No... not real" },
+		[3] = {
+			{ msg = "Did someone just...?",           voice = "halluc_s3_01" },
+			{ msg = "Thought I saw...",               voice = "halluc_s3_02" },
+			{ msg = "Shadows moving... just my eyes", voice = "halluc_s3_03" },
+		},
+		[4] = {
+			{ msg = "They're watching me...",           voice = "halluc_s4_01" },
+			{ msg = "Who's there?!",                   voice = "halluc_s4_02" },
+			{ msg = "Can't trust what I see anymore",  voice = "halluc_s4_03" },
+		},
+		[5] = {
+			{ msg = "THEY'RE EVERYWHERE",  voice = "halluc_s5_01" },
+			{ msg = "GET OUT OF MY HEAD",  voice = "halluc_s5_02" },
+			{ msg = "Lucy...? No... not real", voice = "halluc_s5_03" },
+		},
 	}
 
 	dsp.phantomNPCs = {}  -- { entityID, despawnTime }
@@ -495,7 +502,8 @@ function psychosis.attach(dsp)
 
 			-- Message
 			local msgs = hallucinationMessages[self.CyberPsychoWarnings] or hallucinationMessages[3]
-			self.bbs:SendWarning(msgs[math.random(#msgs)], 3.0)
+			local entry = msgs[math.random(#msgs)]
+			self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
 
 			print('[DSP] Hallucination: spawned phantom '..record..' at stage '..tostring(self.CyberPsychoWarnings))
 		end
@@ -525,20 +533,25 @@ function psychosis.attach(dsp)
 	-- ============================================================
 
 	local autoAttackMessages = {
+		[2] = {
+			{ msg = "What... what just happened?", voice = "attack_s2_01" },
+			{ msg = "Did I just...?",              voice = "attack_s2_02" },
+			{ msg = "My hand... it twitched",      voice = "attack_s2_03" },
+		},
 		[3] = {
-			"What did I just do...",
-			"I didn't mean to... my hand moved on its own",
-			"No... that wasn't me",
+			{ msg = "What did I just do...",                           voice = "attack_s3_01" },
+			{ msg = "I didn't mean to... my hand moved on its own",   voice = "attack_s3_02" },
+			{ msg = "No... that wasn't me",                           voice = "attack_s3_03" },
 		},
 		[4] = {
-			"Can't control it... something's wrong",
-			"My hand... it moved on its own",
-			"NO... STOP...",
+			{ msg = "Can't control it... something's wrong",  voice = "attack_s4_01" },
+			{ msg = "My hand... it moved on its own",         voice = "attack_s4_02" },
+			{ msg = "NO... STOP...",                          voice = "attack_s4_03" },
 		},
 		[5] = {
-			"THEY WERE LOOKING AT ME",
-			"Had to... had to do it",
-			"More... need more",
+			{ msg = "THEY WERE LOOKING AT ME",   voice = "attack_s5_01" },
+			{ msg = "Had to... had to do it",    voice = "attack_s5_02" },
+			{ msg = "More... need more",         voice = "attack_s5_03" },
 		},
 	}
 
@@ -546,16 +559,22 @@ function psychosis.attach(dsp)
 
 	-- Core auto-attack function. Called from specific trigger points.
 	-- fromLaugh: if true, laugh is already active (don't apply PsychoLaughEffect again)
+	-- Strain scaling: violence begets violence — high strain increases auto-attack probability
 	dsp.TryAutoAttack = (function(self, chance, fromLaugh)
 		if not self.cfg.enableCyberpsychosis then return false end
-		if self.CyberPsychoWarnings < 3 then return false end
+		if self.CyberPsychoWarnings < 2 then return false end
 		if self.CachedInMenu or self.CachedBrainDance then return false end
 		if self.lastBreath then return false end
 
 		local now = os.clock()
 		if self.autoAttackCooldown > now then return false end
 
-		if math.random() > chance then return false end
+		-- Strain scaling: chance × (1.0 to 2.0) based on strain ratio
+		local guaranteed = self:GetStrainGuaranteed()
+		local strainRatio = (guaranteed > 0) and (self.neuralStrain / guaranteed) or 0
+		local scaledChance = chance * (1.0 + strainRatio)
+
+		if math.random() > scaledChance then return false end
 
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return false end
@@ -634,7 +653,8 @@ function psychosis.attach(dsp)
 
 		-- Message
 		local msgs = autoAttackMessages[self.CyberPsychoWarnings] or autoAttackMessages[3]
-		self.bbs:SendWarning(msgs[math.random(#msgs)], 3.0)
+		local entry = msgs[math.random(#msgs)]
+		self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
 
 		-- Cooldown 30s
 		self.autoAttackCooldown = now + 30
@@ -668,15 +688,15 @@ function psychosis.attach(dsp)
 		end
 	 end)
 
-	-- Per-second check for low runtime auto-attack (stage 3+, runtime <10%)
+	-- Per-second check for low runtime auto-attack (stage 2+, runtime <10%)
 	dsp.CheckLowRuntimeAutoAttack = (function(self)
 		if not self.isRunning then return end
-		if self.CyberPsychoWarnings < 3 then return end
+		if self.CyberPsychoWarnings < 2 then return end
 		local rtPct = self:GetRuntimePercent()
 		if rtPct >= 10 then return end
-		-- Low runtime chances: 10% stage 3, 20% stage 4, 35% stage 5
-		local chances = { [3]=0.10, [4]=0.20, [5]=0.35 }
-		local chance = chances[self.CyberPsychoWarnings] or 0.10
+		-- Low runtime chances: 5% stage 2, 10% stage 3, 20% stage 4, 35% stage 5
+		local chances = { [2]=0.05, [3]=0.10, [4]=0.20, [5]=0.35 }
+		local chance = chances[self.CyberPsychoWarnings] or 0.05
 		self:TryAutoAttack(chance, false)
 	 end)
 end

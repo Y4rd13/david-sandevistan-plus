@@ -104,4 +104,20 @@ hud.StopSong = (function(self)
 	end
 end)
 
+----------------------------------------------------------------
+-- Voice lines — play/stop via Audioware (redscript bridge)
+----------------------------------------------------------------
+
+hud.PlayVoiceLine = (function(self, eventName)
+	if self.system then
+		pcall(function() self.system:PlayVoiceLine(CName.new(eventName)) end)
+	end
+end)
+
+hud.StopVoiceLine = (function(self)
+	if self.system then
+		pcall(function() self.system:StopVoiceLine() end)
+	end
+end)
+
 return hud

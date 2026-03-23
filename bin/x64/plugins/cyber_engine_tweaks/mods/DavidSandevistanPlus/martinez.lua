@@ -48,12 +48,14 @@ martinez.MartinezFury_SM1            = 'BaseStatusEffect.MartinezSandevistan_Fur
 martinez.MartinezFury_SM2            = 'BaseStatusEffect.MartinezSandevistan_Fury_SM2'
 martinez.MartinezFury_FX1            = 'BaseStatusEffect.MartinezSandevistan_Fury_FX1'
 martinez.MartinezFury_FX2            = 'BaseStatusEffect.MartinezSandevistan_Fury_FX2'
+martinez.MartinezFury_SFX1           = 'BaseStatusEffect.MartinezSandevistan_Fury_SFX1'
 martinez.MartinezFury_Level5         = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5'
 martinez.MartinezFury_Level5_LP      = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_LP'
 martinez.MartinezFury_Level5_SMG     = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_SMG'
 martinez.MartinezFury_Level5_SM1     = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_SM1'
 martinez.MartinezFury_Level5_SM2     = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_SM2'
 martinez.MartinezFury_Level5_FX1     = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_FX1'
+martinez.MartinezFury_Level5_SFX1    = 'BaseStatusEffect.MartinezSandevistan_Fury_Lvl5_SFX1'
 
 martinez.SafetiesOffStatusEffect     = 'BaseStatusEffect.MartinezSandevistan_NoSafety'
 martinez.SafetiesOffStatusEffect_LP  = 'BaseStatusEffect.MartinezSandevistan_NoSafety_LP'
@@ -516,7 +518,7 @@ function martinez.CreateSandevistan(self)
 	-- New FuryRage Buff
 	self:CreateStatusEffect(self.MartinezFury,{
 		 '' --AIData
-		,{} --SFX
+		,{self.MartinezFury_SFX1} --SFX
 		,{self.MartinezFury_FX1,self.MartinezFury_FX2} --VFX
 		,'' --additionalParam
 		,{} --debugTags
@@ -547,11 +549,13 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.MartinezFury_FX2,VFX_SuperHacked)
 	TweakDB:SetFlat(self.MartinezFury_FX1..'.name', 'perk_edgerunner_player')
 	TweakDB:SetFlat(self.MartinezFury_FX2..'.name', 'afterimage_glitch') -- makes shit dark!'
+	self:CloneRecord(self.MartinezFury_SFX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.MartinezFury_SFX1..'.name', 'ui_gmpl_perk_edgerunner')
 
 	-- New FuryRage Buff without Darkness
 	self:CreateStatusEffect(self.MartinezFury_Level5,{
 		 '' --AIData
-		,{} --SFX
+		,{self.MartinezFury_Level5_SFX1} --SFX
 		,{self.MartinezFury_Level5_FX1} --VFX
 		,'' --additionalParam
 		,{} --debugTags
@@ -580,6 +584,8 @@ function martinez.CreateSandevistan(self)
 	self:CreateConstantStatModifier(self.MartinezFury_Level5_SM2, { 'Multiplier', 'BaseStats.HasSandevistan', 0.0 })
 	self:CloneRecord(self.MartinezFury_Level5_FX1,VFX_SuperHacked)
 	TweakDB:SetFlat(self.MartinezFury_Level5_FX1..'.name', '') -- Keep this empty to get the zIndex fighting going on.
+	self:CloneRecord(self.MartinezFury_Level5_SFX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.MartinezFury_Level5_SFX1..'.name', 'ui_gmpl_perk_edgerunner')
 
 	self:CreateStatusEffect(self.SafetiesOffStatusEffect,{
 		 '' --AIData
@@ -1006,7 +1012,7 @@ function martinez.CreateSandevistan(self)
 	})
 
 	-- PrePsychosisEffect: 2s duration, johnny_sickness_blackout + fx_damage_high VFX
-	self:CreateConstantStatModifier(self.PrePsychosisEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 2.0 })
+	self:CreateConstantStatModifier(self.PrePsychosisEffect_SM1, { 'Additive', 'BaseStats.MaxDuration', 5.0 })
 	self:CreateStatModifierGroup(self.PrePsychosisEffect_SMG, { false, false, {}, false, {self.PrePsychosisEffect_SM1}, -1, nil })
 	self:CloneRecord(self.PrePsychosisEffect_FX1, VFX_SuperHacked)
 	TweakDB:SetFlat(self.PrePsychosisEffect_FX1..'.name', 'johnny_sickness_blackout')

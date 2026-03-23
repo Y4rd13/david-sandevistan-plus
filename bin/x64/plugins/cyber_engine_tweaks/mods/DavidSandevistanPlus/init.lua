@@ -221,6 +221,7 @@ dsp = {
 	,martinez = require('./martinez.lua')
 	,gui = require('./gui.lua')
 	,hud = require('./hud.lua')
+	,voice = require('./voice.lua')
 	--[[Every variable after this point is a runtime value not configuration, changing them here will have zero effect they are overwritten at runtime]]--
 	,isRunning = false
 	,lastTick = 0
@@ -505,16 +506,17 @@ dsp = {
 			if newLevel > 0 then
 				local remaining = self.prescribedDoses - self.completedDoses
 				local partialRecovery = {
-					"Slept it off a little... but the buzzing's still there",
-					"Head's clearer after some sleep... not clear enough",
-					"Doc said rest would help... still got "..tostring(remaining).." treatments to go",
-					"Better than yesterday... but the Sandy's still in my head",
+					{ msg = "Slept it off a little... but the buzzing's still there", voice = "sleep_partial_01" },
+					{ msg = "Head's clearer after some sleep... not clear enough", voice = "sleep_partial_02" },
+					{ msg = "Doc said rest would help... still got "..tostring(remaining).." treatments to go", voice = "sleep_partial_03" },
+					{ msg = "Better than yesterday... but the Sandy's still in my head", voice = "sleep_partial_04" },
 				}
-				self.bbs:SendWarning(partialRecovery[math.random(#partialRecovery)], 5.0)
+				local entry = partialRecovery[math.random(#partialRecovery)]
+				self.bbs:SendWarning(entry.msg, 5.0, entry.voice)
 			else
 				self.prescribedDoses = 0
 				self.completedDoses = 0
-				self.bbs:SendMessage("Head's clear... feels like me again", 3.0)
+				self.bbs:SendMessage("Head's clear... feels like me again", 3.0, "sleep_full_01")
 			end
 			-- Reset micro-episode timer for new level
 			self:ResetMicroEpisodeTimer()
@@ -523,11 +525,11 @@ dsp = {
 			self.CyberPsychoWarnings = 1
 			self.neuralStrain = 0
 			self:SyncSafetyWithStage()
-			self.bbs:SendWarning("Crashed hard... still twitching. Need a full night", 5.0)
+			self.bbs:SendWarning("Crashed hard... still twitching. Need a full night", 5.0, "crash_recovery_01")
 		else
 			self.CyberPsychoWarnings = 0
 			if prevPsycho > 0 then
-				self.bbs:SendMessage("Head's clear... feels like me again", 3.0)
+				self.bbs:SendMessage("Head's clear... feels like me again", 3.0, "sleep_full_01")
 			end
 			self.prescribedDoses = 0
 			self.completedDoses = 0
@@ -701,7 +703,7 @@ dsp = {
 			self.cheatedDeath = false
 			self.CyberPsychoWarnings = 5
 			self:DisableSandevistan("cheatedDeath")
-			self.bbs:SendWarning("Heart gave out once already... can't push it again", 4.0)
+			self.bbs:SendWarning("Heart gave out once already... can't push it again", 4.0, "death_prevent_01")
 			return
 		end
 
@@ -720,35 +722,36 @@ dsp = {
 				self:AddStrain(self.cfg.strainPerOveruseBonus * extraUses)
 				local overuseMessages = {
 					[0] = {
-						"Doc said three a day, max... this is number "..tostring(self.dailyActivations),
-						"\"Three times a day, David. I mean it.\" ...sorry, Doc",
-						"Doc's gonna kill me... activation "..tostring(self.dailyActivations).." today",
+						{ msg = "Doc said three a day, max... this is number "..tostring(self.dailyActivations), voice = "overuse_s0_01" },
+						{ msg = "\"Three times a day, David. I mean it.\" ...sorry, Doc", voice = "overuse_s0_02" },
+						{ msg = "Doc's gonna kill me... activation "..tostring(self.dailyActivations).." today", voice = "overuse_s0_03" },
 					},
 					[1] = {
-						"Body's getting used to it... needs more each time",
-						"Can feel the Sandy calling... just one more",
-						"Doc was right about the dependency... can't help it",
+						{ msg = "Body's getting used to it... needs more each time", voice = "overuse_s1_01" },
+						{ msg = "Can feel the Sandy calling... just one more", voice = "overuse_s1_02" },
+						{ msg = "Doc was right about the dependency... can't help it", voice = "overuse_s1_03" },
 					},
 					[2] = {
-						"Can't go a day without it anymore...",
-						"Hands shake when it's off... need another hit",
-						"The Sandy's the only thing that feels real now",
+						{ msg = "Can't go a day without it anymore...", voice = "overuse_s2_01" },
+						{ msg = "Hands shake when it's off... need another hit", voice = "overuse_s2_02" },
+						{ msg = "The Sandy's the only thing that feels real now", voice = "overuse_s2_03" },
 					},
 					[3] = {
-						"Past all limits... doesn't matter anymore",
-						"Doc would lose it if he saw me now... "..tostring(self.dailyActivations).." times today",
-						"Who needs limits... I feel ALIVE",
+						{ msg = "Past all limits... doesn't matter anymore", voice = "overuse_s3_01" },
+						{ msg = "Doc would lose it if he saw me now... "..tostring(self.dailyActivations).." times today", voice = "overuse_s3_02" },
+						{ msg = "Who needs limits... I feel ALIVE", voice = "overuse_s3_03" },
 					},
 					[4] = {
-						"NOBODY SETS MY LIMITS",
-						"More... I need MORE",
-						"Can't tell where I end and the Sandy begins",
+						{ msg = "NOBODY SETS MY LIMITS", voice = "overuse_s4_01" },
+						{ msg = "More... I need MORE", voice = "overuse_s4_02" },
+						{ msg = "Can't tell where I end and the Sandy begins", voice = "overuse_s4_03" },
 					},
 					[5] = nil,
 				}
 				local levelMsgs = overuseMessages[self.CyberPsychoWarnings]
 				if levelMsgs then
-					self.bbs:SendWarning(levelMsgs[math.random(#levelMsgs)], 4.0)
+					local entry = levelMsgs[math.random(#levelMsgs)]
+					self.bbs:SendWarning(entry.msg, 4.0, entry.voice)
 				end
 				if self.dev_mode then
 					print('DailyActivations: '..tostring(self.dailyActivations)..' (safe='..tostring(effectiveSafe)..') strain='..tostring(self.neuralStrain))
@@ -1153,11 +1156,12 @@ dsp = {
 				if not self.lastBreath and not self.lowRuntimeWarned and self.runTime > 0 and self.runTime < 30 then
 					self.lowRuntimeWarned = true
 					local lowRtLines = {
-						"Running on fumes... should stop soon",
-						"Sandy's draining fast... "..tostring(math.floor(self.runTime)).."s left",
-						"Can feel it giving out... not much time",
+						{ msg = "Running on fumes... should stop soon", voice = "lowrt_01" },
+						{ msg = "Sandy's draining fast... "..tostring(math.floor(self.runTime)).."s left", voice = "lowrt_02" },
+						{ msg = "Can feel it giving out... not much time", voice = "lowrt_03" },
 					}
-					self.bbs:SendWarning(lowRtLines[math.random(#lowRtLines)], 3.0)
+					local entry = lowRtLines[math.random(#lowRtLines)]
+					self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
 				end
 
 				self:CalcDamage()
@@ -1525,32 +1529,33 @@ dsp = {
 		self.OutstandingBuff = 5 -- check for sandy
 		if self.cfg.enableCyberpsychosis and (self.CyberPsychoWarnings > 0) then
 			local psychoLoadMsgs = {
-				[1] = "Something's off... the Sandy's whispering even when it's off",
-				[2] = "Vision glitches when you blink... not a good sign",
-				[3] = "Head won't stop buzzing... Doc was right about the limits",
-				[4] = "Can barely tell what's real anymore... need help",
-				[5] = "The Sandy's in control now... not you",
+				[1] = { msg = "Something's off... the Sandy's whispering even when it's off", voice = "load_psycho_01" },
+				[2] = { msg = "Vision glitches when you blink... not a good sign", voice = "load_psycho_02" },
+				[3] = { msg = "Head won't stop buzzing... Doc was right about the limits", voice = "load_psycho_03" },
+				[4] = { msg = "Can barely tell what's real anymore... need help", voice = "load_psycho_04" },
+				[5] = { msg = "The Sandy's in control now... not you", voice = "load_psycho_05" },
 			}
-			local msg = psychoLoadMsgs[self.CyberPsychoWarnings]
-			if msg then self.bbs:SendWarning(msg, 4.0) end
+			local entry = psychoLoadMsgs[self.CyberPsychoWarnings]
+			if entry then self.bbs:SendWarning(entry.msg, 4.0, entry.voice) end
 		end
 		if self:IsWearingSandevistan() then
 			local rt = math.floor(self.runTime)
 			local loadLines
 			if not self.SafetyOn then
 				loadLines = {
-					"Sandy's online... limiters off. Let's see what today brings",
-					"Spine hums to life... no safety net. Just the way David liked it",
-					"Sandevistan ready... running without limits",
+					{ msg = "Sandy's online... limiters off. Let's see what today brings", voice = "load_off_01" },
+					{ msg = "Spine hums to life... no safety net. Just the way David liked it", voice = "load_off_02" },
+					{ msg = "Sandevistan ready... running without limits", voice = "load_off_03" },
 				}
 			else
 				loadLines = {
-					"Sandy's online... safety protocols active",
-					"Implant's humming... ready when you are",
-					"Sandevistan standing by... "..tostring(rt).."s in the tank",
+					{ msg = "Sandy's online... safety protocols active", voice = "load_on_01" },
+					{ msg = "Implant's humming... ready when you are", voice = "load_on_02" },
+					{ msg = "Sandevistan standing by... "..tostring(rt).."s in the tank", voice = "load_on_03" },
 				}
 			end
-			self.bbs:SendMessage(loadLines[math.random(#loadLines)], 3.5)
+			local entry = loadLines[math.random(#loadLines)]
+			self.bbs:SendMessage(entry.msg, 3.5, entry.voice)
 		end
 	 end)
 	,LoadGame = (function(self,GameLoadIndex)
@@ -2015,7 +2020,7 @@ dsp = {
 		 end)
 		,StartSandevistan = (function(self)
 		 end)
-		,SendMessage = (function(self,message,duration)
+		,SendMessage = (function(self,message,duration,voiceId)
 			local MSG = SimpleScreenMessage.new()
 			local BBS = Game.GetBlackboardSystem()
 			local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
@@ -2023,8 +2028,9 @@ dsp = {
 			MSG.isShown = true
 			MSG.duration = duration
 			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.OnscreenMessage, ToVariant(MSG), true)
+			if voiceId then dsp.voice:Play(voiceId, dsp.hud) end
 		 end)
-		,SendWarning = (function(self,message,duration)
+		,SendWarning = (function(self,message,duration,voiceId)
 			local MSG = SimpleScreenMessage.new()
 			local BBS = Game.GetBlackboardSystem()
 			local UINote = BBS:Get(GetAllBlackboardDefs().UI_Notifications)
@@ -2032,6 +2038,7 @@ dsp = {
 			MSG.isShown = true
 			MSG.duration = duration or 3.0
 			UINote:SetVariant(GetAllBlackboardDefs().UI_Notifications.WarningMessage, ToVariant(MSG), true)
+			if voiceId then dsp.voice:Play(voiceId, dsp.hud) end
 		 end)
 		,MoneyTransfer = (function(self,title,message)
 			local V = Game.GetPlayer()
@@ -2194,15 +2201,42 @@ dsp.RegisterActivity = (function(self, activityName)
 
 		-- Message
 		local activityMessages = {
-			lover = { "Feels good to be close to someone...", "For a moment, the buzzing stops", "This is what matters..." },
-			social = { "Good to be around people...", "Almost feels normal", "The world isn't all chrome and blood" },
-			pet = { "Hey little choom...", "Simple things... they help", "At least someone doesn't judge" },
-			shower = { "Hot water... clears the head a bit", "Feels human again... for a sec", "Washed off the day" },
-			apartment = { "Home... small comforts", "Quiet moment", "Breathing room" },
-			sleepWithLover = { "This is what it's all about...", "With you... the noise stops", "Don't want this moment to end" },
+			lover = {
+				{ msg = "Feels good to be close to someone...", voice = "activity_lover_01" },
+				{ msg = "For a moment, the buzzing stops", voice = "activity_lover_02" },
+				{ msg = "This is what matters...", voice = "activity_lover_03" },
+			},
+			social = {
+				{ msg = "Good to be around people...", voice = "activity_social_01" },
+				{ msg = "Almost feels normal", voice = "activity_social_02" },
+				{ msg = "The world isn't all chrome and blood", voice = "activity_social_03" },
+			},
+			pet = {
+				{ msg = "Hey little choom...", voice = "activity_pet_01" },
+				{ msg = "Simple things... they help", voice = "activity_pet_02" },
+				{ msg = "At least someone doesn't judge", voice = "activity_pet_03" },
+			},
+			shower = {
+				{ msg = "Hot water... clears the head a bit", voice = "activity_shower_01" },
+				{ msg = "Feels human again... for a sec", voice = "activity_shower_02" },
+				{ msg = "Washed off the day", voice = "activity_shower_03" },
+			},
+			apartment = {
+				{ msg = "Home... small comforts", voice = "activity_apt_01" },
+				{ msg = "Quiet moment", voice = "activity_apt_02" },
+				{ msg = "Breathing room", voice = "activity_apt_03" },
+			},
+			sleepWithLover = {
+				{ msg = "This is what it's all about...", voice = "activity_slover_01" },
+				{ msg = "With you... the noise stops", voice = "activity_slover_02" },
+				{ msg = "Don't want this moment to end", voice = "activity_slover_03" },
+			},
 		}
 		local msgs = activityMessages[activityName]
-		if msgs then self.bbs:SendMessage(msgs[math.random(#msgs)], 3.0) end
+		if msgs then
+			local entry = msgs[math.random(#msgs)]
+			self.bbs:SendMessage(entry.msg, 3.0, entry.voice)
+		end
 
 		print('[DSP] Activity registered: '..activityName..' (count='..tostring(self.activityCount)..' strain=-'..tostring(drain)..')')
 	end
@@ -2467,6 +2501,7 @@ registerForEvent('onUpdate', function(dt)
             if V and IsDefined(V) then
                 pcall(function() V:SetWarningMessage("LUCY... I CAN SEE THE MOON FROM HERE") end)
             end
+            dsp.voice:Play("death_final_03", dsp.hud)
             dsp.lastBreathMessage = nil
         end
     end

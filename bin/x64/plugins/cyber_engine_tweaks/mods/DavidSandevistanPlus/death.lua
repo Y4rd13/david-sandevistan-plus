@@ -24,7 +24,7 @@ function death.attach(dsp)
 		if V and IsDefined(V) then
 			pcall(function() V:SetWarningMessage("DAVID... IT'S TIME TO STOP") end)
 		end
-		self.bbs:SendWarning("DAVID... IT'S TIME TO STOP", 4.0)
+		self.bbs:SendWarning("DAVID... IT'S TIME TO STOP", 4.0, "death_final_01")
 		self.terminalClarity = { elapsed = 0, duration = 4.0 }
 	 end)
 
@@ -361,7 +361,7 @@ function death.attach(dsp)
 				self.tremor.intensity = 0.006
 				self.nextPsychoMsgTime = now + math.random(2, 4)
 				self.lastBreath.nextVLaugh = now + math.random(4, 8)
-				self.bbs:SendWarning("NO... NOT YET...", 3.0)
+				self.bbs:SendWarning("NO... NOT YET...", 3.0, "lastbreath_resist")
 			end
 
 			-- Tremor build during Pre-Chorus 3 (187-203s)
@@ -473,7 +473,7 @@ function death.attach(dsp)
 				if V and IsDefined(V) then
 					pcall(function() V:SetWarningMessage("THE MOON... I CAN SEE IT") end)
 				end
-				self.bbs:SendWarning("THE MOON... I CAN SEE IT", 3.0)
+				self.bbs:SendWarning("THE MOON... I CAN SEE IT", 3.0, "death_final_02")
 				self.terminalClarity = { elapsed = 0, duration = 3.0 }
 				self.lastBreathDeath = true
 			end

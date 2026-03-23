@@ -1,7 +1,690 @@
 version: 1.0.0
 sfx:
+  # Last Breath song
   dsp_last_breath_song:
     file: last_breath_song.ogg
     settings:
       volume: 0.35
+      loop: false
+
+  # Voice lines — V Male
+  dsp_vm_psycho4_01:
+    file: voice/v_male/psycho4_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_02:
+    file: voice/v_male/psycho4_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_03:
+    file: voice/v_male/psycho4_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_04:
+    file: voice/v_male/psycho4_04.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_05:
+    file: voice/v_male/psycho4_05.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_06:
+    file: voice/v_male/psycho4_06.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_07:
+    file: voice/v_male/psycho4_07.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_08:
+    file: voice/v_male/psycho4_08.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_09:
+    file: voice/v_male/psycho4_09.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho4_10:
+    file: voice/v_male/psycho4_10.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_01:
+    file: voice/v_male/psycho5_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_02:
+    file: voice/v_male/psycho5_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_03:
+    file: voice/v_male/psycho5_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_04:
+    file: voice/v_male/psycho5_04.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_05:
+    file: voice/v_male/psycho5_05.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_06:
+    file: voice/v_male/psycho5_06.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_07:
+    file: voice/v_male/psycho5_07.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_08:
+    file: voice/v_male/psycho5_08.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_09:
+    file: voice/v_male/psycho5_09.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_10:
+    file: voice/v_male/psycho5_10.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_11:
+    file: voice/v_male/psycho5_11.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_12:
+    file: voice/v_male/psycho5_12.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_13:
+    file: voice/v_male/psycho5_13.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_14:
+    file: voice/v_male/psycho5_14.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_15:
+    file: voice/v_male/psycho5_15.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_psycho5_16:
+    file: voice/v_male/psycho5_16.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_01:
+    file: voice/v_male/lastbreath_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_02:
+    file: voice/v_male/lastbreath_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_03:
+    file: voice/v_male/lastbreath_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_04:
+    file: voice/v_male/lastbreath_04.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_05:
+    file: voice/v_male/lastbreath_05.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_06:
+    file: voice/v_male/lastbreath_06.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_07:
+    file: voice/v_male/lastbreath_07.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_08:
+    file: voice/v_male/lastbreath_08.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_09:
+    file: voice/v_male/lastbreath_09.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_10:
+    file: voice/v_male/lastbreath_10.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_11:
+    file: voice/v_male/lastbreath_11.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_12:
+    file: voice/v_male/lastbreath_12.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_13:
+    file: voice/v_male/lastbreath_13.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_14:
+    file: voice/v_male/lastbreath_14.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_15:
+    file: voice/v_male/lastbreath_15.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_16:
+    file: voice/v_male/lastbreath_16.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_17:
+    file: voice/v_male/lastbreath_17.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_18:
+    file: voice/v_male/lastbreath_18.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_19:
+    file: voice/v_male/lastbreath_19.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_20:
+    file: voice/v_male/lastbreath_20.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s3_01:
+    file: voice/v_male/halluc_s3_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s3_02:
+    file: voice/v_male/halluc_s3_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s3_03:
+    file: voice/v_male/halluc_s3_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s4_01:
+    file: voice/v_male/halluc_s4_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s4_02:
+    file: voice/v_male/halluc_s4_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s4_03:
+    file: voice/v_male/halluc_s4_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s5_01:
+    file: voice/v_male/halluc_s5_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s5_02:
+    file: voice/v_male/halluc_s5_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_halluc_s5_03:
+    file: voice/v_male/halluc_s5_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s2_01:
+    file: voice/v_male/attack_s2_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s2_02:
+    file: voice/v_male/attack_s2_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s2_03:
+    file: voice/v_male/attack_s2_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s3_01:
+    file: voice/v_male/attack_s3_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s3_02:
+    file: voice/v_male/attack_s3_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s3_03:
+    file: voice/v_male/attack_s3_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s4_01:
+    file: voice/v_male/attack_s4_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s4_02:
+    file: voice/v_male/attack_s4_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s4_03:
+    file: voice/v_male/attack_s4_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s5_01:
+    file: voice/v_male/attack_s5_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s5_02:
+    file: voice/v_male/attack_s5_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_attack_s5_03:
+    file: voice/v_male/attack_s5_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s0_01:
+    file: voice/v_male/overuse_s0_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s0_02:
+    file: voice/v_male/overuse_s0_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s0_03:
+    file: voice/v_male/overuse_s0_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s1_01:
+    file: voice/v_male/overuse_s1_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s1_02:
+    file: voice/v_male/overuse_s1_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s1_03:
+    file: voice/v_male/overuse_s1_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s2_01:
+    file: voice/v_male/overuse_s2_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s2_02:
+    file: voice/v_male/overuse_s2_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s2_03:
+    file: voice/v_male/overuse_s2_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s3_01:
+    file: voice/v_male/overuse_s3_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s3_02:
+    file: voice/v_male/overuse_s3_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s3_03:
+    file: voice/v_male/overuse_s3_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s4_01:
+    file: voice/v_male/overuse_s4_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s4_02:
+    file: voice/v_male/overuse_s4_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_overuse_s4_03:
+    file: voice/v_male/overuse_s4_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lowrt_01:
+    file: voice/v_male/lowrt_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lowrt_02:
+    file: voice/v_male/lowrt_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lowrt_03:
+    file: voice/v_male/lowrt_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_sleep_partial_01:
+    file: voice/v_male/sleep_partial_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_sleep_partial_02:
+    file: voice/v_male/sleep_partial_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_sleep_partial_03:
+    file: voice/v_male/sleep_partial_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_sleep_partial_04:
+    file: voice/v_male/sleep_partial_04.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_sleep_full_01:
+    file: voice/v_male/sleep_full_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_exhaust_01:
+    file: voice/v_male/exhaust_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_exhaust_02:
+    file: voice/v_male/exhaust_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_home_01:
+    file: voice/v_male/wakeup_home_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_home_02:
+    file: voice/v_male/wakeup_home_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_home_03:
+    file: voice/v_male/wakeup_home_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_vik_01:
+    file: voice/v_male/wakeup_vik_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_vik_02:
+    file: voice/v_male/wakeup_vik_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_vik_03:
+    file: voice/v_male/wakeup_vik_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_kab_01:
+    file: voice/v_male/wakeup_kab_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_kab_02:
+    file: voice/v_male/wakeup_kab_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_wakeup_kab_03:
+    file: voice/v_male/wakeup_kab_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_psycho_01:
+    file: voice/v_male/load_psycho_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_psycho_02:
+    file: voice/v_male/load_psycho_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_psycho_03:
+    file: voice/v_male/load_psycho_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_psycho_04:
+    file: voice/v_male/load_psycho_04.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_psycho_05:
+    file: voice/v_male/load_psycho_05.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_off_01:
+    file: voice/v_male/load_off_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_off_02:
+    file: voice/v_male/load_off_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_off_03:
+    file: voice/v_male/load_off_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_on_01:
+    file: voice/v_male/load_on_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_on_02:
+    file: voice/v_male/load_on_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_load_on_03:
+    file: voice/v_male/load_on_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_lover_01:
+    file: voice/v_male/activity_lover_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_lover_02:
+    file: voice/v_male/activity_lover_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_lover_03:
+    file: voice/v_male/activity_lover_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_social_01:
+    file: voice/v_male/activity_social_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_social_02:
+    file: voice/v_male/activity_social_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_social_03:
+    file: voice/v_male/activity_social_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_pet_01:
+    file: voice/v_male/activity_pet_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_pet_02:
+    file: voice/v_male/activity_pet_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_pet_03:
+    file: voice/v_male/activity_pet_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_shower_01:
+    file: voice/v_male/activity_shower_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_shower_02:
+    file: voice/v_male/activity_shower_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_shower_03:
+    file: voice/v_male/activity_shower_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_apt_01:
+    file: voice/v_male/activity_apt_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_apt_02:
+    file: voice/v_male/activity_apt_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_apt_03:
+    file: voice/v_male/activity_apt_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_slover_01:
+    file: voice/v_male/activity_slover_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_slover_02:
+    file: voice/v_male/activity_slover_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_activity_slover_03:
+    file: voice/v_male/activity_slover_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_death_prevent_01:
+    file: voice/v_male/death_prevent_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_death_final_01:
+    file: voice/v_male/death_final_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_death_final_02:
+    file: voice/v_male/death_final_02.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_death_final_03:
+    file: voice/v_male/death_final_03.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_crash_recovery_01:
+    file: voice/v_male/crash_recovery_01.ogg
+    settings:
+      volume: 0.85
+      loop: false
+  dsp_vm_lastbreath_resist:
+    file: voice/v_male/lastbreath_resist.ogg
+    settings:
+      volume: 0.85
       loop: false

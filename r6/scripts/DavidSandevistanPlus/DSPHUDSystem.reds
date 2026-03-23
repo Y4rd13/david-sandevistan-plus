@@ -477,6 +477,38 @@ public class DSPHUDSystem extends ScriptableSystem {
         audioExt.Stop(n"dsp_last_breath_song", player.GetEntityID(), n"", fadeOut);
     }
 
+    // ---------------------------------------------------------------
+    // Voice lines — play/stop via Audioware
+    // ---------------------------------------------------------------
+
+    private let m_currentVoiceLine: CName;
+
+    public func PlayVoiceLine(eventName: CName) -> Void {
+        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
+        if !IsDefined(audioExt) { return; }
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        // Stop any currently playing voice line to prevent overlap
+        if IsNameValid(this.m_currentVoiceLine) {
+            audioExt.Stop(this.m_currentVoiceLine, player.GetEntityID(), n"", LinearTween.Immediate(0.1));
+        }
+        let settings = new AudioSettingsExt();
+        settings.affectedByTimeDilation = false;
+        audioExt.Play(eventName, player.GetEntityID(), n"", scnDialogLineType.Regular, settings);
+        this.m_currentVoiceLine = eventName;
+    }
+
+    public func StopVoiceLine() -> Void {
+        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
+        if !IsDefined(audioExt) { return; }
+        let player = GetPlayer(this.GetGameInstance());
+        if !IsDefined(player) { return; }
+        if IsNameValid(this.m_currentVoiceLine) {
+            audioExt.Stop(this.m_currentVoiceLine, player.GetEntityID(), n"", LinearTween.Immediate(0.1));
+            this.m_currentVoiceLine = n"";
+        }
+    }
+
     public func SetVisible(visible: Bool) -> Void {
         if this.m_initialized && IsDefined(this.m_widgetSlot) {
             this.m_widgetSlot.SetVisible(visible);

@@ -132,8 +132,8 @@ function loreEffects.attach(dsp)
 		if self:GetRuntimePercent() < 30 then trigger = true end
 		if trigger then
 			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
-			-- Auto-attack chance during nosebleed: 5/15/25% by stage
-			local nosebleedAttackChance = { [3]=0.05, [4]=0.15, [5]=0.25 }
+			-- Auto-attack chance during nosebleed: 3/5/15/25% by stage
+			local nosebleedAttackChance = { [2]=0.03, [3]=0.05, [4]=0.15, [5]=0.25 }
 			local chance = nosebleedAttackChance[self.CyberPsychoWarnings]
 			if chance then self:TryAutoAttack(chance, false) end
 		end
@@ -146,27 +146,27 @@ function loreEffects.attach(dsp)
 		  strainDrain = 15, runtimeRestore = 0.25, healthRange = {40, 60}, hoursRange = {6, 10},
 		  treatmentDose = 0.5,
 		  messages = {
-			"Home... crashed hard, head's pounding",
-			"Woke up in bed... don't remember coming back",
-			"Back at the apartment... everything's blurry",
+			{ msg = "Home... crashed hard, head's pounding", voice = "wakeup_home_01" },
+			{ msg = "Woke up in bed... don't remember coming back", voice = "wakeup_home_02" },
+			{ msg = "Back at the apartment... everything's blurry", voice = "wakeup_home_03" },
 		  }},
 		{ name = "viktor", type = "ripper",
 		  pos = { x = -1554.434, y = 1239.794, z = 11.520 }, yaw = 0,
 		  strainDrain = 25, runtimeRestore = 0.50, healthRange = {60, 70}, hoursRange = {4, 6},
 		  treatmentDose = 1.0,
 		  messages = {
-			"Viktor's clinic... he patched me up again",
-			"Woke up at Doc's... head's splitting",
-			"\"You collapsed again, kid.\" ...sorry, Doc",
+			{ msg = "Viktor's clinic... he patched me up again", voice = "wakeup_vik_01" },
+			{ msg = "Woke up at Doc's... head's splitting", voice = "wakeup_vik_02" },
+			{ msg = "\"You collapsed again, kid.\" ...sorry, Doc", voice = "wakeup_vik_03" },
 		  }},
 		{ name = "kabuki_ripper", type = "ripper",
 		  pos = { x = -993.03, y = 1487.29, z = 25.90 }, yaw = -300,
 		  strainDrain = 25, runtimeRestore = 0.50, healthRange = {60, 70}, hoursRange = {4, 6},
 		  treatmentDose = 1.0,
 		  messages = {
-			"Some clinic in Kabuki... who brought me here?",
-			"Woke up at a ripper's... don't remember the ride",
-			"Kabuki... the doc says I was out cold",
+			{ msg = "Some clinic in Kabuki... who brought me here?", voice = "wakeup_kab_01" },
+			{ msg = "Woke up at a ripper's... don't remember the ride", voice = "wakeup_kab_02" },
+			{ msg = "Kabuki... the doc says I was out cold", voice = "wakeup_kab_03" },
 		  }},
 	}
 
@@ -238,14 +238,14 @@ function loreEffects.attach(dsp)
 		if not location then
 			-- Too far from any safe location: stun only, no teleport
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.Stun')
-			self.bbs:SendWarning("Body gives out... can't move...", 4.0)
+			self.bbs:SendWarning("Body gives out... can't move...", 4.0, "exhaust_01")
 			print('[DSP] ExhaustionCheck: too far for blackout, stun only')
 			return
 		end
 
 		-- Close enough: full blackout sequence
 		self.blackoutToday = true
-		self.bbs:SendWarning("Body gives out... everything goes dark", 4.0)
+		self.bbs:SendWarning("Body gives out... everything goes dark", 4.0, "exhaust_02")
 		print('[DSP] ExhaustionCheck: blackout to '..location.name..' at stage '..tostring(self.CyberPsychoWarnings))
 
 		self.blackoutState = {
@@ -368,8 +368,8 @@ function loreEffects.attach(dsp)
 				end)
 
 				-- Wakeup message
-				local msg = loc.messages[math.random(#loc.messages)]
-				self.bbs:SendWarning(msg, 5.0)
+				local entry = loc.messages[math.random(#loc.messages)]
+				self.bbs:SendWarning(entry.msg, 5.0, entry.voice)
 
 				print('[DSP] Blackout: woke up at '..loc.name..' ('..loc.type..') after '..tostring(bs.hoursSkipped)..'h, strain=-'..tostring(loc.strainDrain))
 				self:SaveGame("BlackoutWakeup")

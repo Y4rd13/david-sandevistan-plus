@@ -22,3 +22,6 @@ tools/
 
 # Claude
 .claude/
+voice_lines/
+__pycache__/
+generate_voice_lines.py
