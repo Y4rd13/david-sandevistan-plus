@@ -543,7 +543,7 @@ function martinez.CreateSandevistan(self)
 	})
 	self:CreateLogicPackage(self.MartinezFury_LP, { '', {}, {}, {}, '' , false, {}, {self.MartinezFury_SM2} }) -- removed FuryRAGE from effectors
 	self:CreateStatModifierGroup(self.MartinezFury_SMG, { false, false, {}, false, {self.MartinezFury_SM1}, -1, nil })
-	self:CreateConstantStatModifier(self.MartinezFury_SM1, { 'Additive', 'BaseStats.MaxDuration', 12.0 })
+	self:CreateConstantStatModifier(self.MartinezFury_SM1, { 'Additive', 'BaseStats.MaxDuration', 15.0 })
 	self:CreateConstantStatModifier(self.MartinezFury_SM2, { 'Multiplier', 'BaseStats.HasSandevistan', 0.0 })
 	self:CloneRecord(self.MartinezFury_FX1,VFX_SuperHacked)
 	self:CloneRecord(self.MartinezFury_FX2,VFX_SuperHacked)
@@ -580,7 +580,7 @@ function martinez.CreateSandevistan(self)
 	})
 	self:CreateLogicPackage(self.MartinezFury_Level5_LP, { '', {}, FuryRAGE, {}, '' , false, {}, {self.MartinezFury_Level5_SM2} }) -- Keep FuryRAGE for zIndex fighting
 	self:CreateStatModifierGroup(self.MartinezFury_Level5_SMG, { false, false, {}, false, {self.MartinezFury_Level5_SM1}, -1, nil })
-	self:CreateConstantStatModifier(self.MartinezFury_Level5_SM1, { 'Additive', 'BaseStats.MaxDuration', 12.0 })
+	self:CreateConstantStatModifier(self.MartinezFury_Level5_SM1, { 'Additive', 'BaseStats.MaxDuration', 15.0 })
 	self:CreateConstantStatModifier(self.MartinezFury_Level5_SM2, { 'Multiplier', 'BaseStats.HasSandevistan', 0.0 })
 	self:CloneRecord(self.MartinezFury_Level5_FX1,VFX_SuperHacked)
 	TweakDB:SetFlat(self.MartinezFury_Level5_FX1..'.name', '') -- Keep this empty to get the zIndex fighting going on.
