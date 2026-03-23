@@ -806,6 +806,10 @@ dsp = {
 		end
 
 		self.runTime = math.floor(self.runTime)
+		-- Sandy shutdown SFX when runtime hits 0 (forced shutdown, not voluntary)
+		if self.runTime <= 0 then
+			pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
+		end
 		self:TimeDilationEffects()
 		self:OutOfRuntime(false)
 		self:UpdateUIText()
@@ -1209,6 +1213,7 @@ dsp = {
 					if self.SafetyOn then
 						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
 							self.sps:EndSandevistan()
+							pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
 							self:BleedingEffect()
 						elseif self.runTime < 10 and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 							self:OutOfRuntime(true)
@@ -1217,6 +1222,7 @@ dsp = {
 						-- Safety OFF + health critical: force psycho escalation even if runtime > 0
 						-- Death only comes from strain episode at level 5
 						self.sps:EndSandevistan()
+						pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
 						self:BleedingEffect(true)
 					elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 						-- Safety OFF + low runtime + injured: bleeding warning

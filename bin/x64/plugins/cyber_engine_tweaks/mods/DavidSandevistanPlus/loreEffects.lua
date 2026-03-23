@@ -224,6 +224,7 @@ function loreEffects.attach(dsp)
 
 		-- End Sandy
 		self.sps:EndSandevistan()
+		pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
 		self:RemoveAllPsychoVFX()
 		self:StopHeartbeat()
 		self:RemoveRuntimeStamina()

@@ -72,6 +72,7 @@ function strain.attach(dsp)
 			-- Stages 0-4 (or stage 5 Safety ON): Sandy shuts down
 			self.runTime = 0
 			self.sps:EndSandevistan()
+			pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
 			self:Safety(true,true)
 			self:BleedingEffect()
 		end
