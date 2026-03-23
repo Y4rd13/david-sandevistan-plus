@@ -1280,12 +1280,12 @@ dsp = {
 				self.CachedInMenu = self.bbs:InGameMenu() -- only check InGameMenu once per second
 				self.CachedBrainDance = self.bbs:InBrainDance() -- only check InBrainDance once per second
 				self.VIsInControl = self.sps:InControl()
-				-- Stop cycled edgerunner SFX when MartinezFury expires
+				-- Stop cycled edgerunner VFX when MartinezFury expires
 				if self.furyEdgerunnerSfxActive then
 					local hasFury = self:StatusEffect_CheckOnly(self.martinez.MartinezFury)
 						or self:StatusEffect_CheckOnly(self.martinez.MartinezFury_Level5)
 					if not hasFury then
-						self.hud:StopCycledSfx("ui_gmpl_perk_edgerunner")
+						self.hud:StopCycledVfx("perk_edgerunner_player")
 						self.furyEdgerunnerSfxActive = false
 					end
 				end

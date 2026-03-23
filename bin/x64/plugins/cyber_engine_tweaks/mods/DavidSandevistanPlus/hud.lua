@@ -124,15 +124,15 @@ end)
 -- Cycled SFX — looping SFX via redscript DelayCallbacks
 ----------------------------------------------------------------
 
-hud.StartCycledSfx = (function(self, sfxName, interval)
+hud.StartCycledVfx = (function(self, vfxName, interval)
 	if self.system then
-		pcall(function() self.system:StartCycledSfx(CName.new(sfxName), interval or 12.0) end)
+		pcall(function() self.system:StartCycledVfx(CName.new(vfxName), interval or 4.0) end)
 	end
 end)
 
-hud.StopCycledSfx = (function(self, sfxName)
+hud.StopCycledVfx = (function(self, vfxName)
 	if self.system then
-		pcall(function() self.system:StopCycledSfx(CName.new(sfxName)) end)
+		pcall(function() self.system:StopCycledVfx(CName.new(vfxName)) end)
 	end
 end)
 

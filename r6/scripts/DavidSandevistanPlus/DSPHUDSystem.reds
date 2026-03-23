@@ -516,27 +516,27 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_cycledSfxDelayId: DelayID;
     private let m_cycledSfxActive: Bool;
 
-    public func StartCycledSfx(sfxName: CName, interval: Float) -> Void {
+    public func StartCycledVfx(vfxName: CName, interval: Float) -> Void {
         let player = GetPlayer(this.GetGameInstance());
         if !IsDefined(player) { return; }
         // Play immediately
-        GameObject.PlaySoundEvent(player, sfxName);
+        GameObjectEffectHelper.StartEffectEvent(player, vfxName, false);
         // Schedule next play
         this.m_cycledSfxActive = true;
         let callback = new DSPCycledSfxCallback();
         callback.system = this;
-        callback.sfxName = sfxName;
+        callback.sfxName = vfxName;
         callback.interval = interval;
         this.m_cycledSfxDelayId = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, interval, true);
     }
 
-    public func StopCycledSfx(sfxName: CName) -> Void {
+    public func StopCycledVfx(vfxName: CName) -> Void {
         if !this.m_cycledSfxActive { return; }
         this.m_cycledSfxActive = false;
         GameInstance.GetDelaySystem(this.GetGameInstance()).CancelDelay(this.m_cycledSfxDelayId);
         let player = GetPlayer(this.GetGameInstance());
         if IsDefined(player) {
-            GameObject.StopSoundEvent(player, sfxName);
+            GameObjectEffectHelper.StopEffectEvent(player, vfxName);
         }
     }
 
@@ -544,7 +544,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         if !this.m_cycledSfxActive { return; }
         let player = GetPlayer(this.GetGameInstance());
         if !IsDefined(player) { return; }
-        GameObject.PlaySoundEvent(player, sfxName);
+        GameObjectEffectHelper.StartEffectEvent(player, sfxName, false);
         // Schedule next
         let callback = new DSPCycledSfxCallback();
         callback.system = this;
