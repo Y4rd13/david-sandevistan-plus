@@ -1299,6 +1299,9 @@ dsp = {
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 
+				-- Passive strain at stages 4-5 (chrome consuming you)
+				self:UpdatePassiveStrain()
+
 				-- Neural Strain tick (1/sec) — runs at all stages including 0
 				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 0 and not self.lastBreath then
 					local immunoblocker = self:IsImmunoblockerActive()
