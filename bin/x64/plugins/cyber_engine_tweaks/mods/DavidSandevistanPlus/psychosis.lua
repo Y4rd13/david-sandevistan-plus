@@ -133,12 +133,13 @@ function psychosis.attach(dsp)
 	 end)
 
 	dsp.BleedingEffect = (function(self, forcePsycho)
+		if self.pendingEpisode then return end  -- already in pre-psychosis, don't re-trigger
 		if self.runTime > 0 and not forcePsycho then
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.MinorBleeding')
 		else
 			if self.cfg.enableCyberpsychosis then
-				-- Pre-Psychosis: johnny_sickness_blackout + fx_damage_high VFX (2s status effect)
-				-- Then 1.5s later the actual episode fires via pendingEpisode
+				-- Pre-Psychosis: johnny_sickness_blackout + fx_damage_high VFX (8s)
+				-- Then 8s later the actual episode fires via UpdatePendingEpisode
 				self:StatusEffect_CheckAndApply(self.martinez.PrePsychosisEffect)
 				pcall(function()
 					local V = Game.GetPlayer()
