@@ -145,7 +145,9 @@ function psychosis.attach(dsp)
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
 						local painSfx = SoundPlayEvent.new()
-						if self.CyberPsychoWarnings >= 3 then
+						if self.CyberPsychoWarnings >= 5 then
+							painSfx.soundName = "w_blackwall_haunted_gun_burnout_scream_short_m"
+						elseif self.CyberPsychoWarnings >= 3 then
 							painSfx.soundName = "ONO_V_LongPain"
 						else
 							painSfx.soundName = "ono_v_pain_short"
@@ -506,7 +508,11 @@ function psychosis.attach(dsp)
 			-- Audio hallucination on V
 			pcall(function()
 				local evt = SoundPlayEvent.new()
-				evt.soundName = "quickhack_shortcircuit"
+				if self.CyberPsychoWarnings >= 5 then
+					evt.soundName = "w_blackwall_haunted_gun_burnout_scream_short_m"
+				else
+					evt.soundName = "quickhack_shortcircuit"
+				end
 				V:QueueEvent(evt)
 			end)
 
