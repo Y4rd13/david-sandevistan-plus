@@ -153,9 +153,9 @@ function psychosis.attach(dsp)
 					end
 				end)
 
-				-- Delay the actual episode by 3s so pre-psychosis VFX builds tension
+				-- Delay the actual episode by 5s (matches PrePsychosisEffect duration)
 				self.pendingEpisode = {
-					timer = 3.0,
+					timer = 5.0,
 					forcePsycho = forcePsycho,
 				}
 				return  -- episode fires later via UpdatePendingEpisode
@@ -248,6 +248,7 @@ function psychosis.attach(dsp)
 			self.nextLaughTime = nil
 			return
 		end
+		if self.pendingEpisode then return end  -- don't laugh during pre-psychosis buildup
 		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
 
 		local now = os.clock()
