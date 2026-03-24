@@ -63,12 +63,15 @@ function strain.attach(dsp)
 	 end)
 
 	dsp.CheckStrainEpisode = (function(self)
-		-- Called once per second in displayTick. Returns true if episode fires.
+		-- Called once per second in displayTick, but dice only roll every 10s
 		if not self.cfg.enableCyberpsychosis then return false end
 		if self.lastBreath then return false end
 		local threshold = self:GetStrainThreshold()
 		local guaranteed = self:GetStrainGuaranteed()
-		if self.neuralStrain < threshold then return false end
+		if self.neuralStrain < threshold then
+			self.nextStrainDiceTime = nil
+			return false
+		end
 
 		-- Stage 5 guaranteed: forced episode (point of no return)
 		if guaranteed and self.CyberPsychoWarnings >= 5 and self.neuralStrain >= guaranteed then
@@ -76,7 +79,16 @@ function strain.attach(dsp)
 			return true
 		end
 
-		-- Stages 2-4 at guaranteed: 75% chance per second (never 100% inevitable)
+		-- Throttle dice rolls to every 10 seconds
+		local now = os.clock()
+		if not self.nextStrainDiceTime then
+			self.nextStrainDiceTime = now + 10
+			return false
+		end
+		if now < self.nextStrainDiceTime then return false end
+		self.nextStrainDiceTime = now + 10
+
+		-- Stages 2-4 at guaranteed: 75% chance per roll (not per second)
 		if guaranteed and self.neuralStrain >= guaranteed then
 			if math.random() < 0.75 then
 				self:TriggerStrainEpisode()
@@ -86,13 +98,13 @@ function strain.attach(dsp)
 		end
 
 		-- Between threshold and guaranteed (or threshold and 100 for stages 0-1):
-		-- Progressive dice roll, slower than before
+		-- Progressive dice roll every 10s
 		local ceiling = guaranteed or 100
 		local range = ceiling - threshold
 		if range <= 0 then return false end
 		local progress = (self.neuralStrain - threshold) / range
-		-- Max 5% per second at top of range (was ~20% before)
-		local chance = progress * 0.05
+		-- Max 30% per roll (every 10s). At halfway: 15%. Takes several rolls.
+		local chance = progress * 0.30
 		if math.random() < chance then
 			self:TriggerStrainEpisode()
 			return true

@@ -805,9 +805,10 @@ dsp = {
 			if self.maxRuntimeDegraded > maxLoss then self.maxRuntimeDegraded = maxLoss end
 		end
 
+		-- Sandy shutdown SFX when runtime ran out (involuntary, not player-triggered)
+		local runtimeRanOut = self.runTime <= 0 and self.isRunning
 		self.runTime = math.floor(self.runTime)
-		-- Sandy shutdown SFX when runtime hits 0 (forced shutdown, not voluntary)
-		if self.runTime <= 0 then
+		if runtimeRanOut then
 			pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
 		end
 		self:TimeDilationEffects()
