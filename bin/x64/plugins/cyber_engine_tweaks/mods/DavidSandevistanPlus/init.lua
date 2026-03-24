@@ -1208,9 +1208,8 @@ dsp = {
 				self:SandevistanCharge()
 				-- During Last Breath: skip all health checks — death comes from runtime only
 				if not self.lastBreath then
-					-- health check every tick; because V is getting shot too!
-					-- This health check is being done before the damage gets applied
-					local VsHealthPercent = VsHealthNow - ToDo_DamageHealthPercent
+					-- Health check AFTER drain has been applied
+					local VsHealthPercent = self.sps:getHealth(true)
 					if self.SafetyOn then
 						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
 							self.sps:EndSandevistan()
