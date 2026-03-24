@@ -142,7 +142,7 @@ dsp = {
 		damageMax = 8.0,                 -- maximum damage % per tick (at zero runtime)
 
 		-- Health Brake
-		enableHealthBrake = false,       -- auto-stop sandy when V's health gets too low
+		enableHealthBrake = true,        -- auto-stop sandy when V's health gets too low
 		healthBrakeDefault = 50,         -- default health brake threshold %
 		requiredHealthMin = 15,          -- minimum required health % before brake kicks in
 
@@ -163,7 +163,7 @@ dsp = {
 		strainPerActivation = 5,         -- strain added per Sandy activation
 		strainPerOveruseBonus = 3,       -- extra strain per activation beyond safe limit
 		strainPerMinuteActive = 2,       -- strain per 60s of Sandy active time
-		strainPerSecSafetyOff = 0.15,    -- strain/sec while Safety OFF
+		strainPerSecSafetyOff = 0.10,    -- strain/sec while Safety OFF
 		strainPerKillGang = 2,           -- kill strain: gang members (lowest)
 		strainPerKillCorpo = 3,          -- kill strain: corporate security
 		strainPerKillNCPD = 5,           -- kill strain: NCPD / NetWatch
@@ -239,6 +239,11 @@ dsp = {
 	,DamagePerTick = -1
 	,CyberPsychoWarnings = -1
 	,dailyActivations = 0
+	-- Treatment protocol state
+	,treatmentActive = false
+	,completedDoses = 0
+	,completedVisits = 0
+	,prescribedDoses = 0
 	-- Activity tracking for sleep multiplier (reset on sleep)
 	,activities = {
 		lover = false,          -- visited romantic partner
@@ -474,65 +479,35 @@ dsp = {
 		RestedHours = math.floor(RestedHours)
 		if RestedHours < 1 then return end
 
-		local prevPsycho = self.CyberPsychoWarnings
+		-- Sleep drains strain but does NOT reduce psycho stage
+		-- Stage reduction only comes from completing treatment protocol (ripper + immunoblockers)
+		local recovMult = self.cfg.strainRecoveryMultiplier or 1.0
+		local sleepMult = self:GetSleepMultiplier()
+		local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult * sleepMult
+		local prevStrain = self.neuralStrain or 0
+		self.neuralStrain = math.max(prevStrain - strainDrain, 0)
+		if self.activityCount > 0 then
+			print('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
+		end
 
-		if self.cfg.enablePrescription and prevPsycho > 0 then
-			-- Graduated recovery: max -1 level per sleep
-			local maxRecovery = self.cfg.maxPsychoRecoveryPerSleep or 1
-			local requiredDoses, requiredRipper = self:GetPrescription(prevPsycho)
-			-- Can't sleep below level that requires ripper visits
-			local minLevelFromSleep = 0
-			for lvl = prevPsycho, 0, -1 do
-				local _, minRip = self:GetPrescription(lvl)
-				if minRip > 0 and (self.completedDoses or 0) < requiredRipper then
-					minLevelFromSleep = lvl
-					break
-				end
-			end
-			local newLevel = math.max(prevPsycho - maxRecovery, minLevelFromSleep, 0)
-			-- Count sleep as a dose
-			if newLevel < prevPsycho and self.prescribedDoses > 0 then
-				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
-			end
-			self.CyberPsychoWarnings = newLevel
-			-- Drain strain on sleep (scaled by hours + activity multiplier)
-			local recovMult = self.cfg.strainRecoveryMultiplier or 1.0
-			local sleepMult = self:GetSleepMultiplier()
-			local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult * sleepMult
-			self.neuralStrain = math.max((self.neuralStrain or 0) - strainDrain, 0)
-			if self.activityCount > 0 then
-				print('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
-			end
-			if newLevel > 0 then
-				local remaining = self.prescribedDoses - self.completedDoses
-				local partialRecovery = {
-					{ msg = "Slept it off a little... but the buzzing's still there", voice = "sleep_partial_01" },
-					{ msg = "Head's clearer after some sleep... not clear enough", voice = "sleep_partial_02" },
-					{ msg = "Doc said rest would help... still got "..tostring(remaining).." treatments to go", voice = "sleep_partial_03" },
-					{ msg = "Better than yesterday... but the Sandy's still in my head", voice = "sleep_partial_04" },
-				}
-				local entry = partialRecovery[math.random(#partialRecovery)]
-				self.bbs:SendWarning(entry.msg, 5.0, entry.voice)
-			else
-				self.prescribedDoses = 0
-				self.completedDoses = 0
-				self.bbs:SendMessage("Head's clear... feels like me again", 3.0, "sleep_full_01")
-			end
-			-- Reset micro-episode timer for new level
-			self:ResetMicroEpisodeTimer()
-			self:SyncSafetyWithStage()
-		elseif RestedHours < self.MaxRechargePerSleep and self.CyberPsychoWarnings == 5 then
-			self.CyberPsychoWarnings = 1
-			self.neuralStrain = 0
-			self:SyncSafetyWithStage()
-			self.bbs:SendWarning("Crashed hard... still twitching. Need a full night", 5.0, "crash_recovery_01")
-		else
-			self.CyberPsychoWarnings = 0
-			if prevPsycho > 0 then
-				self.bbs:SendMessage("Head's clear... feels like me again", 3.0, "sleep_full_01")
-			end
-			self.prescribedDoses = 0
-			self.completedDoses = 0
+		-- Sleep messages based on psycho level
+		if self.CyberPsychoWarnings >= 4 then
+			local hardSleep = {
+				{ msg = "Slept... but the chrome never sleeps", voice = "sleep_partial_01" },
+				{ msg = "Woke up shaking... need to see Doc", voice = "sleep_partial_02" },
+				{ msg = "Rest helped the pain... not the voices", voice = "sleep_partial_03" },
+			}
+			local entry = hardSleep[math.random(#hardSleep)]
+			self.bbs:SendWarning(entry.msg, 4.0, entry.voice)
+		elseif self.CyberPsychoWarnings >= 2 then
+			local medSleep = {
+				{ msg = "Head's a bit clearer... strain's down", voice = "sleep_partial_01" },
+				{ msg = "Better than yesterday... but the buzzing's still there", voice = "sleep_partial_04" },
+			}
+			local entry = medSleep[math.random(#medSleep)]
+			self.bbs:SendMessage(entry.msg, 3.0, entry.voice)
+		elseif self.CyberPsychoWarnings >= 1 then
+			self.bbs:SendMessage("Slept well... strain's down. Keep resting.", 3.0, "sleep_partial_01")
 		end
 
 		self.dailyActivations = 0
@@ -594,20 +569,74 @@ dsp = {
 		local isRested = ""
 		if VendorName == nil then VendorName = "" end
 		if VendorName ~= "" and self.ViktorCooldown == nil then -- At Ripper + no cooldown
-			-- Prescription system: ripper visit = treatment
+			local stageNames = { "I", "II", "III", "IV", "V" }
+
 			if self.cfg.enablePrescription and self.CyberPsychoWarnings > 0 then
-				-- Issue prescription on first visit at this level
-				local requiredDoses, requiredRipper = self:GetPrescription(self.CyberPsychoWarnings)
-				if self.prescribedDoses == 0 or self.prescribedDoses ~= requiredDoses then
-					self.prescribedDoses = requiredDoses
+				local rx = self:GetPrescription(self.CyberPsychoWarnings)
+				local stageName = stageNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)
+				local tierName = self:GetTierName(rx.minTier)
+
+				-- First visit or new stage: prescribe treatment protocol
+				if not self.treatmentActive then
+					self.treatmentActive = true
 					self.completedDoses = 0
+					self.completedVisits = 0
+					self.prescribedDoses = rx.doses
+
+					-- SMS: prescription — lore-accurate, Viktor talks like a doctor (3 variants)
+					local prescriptionMsgs = {
+						[1] = {
+							"Alright kid, I ran the diagnostics. Stage I — your neural interface is destabilizing but we caught it early. " .. tostring(rx.doses) .. " doses of standard immunoblockers. Take them, don't skip. Come back for a checkup.",
+							"Stage I, V. Your readings are off but nothing we can't handle. I'm putting you on " .. tostring(rx.doses) .. " doses Common Immunoblocker. Simple protocol — take the meds, come see me after.",
+							"Good news is we caught it early. Stage I — " .. tostring(rx.doses) .. " doses of standard grade should stabilize things. Just don't skip any, kid. I mean it.",
+						},
+						[2] = {
+							"Stage II. The degradation is accelerating. " .. tostring(rx.doses) .. " doses and " .. tostring(rx.visits) .. " follow-up visit. This isn't optional, V.",
+							"V, Stage II. Your neural pathways are degrading faster than I'd like. " .. tostring(rx.doses) .. " doses Common Immunoblocker, " .. tostring(rx.visits) .. " follow-up to recalibrate. Start today.",
+							"Alright, Stage II. Worse than last time. I need you on " .. tostring(rx.doses) .. " doses and " .. tostring(rx.visits) .. " visit to monitor. Don't make me chase you down.",
+						},
+						[3] = {
+							"Stage III. Standard grade won't hold anymore — " .. tostring(rx.doses) .. " doses Uncommon Immunoblocker. Stronger compound. " .. tostring(rx.visits) .. " visits to monitor the response.",
+							"V, we're past Common grade. Stage III — I'm switching you to Uncommon Immunoblocker. " .. tostring(rx.doses) .. " doses, " .. tostring(rx.visits) .. " visits. The compound hits deeper neural pathways. Don't wait on this.",
+							"Stage III protocol. " .. tostring(rx.doses) .. " doses Uncommon grade, " .. tostring(rx.visits) .. " follow-ups. The standard stuff can't keep up anymore. Find the Uncommon stock and start treatment.",
+						},
+						[4] = {
+							"Stage IV. Only Military Grade can slow this down. " .. tostring(rx.doses) .. " doses, " .. tostring(rx.visits) .. " visits. It's expensive but the alternative is worse.",
+							"V, Stage IV. We're in critical territory. " .. tostring(rx.doses) .. " doses Military Grade Immunoblocker and " .. tostring(rx.visits) .. " visits. This is the heavy stuff — restricted compound, not cheap. But you need it.",
+							"I'm not going to sugarcoat this — Stage IV. " .. tostring(rx.doses) .. " doses Military Grade, " .. tostring(rx.visits) .. " visits. Everything below mil-spec is useless at this point. Get the eddies together.",
+						},
+						[5] = {
+							"Stage V. " .. tostring(rx.doses) .. " doses Military Grade and " .. tostring(rx.visits) .. " visits. This is the protocol I had for Maine. He didn't finish it. You will.",
+							"V... Stage V. Point of no return. " .. tostring(rx.doses) .. " doses Military Grade, " .. tostring(rx.visits) .. " visits — full course, no shortcuts. Most chooms don't come back from this. But you're still here. That counts.",
+							"Stage V protocol. " .. tostring(rx.doses) .. " Military Grade doses. " .. tostring(rx.visits) .. " visits. This is everything I've got, kid. The same protocol I developed for Maine before... well. Just finish it.",
+						},
+					}
+					local pool = prescriptionMsgs[self.CyberPsychoWarnings]
+					local msg = pool and pool[math.random(#pool)] or ("Prescribing " .. tostring(rx.doses) .. " doses " .. tierName .. " Immunoblocker + " .. tostring(rx.visits) .. " follow-up visits.")
+					self:ViktorSMS(msg, 10.0)
 				end
-				-- Ripper visit counts as a treatment dose + recovers 1 level
-				self.completedDoses = math.min((self.completedDoses or 0) + 1, self.prescribedDoses)
-				local recoveryLevels = self.cfg.ripperRecoveryLevels or 1
-				local prevLevel = self.CyberPsychoWarnings
-				self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - recoveryLevels, 0)
-				self:SyncSafetyWithStage()
+
+				-- Count this visit
+				self.completedVisits = math.min((self.completedVisits or 0) + 1, rx.visits)
+				local remainDoses = rx.doses - (self.completedDoses or 0)
+				local remainVisits = rx.visits - self.completedVisits
+
+				-- Progress SMS (if not first visit and not completing)
+				if self.completedVisits > 1 or (self.completedDoses or 0) > 0 then
+					if remainDoses > 0 or remainVisits > 0 then
+						local progressMsgs = {
+							"Good, you came back. " .. tostring(remainDoses) .. " doses left, " .. tostring(math.max(remainVisits, 0)) .. " more visits. Keep at it.",
+							"Progress looks decent. " .. tostring(remainDoses) .. " doses to go, " .. tostring(math.max(remainVisits, 0)) .. " visits remaining. Don't stop now.",
+							"Readings are improving. " .. tostring(remainDoses) .. " doses and " .. tostring(math.max(remainVisits, 0)) .. " visits to finish the protocol. Almost there, kid.",
+						}
+						self:ViktorSMS(progressMsgs[math.random(#progressMsgs)], 6.0)
+					end
+				end
+
+				-- Ripper drains strain
+				local ripRecovMult = self.cfg.strainRecoveryMultiplier or 1.0
+				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper * ripRecovMult, 0)
+
 				-- Grant runtime recharge (50% max)
 				local oldRuntime = self.runTime
 				local effectiveMax = self:GetEffectiveMaxRuntime()
@@ -618,38 +647,20 @@ dsp = {
 				if self.cfg.ripperFullRestore then
 					self.maxRuntimeDegraded = 0
 				end
-				if self.completedDoses >= self.prescribedDoses then
-					self.prescribedDoses = 0
-					self.completedDoses = 0
-					local completeMsgs = {
-						"\"You're clean, kid. Don't make me do this again.\"",
-						"Doc gives the all-clear... head's finally quiet",
-						"\"Treatment's done. Try not to flatline before next visit.\"",
-					}
-					self.bbs:SendMessage(completeMsgs[math.random(#completeMsgs)], 5.0)
-				else
-					local remaining = self.prescribedDoses - self.completedDoses
-					local progressMsgs = {
-						"\"Getting better, but we're not done. "..tostring(remaining).." more sessions.\"",
-						"Doc adjusts the implant... some relief, but not enough yet",
-						"\"Come back for the rest. "..tostring(remaining).." treatments to go.\"",
-						"Spine calibration helps... still "..tostring(remaining).." to go",
-					}
-					self.bbs:SendMessage(progressMsgs[math.random(#progressMsgs)], 4.0)
-				end
-				-- Ripper drains strain
-				local ripRecovMult = self.cfg.strainRecoveryMultiplier or 1.0
-				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper * ripRecovMult, 0)
+
+				-- Check if protocol is now complete
+				self:CheckTreatmentComplete()
 				self:ResetMicroEpisodeTimer()
 				self:DisableSandevistan("VisitedRipper")
 			else
+				-- No psychosis — just rest
 				self:Rested(8)
 			end
 			isRested = "Treatment"
 			self.ViktorCooldown = 300 -- 5min cooldown
 		end
 		if self.dev_mode then
-			print('DSP:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' prescribedDoses='..tostring(self.prescribedDoses)..' completedDoses='..tostring(self.completedDoses))
+			print('DSP:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' completedDoses='..tostring(self.completedDoses)..' completedVisits='..tostring(self.completedVisits))
 		end
 	 end)
 	,DamageCalculator = (function(self,MaxRuntime,runTime)
@@ -809,7 +820,14 @@ dsp = {
 		local runtimeRanOut = self.runTime <= 0 and self.isRunning
 		self.runTime = math.floor(self.runTime)
 		if runtimeRanOut then
-			pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
+			pcall(function()
+				local V = Game.GetPlayer()
+				if V and IsDefined(V) then
+					local evt = SoundPlayEvent.new()
+					evt.soundName = "quickhack_cyberpsychosis_mech"
+					V:QueueEvent(evt)
+				end
+			end)
 		end
 		self:TimeDilationEffects()
 		self:OutOfRuntime(false)
@@ -819,10 +837,10 @@ dsp = {
 	,Safety = (function(self,SafetyOn,ForceSafe)
 		ForceSafe = (ForceSafe == true) and true or false
 		if (not SafetyOn) and (not self:IsWearingSandevistan()) then return end
-		-- Safety OFF is automatic at stage 5 — cannot be forced ON
-		if SafetyOn and (not ForceSafe) and self.CyberPsychoWarnings >= 5 then return end
-		-- Safety ON is automatic at stages 0-4 — cannot be forced OFF
-		if (not SafetyOn) and (not ForceSafe) and self.CyberPsychoWarnings < 5 then return end
+		-- Safety OFF is automatic at stage 4+ — limiters failing, can't be forced ON
+		if SafetyOn and (not ForceSafe) and self.CyberPsychoWarnings >= 4 then return end
+		-- Safety ON is automatic at stages 0-3 — cannot be forced OFF
+		if (not SafetyOn) and (not ForceSafe) and self.CyberPsychoWarnings < 4 then return end
 
 		if SafetyOn then
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
@@ -836,21 +854,21 @@ dsp = {
 	 end)
 	-- Sync Safety state with psycho level (called on level change, game load)
 	,SyncSafetyWithStage = (function(self)
-		if self.CyberPsychoWarnings >= 5 then
+		if self.CyberPsychoWarnings >= 4 then
 			if self.SafetyOn then
-				self:Safety(false, true)  -- Force Safety OFF at stage 5
+				self:Safety(false, true)  -- Force Safety OFF at stage 4+ (limiters failing)
 			end
 		else
 			if not self.SafetyOn then
-				self:Safety(true, true)  -- Force Safety ON at stages 0-4
+				self:Safety(true, true)  -- Force Safety ON at stages 0-3
 			end
 		end
 	 end)
 	,ToggleSafetyLastKey = false
 	,ToggleSafety = (function(self,KeyDown)
 		-- Safety ON/OFF is automatic based on psycho stage, not a manual toggle
-		-- Stage 5+: Safety OFF (limiters fail — David can't stop)
-		-- Stages 0-4: Safety ON (limiters active)
+		-- Stage 4+: Safety OFF (limiters failing — David can't hold back)
+		-- Stages 0-3: Safety ON (limiters active)
 		-- Keybind kept for backwards compatibility but does nothing
 	 end)
 	,OutOfRuntime = (function(self,BleedingOn)
@@ -1212,9 +1230,16 @@ dsp = {
 					local VsHealthPercent = self.sps:getHealth(true)
 					if self.SafetyOn then
 						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
+							pcall(function()
+								local V = Game.GetPlayer()
+								if V and IsDefined(V) then
+									local evt = SoundPlayEvent.new()
+									evt.soundName = "quickhack_cyberpsychosis_mech"
+									V:QueueEvent(evt)
+								end
+							end)
 							self.sps:EndSandevistan()
-							pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
-							self:BleedingEffect()
+							self:OutOfRuntime(true)  -- safety brake: stop Sandy + minor bleeding, NOT psycho escalation
 						elseif self.runTime < 10 and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 							self:OutOfRuntime(true)
 						end
@@ -1222,7 +1247,14 @@ dsp = {
 						-- Safety OFF + health critical: force psycho escalation even if runtime > 0
 						-- Death only comes from strain episode at level 5
 						self.sps:EndSandevistan()
-						pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
+						pcall(function()
+							local V = Game.GetPlayer()
+							if V and IsDefined(V) then
+								local evt = SoundPlayEvent.new()
+								evt.soundName = "quickhack_cyberpsychosis_mech"
+								V:QueueEvent(evt)
+							end
+						end)
 						self:BleedingEffect(true)
 					elseif self.runTime < (self.TickLength*32) and (not self.MinorBleedingOn) and VsHealthPercent < 99 then
 						-- Safety OFF + low runtime + injured: bleeding warning
@@ -1407,6 +1439,12 @@ dsp = {
 				end
 				-- Auto-injector: invalidate equipped cache each cycle
 				self.autoInjectorEquipped = nil
+				-- Vendor proximity check (every ~5s)
+				self.vendorProximityAccum = (self.vendorProximityAccum or 0) + 1
+				if self.vendorProximityAccum >= 5 then
+					self.vendorProximityAccum = 0
+					self:CheckVendorProximity()
+				end
 				-- Martinez Protocol: preventive auto-injection when strain nears threshold
 				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0
 				   and self.neuralStrain >= self:GetStrainThreshold() then
@@ -1515,6 +1553,9 @@ dsp = {
 		self.completedDoses = self.qs:LoadCompletedDoses()
 		self.maxRuntimeDegraded = self.qs:LoadRuntimeDegraded()
 		self.neuralStrain = self.qs:LoadNeuralStrain()
+		self.episodeCooldownUntil = self.qs:LoadEpisodeCooldown()
+		self.qs:LoadTreatmentState()
+		self:LoadVendorDiscovery()
 		self.strainComedownAccum = 0
 		self.strainActiveAccum = 0
 		self.sessionActivations = 0
@@ -1622,6 +1663,10 @@ dsp = {
 		self.qs:SaveCompletedDoses(self.completedDoses or 0)
 		self.qs:SaveRuntimeDegraded(self.maxRuntimeDegraded or 0)
 		self.qs:SaveNeuralStrain(self.neuralStrain or 0)
+		if self.episodeCooldownUntil then
+			self.qs:SaveEpisodeCooldown(self.episodeCooldownUntil)
+		end
+		self.qs:SaveTreatmentState()
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DSP:SaveGame() Completed')
@@ -1853,6 +1898,9 @@ dsp = {
 		,CompletedDosesFactName = 'martinezsandevistan_completeddoses'
 		,RuntimeDegradedFactName = 'martinezsandevistan_runtimedegraded'
 		,NeuralStrainFactName = 'martinezsandevistan_neuralstrain'
+		,EpisodeCooldownFactName = 'martinezsandevistan_episodecooldown'
+		,TreatmentActiveFactName = 'martinezsandevistan_treatmentactive'
+		,CompletedVisitsFactName = 'martinezsandevistan_completedvisits'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
@@ -1929,6 +1977,26 @@ dsp = {
 			local v = self:GetFactValue(self.NeuralStrainFactName) - 1
 			if v < 0 then return 0 end
 			return v / 10  -- Convert back from ×10
+		 end)
+		,SaveEpisodeCooldown = (function(self,timestamp)
+			-- Store game timestamp as integer (seconds since epoch)
+			self:SetFactValue(self.EpisodeCooldownFactName, math.floor(timestamp) + 1)
+		 end)
+		,LoadEpisodeCooldown = (function(self)
+			local v = self:GetFactValue(self.EpisodeCooldownFactName) - 1
+			if v <= 0 then return nil end
+			return v
+		 end)
+		,SaveTreatmentState = (function(self)
+			self:SetFactValue(self.TreatmentActiveFactName, self.treatmentActive and 2 or 1)
+			self:SetFactValue(self.CompletedVisitsFactName, (self.completedVisits or 0) + 1)
+			-- completedDoses + prescribedDoses reuse existing facts
+		 end)
+		,LoadTreatmentState = (function(self)
+			local active = self:GetFactValue(self.TreatmentActiveFactName)
+			self.treatmentActive = (active == 2)
+			local visits = self:GetFactValue(self.CompletedVisitsFactName) - 1
+			self.completedVisits = (visits >= 0) and visits or 0
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
@@ -2289,6 +2357,7 @@ dsp.UpdatePsychoStamina = (function(self)
 	end
  end)
 
+require('./sms.lua').attach(dsp)
 require('./psychosis.lua').attach(dsp)
 require('./death.lua').attach(dsp)
 
@@ -2518,6 +2587,27 @@ registerForEvent('onUpdate', function(dt)
     dsp:UpdateHallucinations(dt)
     dsp:UpdateAutoAttack()
     dsp:UpdatePendingEpisode(dt)
+    -- Delayed Viktor SMS (after stage change warning)
+    -- Waits for V to be out of combat, then sends after organic delay
+    if dsp.pendingViktorSMS then
+        if dsp.VIsInControl and not dsp.isRunning then
+            dsp.pendingViktorSMS.timer = dsp.pendingViktorSMS.timer - dt
+        end
+        if dsp.pendingViktorSMS.timer <= 0 then
+            dsp:ViktorSMS(dsp.pendingViktorSMS.msg, 8.0)
+            dsp.pendingViktorSMS = nil
+        end
+    end
+    -- Delayed vendor proximity tip (30-90s after entering zone)
+    if dsp.pendingVendorTip then
+        if dsp.VIsInControl and not dsp.isRunning then
+            dsp.pendingVendorTip.timer = dsp.pendingVendorTip.timer - dt
+        end
+        if dsp.pendingVendorTip.timer <= 0 then
+            dsp:ViktorSMS(dsp.pendingVendorTip.msg, 8.0)
+            dsp.pendingVendorTip = nil
+        end
+    end
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt

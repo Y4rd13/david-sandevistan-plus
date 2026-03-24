@@ -235,14 +235,19 @@ local function ContextualLastBreathLine(self)
 	return pool[#pool].line
 end
 
+-- Treatment protocol: { doses, ripperVisits, minTier }
+-- minTier: 1=Common, 2=Uncommon, 3=Rare (Military Grade)
+-- Stage reduction only happens when FULL protocol is complete
 local prescriptionTable = {
-	[0] = { 0, 0 },
-	[1] = { 1, 0 },
-	[2] = { 2, 0 },
-	[3] = { 3, 1 },
-	[4] = { 5, 2 },
-	[5] = { 7, 3 },
+	[0] = { doses = 0, visits = 0, minTier = 0 },
+	[1] = { doses = 3, visits = 1, minTier = 1 },
+	[2] = { doses = 5, visits = 1, minTier = 1 },
+	[3] = { doses = 5, visits = 2, minTier = 2 },
+	[4] = { doses = 7, visits = 3, minTier = 3 },
+	[5] = { doses = 10, visits = 5, minTier = 3 },
 }
+
+local tierNames = { "Common", "Uncommon", "Military Grade" }
 
 -- Micro-episode pool: { type, minLevel, weight, effectKey, duration }
 local microEpisodePool = {
@@ -305,7 +310,7 @@ function psychosis.attach(dsp)
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
 						if self.CyberPsychoWarnings >= 5 then
-							Game.GetAudioSystem():Play(CName.new("w_blackwall_haunted_gun_burnout_scream_short_m"))
+							self.hud:PlayVoiceLine("dsp_blackwall_scream")
 						else
 							local painSfx = SoundPlayEvent.new()
 							if self.CyberPsychoWarnings >= 3 then
@@ -340,15 +345,49 @@ function psychosis.attach(dsp)
 		self.pendingEpisode = nil
 
 		if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
-		local psychoMessages = {
-			[1] = { msg = "CYBERPSYCHOSIS I \xe2\x80\x94 NEURAL INSTABILITY DETECTED", dur = 4.0 },
-			[2] = { msg = "CYBERPSYCHOSIS II \xe2\x80\x94 SENSORY GLITCHES INCREASING", dur = 4.0 },
-			[3] = { msg = "CYBERPSYCHOSIS III \xe2\x80\x94 LOSING GRIP ON REALITY", dur = 5.0 },
-			[4] = { msg = "CYBERPSYCHOSIS IV \xe2\x80\x94 CRITICAL \xe2\x80\x94 REST NOW", dur = 5.0 },
-			[5] = { msg = "CYBERPSYCHO V \xe2\x80\x94 POINT OF NO RETURN", dur = 6.0 },
+		-- Viktor SMS: alert on stage change (3 variants per stage for variety)
+		local viktorStageAlerts = {
+			[1] = {
+				"V, your neural readings just flagged on my monitor. Mild instability — nothing critical yet. Come by when you can, I want to run some tests.",
+				"Kid, I'm picking up irregularities in your neural interface. Early stage, but don't ignore it. Drop by my clinic when you get a chance.",
+				"V, your implant telemetry is showing stress patterns I don't like. Stage I — manageable, but come see me. Sooner is better.",
+			},
+			[2] = {
+				"Stage II, V. Your nervous system is showing real degradation now. You need immunoblockers — standard grade will do for now. Get to a clinic.",
+				"V, it's Viktor. Your readings jumped to Stage II. The neural degradation is progressing. Get on immunoblockers — Common grade, any medicstore should carry them.",
+				"Kid, your telemetry just spiked. Stage II neural degradation. I need you on immunoblockers before this gets worse. Standard grade for now. Don't wait.",
+			},
+			[3] = {
+				"V, this is Viktor. Stage III. The standard immunoblockers won't cut it anymore. You need Uncommon grade — stronger compound that hits the neural pathways harder. Don't sit on this.",
+				"Stage III, kid. I'm not going to sugarcoat it — Common grade can't keep up with this level of degradation. I'm switching you to Uncommon Immunoblockers. Find them.",
+				"Your readings hit Stage III. The standard stuff is barely slowing it down. You need Uncommon grade immunoblockers — tighter molecular bond, deeper neural penetration. Get on it.",
+			},
+			[4] = {
+				"Stage IV, V. Only Military Grade immunoblockers can hold this back. The compound is restricted — expensive and hard to find. Get to my clinic NOW.",
+				"V, Stage IV. We're past anything commercial-grade can handle. Military Grade immunoblockers only. I stock them, but they're not cheap. Come see me.",
+				"Kid, your neural readings are critical. Stage IV. Everything below Military Grade is useless at this point. I've got the supply but you need to move. Now.",
+			},
+			[5] = {
+				"Stage V. I've seen this happen before and it never ends well. Military Grade — 10 doses and 5 visits. This is your last shot, kid. Don't waste it.",
+				"V... Stage V. Point of no return territory. This is the protocol I had ready for Maine. He never made it. Military Grade, full course. Get to my clinic.",
+				"Stage V, V. I'm going to be straight with you — most people don't come back from this. But you're not most people. Military Grade immunoblockers, full treatment. It's your only chance.",
+			},
 		}
-		local entry = psychoMessages[self.CyberPsychoWarnings]
-		if entry then self.bbs:SendWarning(entry.msg, entry.dur) end
+		local alertPool = viktorStageAlerts[self.CyberPsychoWarnings]
+		local viktorMsg = alertPool and alertPool[math.random(#alertPool)]
+		if viktorMsg then
+			-- Reset treatment for new stage
+			self.treatmentActive = false
+			self.completedDoses = 0
+			self.completedVisits = 0
+			self.prescribedDoses = 0
+			-- Delayed SMS: diagnosis (1-5 min), pauses during combat
+			local smsSelf = self
+			pcall(function()
+				local delay = 60 + math.random(0, 240)
+				smsSelf.pendingViktorSMS = { timer = delay, msg = viktorMsg }
+			end)
+		end
 		self:SyncSafetyWithStage()
 		self:FrightenNPCs()
 		self:DisableSandevistan("BleedingEffect()")
@@ -444,7 +483,7 @@ function psychosis.attach(dsp)
 			self.nextPsychoMsgTime = nil
 			return
 		end
-		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
 
 		local now = os.clock()
 		local isLastBreath = (self.lastBreath ~= nil and self.lastBreath.phase == "decay")
@@ -479,8 +518,67 @@ function psychosis.attach(dsp)
 
 	dsp.GetPrescription = (function(self, level)
 		local entry = prescriptionTable[level]
-		if entry then return entry[1], entry[2] end
-		return 0, 0
+		if entry then return entry end
+		return { doses = 0, visits = 0, minTier = 0 }
+	 end)
+
+	dsp.GetTierName = (function(self, tier)
+		return tierNames[tier] or "Unknown"
+	 end)
+
+	-- Check if taking an immunoblocker advances the treatment protocol
+	dsp.CheckTreatmentDose = (function(self, consumedTier)
+		if not self.treatmentActive then return end
+		if self.CyberPsychoWarnings < 1 then return end
+		local rx = self:GetPrescription(self.CyberPsychoWarnings)
+		if rx.minTier == 0 then return end
+
+		if consumedTier < rx.minTier then
+			-- Tier too low for protocol
+			self:ViktorSMS("That dosage won't cut it at Stage " .. tostring(self.CyberPsychoWarnings) .. ". You need " .. self:GetTierName(rx.minTier) .. " grade.")
+			return
+		end
+
+		-- Count as treatment dose
+		self.completedDoses = math.min((self.completedDoses or 0) + 1, rx.doses)
+		local remaining = rx.doses - self.completedDoses
+		if remaining > 0 then
+			self:ViktorSMS("Treatment dose registered. " .. tostring(remaining) .. " remaining.")
+		end
+		self:SaveGame("TreatmentDose")
+
+		-- Check if protocol is complete
+		self:CheckTreatmentComplete()
+	 end)
+
+	-- Check if full treatment protocol is complete (all doses + all visits)
+	dsp.CheckTreatmentComplete = (function(self)
+		if not self.treatmentActive then return end
+		local rx = self:GetPrescription(self.CyberPsychoWarnings)
+		if rx.doses == 0 then return end
+		local dosesOk = (self.completedDoses or 0) >= rx.doses
+		local visitsOk = (self.completedVisits or 0) >= rx.visits
+		if dosesOk and visitsOk then
+			-- Protocol complete — reduce stage
+			local prevLevel = self.CyberPsychoWarnings
+			self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - 1, 0)
+			self.treatmentActive = false
+			self.completedDoses = 0
+			self.completedVisits = 0
+			self.prescribedDoses = 0
+			self:SyncSafetyWithStage()
+			self:ResetMicroEpisodeTimer()
+			self:DisableSandevistan("TreatmentComplete")
+			self:SaveGame("TreatmentComplete")
+
+			local stageNames = { "I", "II", "III", "IV", "V" }
+			if self.CyberPsychoWarnings > 0 then
+				self:ViktorSMS("Treatment complete. You're down to Stage " .. (stageNames[self.CyberPsychoWarnings] or tostring(self.CyberPsychoWarnings)) .. ". Don't make me do this again, kid.", 8.0)
+			else
+				self:ViktorSMS("Treatment complete. Neural readings are clean. Stay off the chrome for a while.", 8.0)
+			end
+			print('[DSP] Treatment complete: ' .. tostring(prevLevel) .. ' -> ' .. tostring(self.CyberPsychoWarnings))
+		end
 	 end)
 
 	dsp.ResetMicroEpisodeTimer = (function(self)
@@ -499,7 +597,7 @@ function psychosis.attach(dsp)
 	dsp.FireMicroEpisode = (function(self)
 		-- Martinez Protocol: reactive auto-injection prevents micro-episode
 		if self:TryAutoInject() then return end
-		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
 		if self.comedownTimer then return end
 		if self.lastBreath then return end
 		local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
@@ -669,7 +767,7 @@ function psychosis.attach(dsp)
 			-- Audio hallucination on V
 			pcall(function()
 				if self.CyberPsychoWarnings >= 5 then
-					Game.GetAudioSystem():Play(CName.new("w_blackwall_haunted_gun_burnout_scream_short_m"))
+					self.hud:PlayVoiceLine("dsp_blackwall_scream")
 				else
 					local evt = SoundPlayEvent.new()
 					evt.soundName = "quickhack_shortcircuit"

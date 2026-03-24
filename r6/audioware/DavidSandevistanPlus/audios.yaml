@@ -1,5 +1,12 @@
 version: 1.0.0
 sfx:
+  # Blackwall scream (extracted from w_blackwall_haunted_gun_burnout_scream_short_m)
+  dsp_blackwall_scream:
+    file: sfx/blackwall_scream.ogg
+    settings:
+      volume: 1.0
+      loop: false
+
   # Last Breath song
   dsp_last_breath_song:
     file: last_breath_song.ogg

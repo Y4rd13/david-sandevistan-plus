@@ -87,9 +87,11 @@ function immunoblocker_logic.attach(dsp)
 			if not dsp then return end
 			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
 			if not ok or not recordID then return end
-			for _, id in ipairs(immunoEffectIDs) do
+			for tier, id in ipairs(immunoEffectIDs) do
 				if recordID == id then
 					dsp:TriggerImmunoblockerAnim()
+					-- Track dose for treatment protocol (tier: 1=Common, 2=Uncommon, 3=Rare)
+					dsp:CheckTreatmentDose(tier)
 					-- Sync qty so real-time tick won't double-fire for this consumption
 					local qty = getImmunoblockerQty()
 					if qty then dsp.immunoLastQty = qty end

@@ -224,7 +224,14 @@ function loreEffects.attach(dsp)
 
 		-- End Sandy
 		self.sps:EndSandevistan()
-		pcall(function() Game.GetAudioSystem():Play(CName.new("quickhack_cyberpsychosis_mech")) end)
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_cyberpsychosis_mech"
+				V:QueueEvent(evt)
+			end
+		end)
 		self:RemoveAllPsychoVFX()
 		self:StopHeartbeat()
 		self:RemoveRuntimeStamina()
@@ -321,17 +328,8 @@ function loreEffects.attach(dsp)
 				local effectiveMax = self:GetEffectiveMaxRuntime()
 				self.runTime = math.min(self.runTime + effectiveMax * loc.runtimeRestore, effectiveMax)
 
-				-- Treatment dose: ripper = 1 full dose, apartment = 0.5
-				if self.prescribedDoses > 0 then
-					self.completedDoses = math.min((self.completedDoses or 0) + loc.treatmentDose, self.prescribedDoses)
-				end
-
-				-- Apartment can reduce psycho level (like sleep)
-				if loc.type == "apartment" and self.CyberPsychoWarnings > 0 then
-					local maxRecovery = self.cfg.maxPsychoRecoveryPerSleep or 1
-					self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - maxRecovery, 0)
-					self:SyncSafetyWithStage()
-				end
+				-- Blackout does NOT reduce psycho stage — only treatment protocol can
+				-- But ripper blackout drains more strain than apartment (loc.strainDrain already handled above)
 
 				-- Reset daily activations (V rested)
 				self.dailyActivations = 0
@@ -383,7 +381,7 @@ function loreEffects.attach(dsp)
 		-- Random nosebleed at psycho 2+ even when Sandy is off (David bled unprompted — Ep 3,5,9)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 2 then self.nextNosebleedTime = nil return end
-		if self.CachedInMenu or self.CachedBrainDance then return end
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then return end
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
 		if eff == 'full' then return end
