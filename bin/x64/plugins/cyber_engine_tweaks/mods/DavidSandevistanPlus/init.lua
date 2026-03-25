@@ -1302,12 +1302,6 @@ dsp = {
 		if self.displayTick >= 0.25 then -- tick every 1/4 second
 			self.displayTick = 0
 
-			-- HUD update every tick (0.25s) for smooth bar animation
-			-- Skip when Sandy is running — runningHudTick at 0.2s already handles it
-			if not (self.CachedInMenu or self.CachedBrainDance) and not self.isRunning then
-				self:UpdateUIText()
-			end
-
 			-- split the second tick into 4 parts to spread the load evenly
 			self.displayTick2 = self.displayTick2 + 1
 			if self.displayTick2 > 3 then self.displayTick2 = 0 end
@@ -1326,6 +1320,10 @@ dsp = {
 					end
 				end
 				if self.CachedInMenu or self.CachedBrainDance then return end
+				-- HUD update (1/sec in Phase 0). Skip when Sandy running — runningHudTick at 0.2s handles it
+				if not self.isRunning then
+					self:UpdateUIText()
+				end
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 
