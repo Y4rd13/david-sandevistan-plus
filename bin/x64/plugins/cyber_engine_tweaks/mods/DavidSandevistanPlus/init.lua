@@ -313,6 +313,7 @@ dsp = {
 			print('[DSP] Init: hud.lua failed to load: '..tostring(errors))
 		else
 			self.Localization:Init()
+			self.bbs:Init()
 			self.gui:Init(self)
 			print('[DSP] sps:Init skipped (Codeware compat)')
 			self.GMGC:Init(self)
@@ -396,11 +397,11 @@ dsp = {
 		return false
 	 end)
 	,IsWearingSandevistan = (function(self)
-		if self.cachedIsWearing ~= nil then return self.cachedIsWearing end
 		local output = self:GetSandevistanIndex()
-		local result = (output ~= false and output ~= nil)
-		self.cachedIsWearing = result
-		return result
+		    if output == nil   then return nil
+		elseif output == false then return false
+		end
+		return true
 	 end)
 	,RemoveAllPsychoVFX = (function(self)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
@@ -543,7 +544,7 @@ dsp = {
 		self:DisableSandevistan()
 		if RestedHours > self.MaxRechargePerSleep then RestedHours = self.MaxRechargePerSleep end
 		local effectiveMax = self:GetEffectiveMaxRuntime()
-		local RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
+		RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
 		if self.dev_mode then
 			print('DSP:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
 		end
@@ -780,6 +781,7 @@ dsp = {
 		self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 
 		self.lastTick = self.TickLength + 0.001 -- TICK NOW!
+		self.bbs:StartSandevistan()
 		self.displayTick = 1 -- do the display straight away!
 
 		-- FOV pulse on activation (perception shift like in the anime)
@@ -1014,6 +1016,8 @@ dsp = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
+		elseif not self:IsWearingSandevistan() then
+			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
 		end
@@ -1054,16 +1058,16 @@ dsp = {
 	 end)
 	,StatusEffect_CheckOnly = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
-		if not V or not IsDefined(V) then return false end
+		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		return SEE:HasStatusEffect(VEntity,theStatusEffect)
 	 end)
 	,StatusEffect_CheckAndApply = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
+		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		if not SEE:HasStatusEffect(VEntity,theStatusEffect) then
@@ -1072,8 +1076,8 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndRemove = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
-		if not V or not IsDefined(V) then return end
+		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		if SEE:HasStatusEffect(VEntity,theStatusEffect) then
@@ -1189,11 +1193,10 @@ dsp = {
 
 				local DamagePerTick = self.DamagePerTick
 				local RequiredHealth = self.RequiredHealth
-				local V = self.cachedPlayer
-
+				
 				local ToDo_DamageHealthPercent = 0
-				local VsHealthNow = self.sps:getHealth(true, V)
-				local VsOvershieldNow = self.sps:getAdrenaline(V)/2
+				local VsHealthNow = self.sps:getHealth(true)
+				local VsOvershieldNow = self.sps:getAdrenaline(true)/2
 				if self.cfg.enableHealthDrain then
 					local theDamage = DamagePerTick
 					local VsOvershieldDeduction = VsHealthNow - theDamage
@@ -1209,13 +1212,13 @@ dsp = {
 					if theDamage >= VsHealthNow - healthFloor then
 						theDamage = math.max(VsHealthNow - healthFloor, 0)
 					end
-					self.sps:damage(theDamage, V)
+					self.sps:damage(theDamage)
 					ToDo_DamageHealthPercent = theDamage
 
 					if VsOvershieldDeduction < healthFloor and not self.SafetyOn then -- if safety is off use every ounce of V's health pool.
 						theDamage = (VsOvershieldDeduction-healthFloor)*-1
 						if theDamage >= VsOvershieldNow then theDamage = VsOvershieldNow-2 end
-						self.sps:UseAdrenaline(theDamage, V)
+						self.sps:UseAdrenaline(theDamage)
 						ToDo_DamageHealthPercent = theDamage
 					end
 				end
@@ -1224,7 +1227,7 @@ dsp = {
 				-- During Last Breath: skip all health checks — death comes from runtime only
 				if not self.lastBreath then
 					-- Health check AFTER drain has been applied
-					local VsHealthPercent = self.sps:getHealth(true, V)
+					local VsHealthPercent = self.sps:getHealth(true)
 					if self.SafetyOn then
 						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
 							pcall(function()
@@ -1302,6 +1305,11 @@ dsp = {
 		if self.displayTick >= 0.25 then -- tick every 1/4 second
 			self.displayTick = 0
 
+			-- HUD update every tick (0.25s) for smooth bar animation
+			if not (self.CachedInMenu or self.CachedBrainDance) then
+				self:UpdateUIText()
+			end
+
 			-- split the second tick into 4 parts to spread the load evenly
 			self.displayTick2 = self.displayTick2 + 1
 			if self.displayTick2 > 3 then self.displayTick2 = 0 end
@@ -1320,10 +1328,6 @@ dsp = {
 					end
 				end
 				if self.CachedInMenu or self.CachedBrainDance then return end
-				-- HUD update (1/sec in Phase 0). Skip when Sandy running — runningHudTick at 0.2s handles it
-				if not self.isRunning then
-					self:UpdateUIText()
-				end
 			elseif self.displayTick2 == 1 then -- 1/sec +0.25 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
 
@@ -1418,6 +1422,8 @@ dsp = {
 					self:CheckStrainEpisode()
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
+				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
+				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				-- Low runtime auto-attack check (stage 3+, runtime <10%, every 5s)
 				self.lowRuntimeAttackAccum = (self.lowRuntimeAttackAccum or 0) + 1
@@ -1513,21 +1519,10 @@ dsp = {
 						end
 					end
 				end
-				-- Periodic stale combatNPCs cleanup (~every 30s at 1/sec phase 3)
-				self.combatNPCCleanupAccum = (self.combatNPCCleanupAccum or 0) + 1
-				if self.combatNPCCleanupAccum >= 30 then
-					self.combatNPCCleanupAccum = 0
-					for eid, npcRef in pairs(self.combatNPCs) do
-						if not IsDefined(npcRef) then
-							self.combatNPCs[eid] = nil
-						end
-					end
-				end
 			end
 		end
 	 end)
 	,LoadGamePart1 = (function(self)
-		self.cachedIsWearing = nil  -- invalidate equipment cache on game load
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		loadConfig(self.cfg)
 		self:UpdateImmunoblockerPrices()
@@ -1733,12 +1728,12 @@ dsp = {
 			local VEntity = V:GetEntityID()
 			local SS = Game.GetStatsSystem()
 			
-			local PlayerLevel = SS:GetStatValue(VEntity, "Level")
+			PlayerLevel = SS:GetStatValue(VEntity, "Level")
 			
 			return PlayerLevel
 		 end)
-		,getHealth = (function(self,percent,player)
-			local V = player or Game.GetPlayer()
+		,getHealth = (function(self,percent)
+			local V = Game.GetPlayer()
 			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1765,8 +1760,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Memory,false)
 		 end)
-		,getAdrenaline = (function(self,player)
-			local V = player or Game.GetPlayer()
+		,getAdrenaline = (function(self)
+			local V = Game.GetPlayer()
 			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1786,8 +1781,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,true)
 		 end)
-		,damage = (function(self,percentage,player)
-			local V = player or Game.GetPlayer()
+		,damage = (function(self,percentage)
+			local V = Game.GetPlayer()
 			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1801,8 +1796,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestChangingStatPoolValue(VEntity,gamedataStatPoolType.Memory,-RAMToUse,V, false, false)
 		 end)
-		,UseAdrenaline = (function(self,percentage,player)
-			local V = player or Game.GetPlayer()
+		,UseAdrenaline = (function(self,percentage)
+			local V = Game.GetPlayer()
 			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1993,15 +1988,15 @@ dsp = {
 			return v
 		 end)
 		,SaveTreatmentState = (function(self)
-			self:SetFactValue(self.TreatmentActiveFactName, dsp.treatmentActive and 2 or 1)
-			self:SetFactValue(self.CompletedVisitsFactName, (dsp.completedVisits or 0) + 1)
+			self:SetFactValue(self.TreatmentActiveFactName, self.treatmentActive and 2 or 1)
+			self:SetFactValue(self.CompletedVisitsFactName, (self.completedVisits or 0) + 1)
 			-- completedDoses + prescribedDoses reuse existing facts
 		 end)
 		,LoadTreatmentState = (function(self)
 			local active = self:GetFactValue(self.TreatmentActiveFactName)
-			dsp.treatmentActive = (active == 2)
+			self.treatmentActive = (active == 2)
 			local visits = self:GetFactValue(self.CompletedVisitsFactName) - 1
-			dsp.completedVisits = (visits >= 0) and visits or 0
+			self.completedVisits = (visits >= 0) and visits or 0
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
@@ -2048,6 +2043,8 @@ dsp = {
 	,bbs = {
 		 ThatValue = 800*12.5 -- don't change these values, shit is hard coded for them
 		,ThatOtherValue = 375*64 -- not for editing
+		,Init = (function(self)
+		 end)
 		,GetThatValue = (function(self,Heat)
 			return (Heat==5) and self.ThatOtherValue or self.ThatValue
 		 end)
@@ -2106,6 +2103,8 @@ dsp = {
 		 end)
 		,InBrainDance = (function(self)
 			return self:BlackBoardQuery('Braindance','IsActive',false)
+		 end)
+		,StartSandevistan = (function(self)
 		 end)
 		,SendMessage = (function(self,message,duration,voiceId)
 			if voiceId then
@@ -2570,10 +2569,6 @@ registerForEvent('onInit', function()
 end)
 
 registerForEvent('onUpdate', function(dt)
-    -- Cache player reference once per frame (Game.GetPlayer() crosses CET-to-RED4 boundary)
-    local ok, player = pcall(function() return Game.GetPlayer() end)
-    dsp.cachedPlayer = (ok and player and IsDefined(player)) and player or nil
-
     -- CET restart recovery (moved from onDraw: game API calls in onDraw crash with Codeware during Loading world)
     if dsp.gui and (not dsp.LoadGameRun) and (not dsp.TriedLoadGameRun) then
         local V = Game.GetPlayer()
@@ -2711,18 +2706,4 @@ registerInput("DebugForceBleed", 'DEBUG: Force BleedingEffect (psycho escalation
 	if not isKeyDown then return end
 	dsp:BleedingEffect(true)
 	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings))
-end)
-
-registerForEvent('onShutdown', function()
-    pcall(function() dsp:StopHeartbeat() end)
-    pcall(function() Game.GetAudioSystem():Stop(CName.new("ui_gmpl_perk_edgerunner")) end)
-    pcall(function() dsp.hud:StopSong() end)
-    pcall(function() dsp.hud:StopVoiceLine() end)
-    pcall(function()
-        local ts = Game.GetTimeSystem()
-        ts:UnsetTimeDilation("sandevistan")
-        ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
-    end)
-    pcall(function() dsp:DespawnAllPhantoms() end)
-    print('[DSP] onShutdown: cleanup complete')
 end)

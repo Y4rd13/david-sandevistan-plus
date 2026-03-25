@@ -44,7 +44,7 @@ function loreEffects.attach(dsp)
 			return
 		end
 
-		local V = self.cachedPlayer
+		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 		local camera = V:GetFPPCameraComponent()
 		if not camera then return end
@@ -60,7 +60,7 @@ function loreEffects.attach(dsp)
 	dsp.UpdateFOVPulse = (function(self, dt)
 		if not self.fovPulse then return end
 
-		local V = self.cachedPlayer
+		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then self.fovPulse = nil return end
 		local camera = V:GetFPPCameraComponent()
 		if not camera then self.fovPulse = nil return end

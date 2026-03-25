@@ -3,22 +3,19 @@ local strain = {}
 function strain.attach(dsp)
 	print('[DSP] strain.lua attached')
 
-	-- Module-level constant tables (created once at attach time)
-	local strainThresholds  = { [0]=100, [1]=85, [2]=70, [3]=55, [4]=40, [5]=30 }
-	local strainGuaranteed  = { [2]=120, [3]=100, [4]=80, [5]=70 }
-	local immunoReduction   = { full = 0.8, partial = 0.5 }
-
 	-- Thresholds: higher at low stages (body is healthy, resistant), lower at high stages (dangerous)
 	-- Tuned to anime timeline: David took ~9 months from install to full psychosis
 	-- Stages 0-1 have NO guaranteed ceiling — only dice rolls
 	dsp.GetStrainThreshold = (function(self)
-		return strainThresholds[self.CyberPsychoWarnings] or 100
+		local thresholds = { [0]=100, [1]=85, [2]=70, [3]=55, [4]=40, [5]=30 }
+		return thresholds[self.CyberPsychoWarnings] or 100
 	 end)
 
 	dsp.GetStrainGuaranteed = (function(self)
 		-- Stages 0-1: no guaranteed (nil = dice only, never forced)
 		-- Stage 5: guaranteed exists (point of no return)
-		return strainGuaranteed[self.CyberPsychoWarnings]
+		local guaranteed = { [2]=120, [3]=100, [4]=80, [5]=70 }
+		return guaranteed[self.CyberPsychoWarnings]
 	 end)
 
 	-- Stage-based strain multiplier: body resists at low stages, normal at high
@@ -40,6 +37,7 @@ function strain.attach(dsp)
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
 		-- Immunoblocker reduces strain accumulation: full=80%, partial=50%, ineffective/none=0%
+		local immunoReduction = { full = 0.8, partial = 0.5 }
 		local reduction = immunoReduction[eff] or 0
 		local effective = amount * (1 - reduction)
 		-- Stage multiplier only for tolerance-based strain (Sandy use), not for kills/runtime
@@ -62,6 +60,7 @@ function strain.attach(dsp)
 		if not passive then return end
 		-- Immunoblocker reduces passive strain too
 		local eff = self:GetImmunoblockerEffectiveness()
+		local immunoReduction = { full = 0.8, partial = 0.5 }
 		local reduction = immunoReduction[eff] or 0
 		local effective = passive * (1 - reduction) * (self.cfg.strainBuildupMultiplier or 1.0)
 		self.neuralStrain = self.neuralStrain + effective

@@ -109,7 +109,7 @@ function immunoblocker_logic.attach(dsp)
 	dsp.RealTimeImmunoblockerTick = (function(self)
 		if not self.PlayerAttached then return end
 		local now = os.clock()
-		if now - immunoRealTimeClock < 1.0 then return end
+		if now - immunoRealTimeClock < 0.25 then return end
 		immunoRealTimeClock = now
 
 		local totalQty = getImmunoblockerQty()
@@ -123,6 +123,9 @@ function immunoblocker_logic.attach(dsp)
 		self.immunoLastQty = totalQty
 		self:ProcessImmunoblockerAnimQueue()
 	 end)
+
+	-- Legacy no-op (replaced by RealTimeImmunoblockerTick, but init.lua Phase 2 still calls it)
+	dsp.CheckImmunoblockerConsumed = (function(self) end)
 
 	dsp.IsAutoInjectorEquipped = (function(self)
 		if self.autoInjectorEquipped ~= nil then return self.autoInjectorEquipped end
