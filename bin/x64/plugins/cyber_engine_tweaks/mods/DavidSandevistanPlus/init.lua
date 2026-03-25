@@ -1054,7 +1054,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckOnly = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer
+		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not V or not IsDefined(V) then return false end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
@@ -1062,7 +1062,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndApply = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer
+		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
@@ -1072,7 +1072,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndRemove = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = npcPuppet or self.cachedPlayer
+		local V = npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not V or not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
