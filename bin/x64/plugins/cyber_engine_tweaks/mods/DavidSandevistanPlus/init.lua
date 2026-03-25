@@ -313,7 +313,6 @@ dsp = {
 			print('[DSP] Init: hud.lua failed to load: '..tostring(errors))
 		else
 			self.Localization:Init()
-			self.bbs:Init()
 			self.gui:Init(self)
 			print('[DSP] sps:Init skipped (Codeware compat)')
 			self.GMGC:Init(self)
@@ -781,7 +780,6 @@ dsp = {
 		self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 
 		self.lastTick = self.TickLength + 0.001 -- TICK NOW!
-		self.bbs:StartSandevistan()
 		self.displayTick = 1 -- do the display straight away!
 
 		-- FOV pulse on activation (perception shift like in the anime)
@@ -1016,8 +1014,6 @@ dsp = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
-		elseif not self:IsWearingSandevistan() then
-			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
 		end
@@ -1307,7 +1303,8 @@ dsp = {
 			self.displayTick = 0
 
 			-- HUD update every tick (0.25s) for smooth bar animation
-			if not (self.CachedInMenu or self.CachedBrainDance) then
+			-- Skip when Sandy is running — runningHudTick at 0.2s already handles it
+			if not (self.CachedInMenu or self.CachedBrainDance) and not self.isRunning then
 				self:UpdateUIText()
 			end
 
@@ -1423,8 +1420,6 @@ dsp = {
 					self:CheckStrainEpisode()
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
-				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
-				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				-- Low runtime auto-attack check (stage 3+, runtime <10%, every 5s)
 				self.lowRuntimeAttackAccum = (self.lowRuntimeAttackAccum or 0) + 1
@@ -2045,8 +2040,6 @@ dsp = {
 	,bbs = {
 		 ThatValue = 800*12.5 -- don't change these values, shit is hard coded for them
 		,ThatOtherValue = 375*64 -- not for editing
-		,Init = (function(self)
-		 end)
 		,GetThatValue = (function(self,Heat)
 			return (Heat==5) and self.ThatOtherValue or self.ThatValue
 		 end)
@@ -2105,8 +2098,6 @@ dsp = {
 		 end)
 		,InBrainDance = (function(self)
 			return self:BlackBoardQuery('Braindance','IsActive',false)
-		 end)
-		,StartSandevistan = (function(self)
 		 end)
 		,SendMessage = (function(self,message,duration,voiceId)
 			if voiceId then

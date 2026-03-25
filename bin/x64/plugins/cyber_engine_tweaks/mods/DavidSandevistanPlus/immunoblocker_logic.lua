@@ -124,9 +124,6 @@ function immunoblocker_logic.attach(dsp)
 		self:ProcessImmunoblockerAnimQueue()
 	 end)
 
-	-- Legacy no-op (replaced by RealTimeImmunoblockerTick, but init.lua Phase 2 still calls it)
-	dsp.CheckImmunoblockerConsumed = (function(self) end)
-
 	dsp.IsAutoInjectorEquipped = (function(self)
 		if self.autoInjectorEquipped ~= nil then return self.autoInjectorEquipped end
 		local V = Game.GetPlayer()
