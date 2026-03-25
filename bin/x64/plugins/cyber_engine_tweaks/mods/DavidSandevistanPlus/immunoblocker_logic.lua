@@ -109,7 +109,7 @@ function immunoblocker_logic.attach(dsp)
 	dsp.RealTimeImmunoblockerTick = (function(self)
 		if not self.PlayerAttached then return end
 		local now = os.clock()
-		if now - immunoRealTimeClock < 0.25 then return end
+		if now - immunoRealTimeClock < 1.0 then return end
 		immunoRealTimeClock = now
 
 		local totalQty = getImmunoblockerQty()

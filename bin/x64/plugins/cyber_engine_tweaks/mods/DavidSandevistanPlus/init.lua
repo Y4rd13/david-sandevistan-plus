@@ -397,11 +397,11 @@ dsp = {
 		return false
 	 end)
 	,IsWearingSandevistan = (function(self)
+		if self.cachedIsWearing ~= nil then return self.cachedIsWearing end
 		local output = self:GetSandevistanIndex()
-		    if output == nil   then return nil
-		elseif output == false then return false
-		end
-		return true
+		local result = (output ~= false and output ~= nil)
+		self.cachedIsWearing = result
+		return result
 	 end)
 	,RemoveAllPsychoVFX = (function(self)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
@@ -1524,6 +1524,7 @@ dsp = {
 		end
 	 end)
 	,LoadGamePart1 = (function(self)
+		self.cachedIsWearing = nil  -- invalidate equipment cache on game load
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		loadConfig(self.cfg)
 		self:UpdateImmunoblockerPrices()
