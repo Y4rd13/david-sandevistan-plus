@@ -544,7 +544,7 @@ dsp = {
 		self:DisableSandevistan()
 		if RestedHours > self.MaxRechargePerSleep then RestedHours = self.MaxRechargePerSleep end
 		local effectiveMax = self:GetEffectiveMaxRuntime()
-		RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
+		local RestedRuntime = self.MaxRuntime * (RestedHours/self.FullRechargeHours)
 		if self.dev_mode then
 			print('DSP:Rested() => Runtime'..tostring(RestedRuntime)..' / '..tostring(self.MaxRuntime)..' - MaxRechargePerSleep:'..tostring(self.MaxRechargePerSleep)..' - FullRechargeHours:'..tostring(self.FullRechargeHours))
 		end
@@ -1728,7 +1728,7 @@ dsp = {
 			local VEntity = V:GetEntityID()
 			local SS = Game.GetStatsSystem()
 			
-			PlayerLevel = SS:GetStatValue(VEntity, "Level")
+			local PlayerLevel = SS:GetStatValue(VEntity, "Level")
 			
 			return PlayerLevel
 		 end)
@@ -1988,15 +1988,15 @@ dsp = {
 			return v
 		 end)
 		,SaveTreatmentState = (function(self)
-			self:SetFactValue(self.TreatmentActiveFactName, self.treatmentActive and 2 or 1)
-			self:SetFactValue(self.CompletedVisitsFactName, (self.completedVisits or 0) + 1)
+			self:SetFactValue(self.TreatmentActiveFactName, dsp.treatmentActive and 2 or 1)
+			self:SetFactValue(self.CompletedVisitsFactName, (dsp.completedVisits or 0) + 1)
 			-- completedDoses + prescribedDoses reuse existing facts
 		 end)
 		,LoadTreatmentState = (function(self)
 			local active = self:GetFactValue(self.TreatmentActiveFactName)
-			self.treatmentActive = (active == 2)
+			dsp.treatmentActive = (active == 2)
 			local visits = self:GetFactValue(self.CompletedVisitsFactName) - 1
-			self.completedVisits = (visits >= 0) and visits or 0
+			dsp.completedVisits = (visits >= 0) and visits or 0
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()

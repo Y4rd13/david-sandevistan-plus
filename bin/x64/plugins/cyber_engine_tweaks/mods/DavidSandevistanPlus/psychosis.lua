@@ -144,7 +144,8 @@ local function lastBreathContextMultiplier(ctx, self)
 	end
 	if ctx == "physical" then
 		local mult = 1.0
-		local health = pcall(function() return Game.GetPlayer():GetHealth() end) or 100
+		local ok, health = pcall(function() return Game.GetPlayer():GetHealth() end)
+		if not ok then health = 100 end
 		if health < 30 then mult = mult + 1.5 end
 		if self.tremor and self.tremor.intensity > 0.008 then mult = mult + 1.0 end
 		return mult
@@ -674,11 +675,20 @@ function psychosis.attach(dsp)
 	-- ============================================================
 
 	-- NPC records for phantom spawns (generic crowd types)
-	local phantomRecords = {
+	-- Civilian phantoms (for frozen/approach behaviors — no combat AI needed)
+	local phantomRecordsCivilian = {
 		'Character.otr_service_vendor_ma',
 		'Character.otr_service_vendor_wa',
 		'Character.Grilled_Food',
 		'Character.Chinese_Food_Woman',
+	}
+
+	-- Combat-capable phantoms (for attack behavior — these have actual combat AI)
+	local phantomRecordsCombat = {
+		'Character.otr_maelstrom_ganger_ranged1_shotgun_ma',
+		'Character.otr_tyger_claws_ganger_melee2_mantis_wa',
+		'Character.otr_valentinos_ganger_melee1_knife_ma',
+		'Character.otr_6thstreet_ganger_ranged1_rifle_ma',
 	}
 
 	-- Lover records mapped to quest facts
@@ -689,24 +699,25 @@ function psychosis.attach(dsp)
 		{ fact = "sq028_kerry_lover", record = "Character.Kerry" },
 	}
 
-	-- Get phantom record pool (includes lover if romance active)
-	local function getPhantomPool(self)
+	-- Get phantom record pool based on behavior type
+	local function getPhantomPool(self, behavior)
 		local pool = {}
-		for _, r in ipairs(phantomRecords) do
-			table.insert(pool, r)
+		if behavior == 'attack' then
+			for _, r in ipairs(phantomRecordsCombat) do
+				table.insert(pool, r)
+			end
+		else
+			for _, r in ipairs(phantomRecordsCivilian) do
+				table.insert(pool, r)
+			end
 		end
-		-- Add lover to pool (higher weight at stage 5)
+		-- Add lover to pool (same weight as others — 1 entry)
 		pcall(function()
 			local QS = Game.GetQuestsSystem()
 			for _, lover in ipairs(loverRecords) do
 				if QS:GetFactStr(lover.fact) == 1 then
 					table.insert(pool, lover.record)
-					-- Extra weight at stage 5 (David saw Lucy everywhere)
-					if self.CyberPsychoWarnings >= 5 then
-						table.insert(pool, lover.record)
-						table.insert(pool, lover.record)
-					end
-					break  -- only one active romance
+					break
 				end
 			end
 		end)
@@ -945,10 +956,29 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		local pool = getPhantomPool(self)
+		-- Choose behavior first (determines which NPC pool to use)
+		local behavior
+		if self.CyberPsychoWarnings >= 5 then
+			-- Stage 5: 60% attack, 20% frozen, 20% lover_stare (if has lover)
+			local roll = math.random()
+			if roll < 0.6 then
+				behavior = 'attack'
+			elseif roll < 0.8 then
+				behavior = 'frozen'
+			else
+				behavior = 'lover_stare'  -- falls back to frozen if no lover
+			end
+		elseif self.CyberPsychoWarnings >= 4 then
+			behavior = 'approach'
+		else
+			behavior = 'frozen'
+		end
+
+		-- Pick NPC from appropriate pool
+		local pool = getPhantomPool(self, behavior)
 		local record = pool[math.random(#pool)]
 
-		-- Determine if this is a lover phantom
+		-- Check if this is actually a lover record
 		local isLover = false
 		pcall(function()
 			local QS = Game.GetQuestsSystem()
@@ -960,24 +990,20 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		-- Choose behavior based on stage (and lover)
-		local behavior
+		-- If lover_stare was chosen but record isn't actually a lover, fall back to frozen
+		if behavior == 'lover_stare' and not isLover then
+			behavior = 'frozen'
+		end
+		-- If record IS a lover at stage 5, force lover_stare
 		if isLover and self.CyberPsychoWarnings >= 5 then
 			behavior = 'lover_stare'
-		elseif self.CyberPsychoWarnings >= 5 then
-			-- Stage 5: 70% attack, 30% frozen
-			behavior = (math.random() < 0.7) and 'attack' or 'frozen'
-		elseif self.CyberPsychoWarnings >= 4 then
-			behavior = 'approach'
-		else
-			behavior = 'frozen'
 		end
 
 		-- Despawn timing by stage + behavior
 		local despawnDelays = {
 			frozen      = { [3] = {3, 5},  [4] = {4, 6},  [5] = {2, 4} },
 			approach    = { [3] = {5, 8},  [4] = {6, 10}, [5] = {4, 6} },
-			attack      = { [3] = {3, 5},  [4] = {5, 8},  [5] = {3, 5} },
+			attack      = { [3] = {5, 8},  [4] = {5, 8},  [5] = {5, 8} },
 			lover_stare = { [3] = {5, 8},  [4] = {6, 10}, [5] = {5, 8} },
 		}
 		local delays = despawnDelays[behavior] or despawnDelays.frozen
