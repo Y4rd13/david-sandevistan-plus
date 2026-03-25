@@ -1058,16 +1058,16 @@ dsp = {
 	 end)
 	,StatusEffect_CheckOnly = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
-		if not IsDefined(V) then return end
+		local V = npcPuppet or self.cachedPlayer
+		if not V or not IsDefined(V) then return false end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		return SEE:HasStatusEffect(VEntity,theStatusEffect)
 	 end)
 	,StatusEffect_CheckAndApply = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
-		if not IsDefined(V) then return end
+		local V = npcPuppet or self.cachedPlayer
+		if not V or not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		if not SEE:HasStatusEffect(VEntity,theStatusEffect) then
@@ -1076,8 +1076,8 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndRemove = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
-		if not IsDefined(V) then return end
+		local V = npcPuppet or self.cachedPlayer
+		if not V or not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
 		if SEE:HasStatusEffect(VEntity,theStatusEffect) then
@@ -1193,10 +1193,11 @@ dsp = {
 
 				local DamagePerTick = self.DamagePerTick
 				local RequiredHealth = self.RequiredHealth
-				
+				local V = self.cachedPlayer
+
 				local ToDo_DamageHealthPercent = 0
-				local VsHealthNow = self.sps:getHealth(true)
-				local VsOvershieldNow = self.sps:getAdrenaline(true)/2
+				local VsHealthNow = self.sps:getHealth(true, V)
+				local VsOvershieldNow = self.sps:getAdrenaline(V)/2
 				if self.cfg.enableHealthDrain then
 					local theDamage = DamagePerTick
 					local VsOvershieldDeduction = VsHealthNow - theDamage
@@ -1212,13 +1213,13 @@ dsp = {
 					if theDamage >= VsHealthNow - healthFloor then
 						theDamage = math.max(VsHealthNow - healthFloor, 0)
 					end
-					self.sps:damage(theDamage)
+					self.sps:damage(theDamage, V)
 					ToDo_DamageHealthPercent = theDamage
 
 					if VsOvershieldDeduction < healthFloor and not self.SafetyOn then -- if safety is off use every ounce of V's health pool.
 						theDamage = (VsOvershieldDeduction-healthFloor)*-1
 						if theDamage >= VsOvershieldNow then theDamage = VsOvershieldNow-2 end
-						self.sps:UseAdrenaline(theDamage)
+						self.sps:UseAdrenaline(theDamage, V)
 						ToDo_DamageHealthPercent = theDamage
 					end
 				end
@@ -1227,7 +1228,7 @@ dsp = {
 				-- During Last Breath: skip all health checks — death comes from runtime only
 				if not self.lastBreath then
 					-- Health check AFTER drain has been applied
-					local VsHealthPercent = self.sps:getHealth(true)
+					local VsHealthPercent = self.sps:getHealth(true, V)
 					if self.SafetyOn then
 						if VsHealthPercent < RequiredHealth and self.cfg.enableHealthBrake then
 							pcall(function()
@@ -1732,8 +1733,8 @@ dsp = {
 			
 			return PlayerLevel
 		 end)
-		,getHealth = (function(self,percent)
-			local V = Game.GetPlayer()
+		,getHealth = (function(self,percent,player)
+			local V = player or Game.GetPlayer()
 			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1760,8 +1761,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.Memory,false)
 		 end)
-		,getAdrenaline = (function(self)
-			local V = Game.GetPlayer()
+		,getAdrenaline = (function(self,player)
+			local V = player or Game.GetPlayer()
 			if not IsDefined(V) then return 0 end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1781,8 +1782,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			return SPS:GetStatPoolValue(VEntity,gamedataStatPoolType.SandevistanCharge,true)
 		 end)
-		,damage = (function(self,percentage)
-			local V = Game.GetPlayer()
+		,damage = (function(self,percentage,player)
+			local V = player or Game.GetPlayer()
 			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -1796,8 +1797,8 @@ dsp = {
 			local SPS = Game.GetStatPoolsSystem()
 			SPS:RequestChangingStatPoolValue(VEntity,gamedataStatPoolType.Memory,-RAMToUse,V, false, false)
 		 end)
-		,UseAdrenaline = (function(self,percentage)
-			local V = Game.GetPlayer()
+		,UseAdrenaline = (function(self,percentage,player)
+			local V = player or Game.GetPlayer()
 			if not IsDefined(V) then return end
 			local VEntity = V:GetEntityID()
 			local SPS = Game.GetStatPoolsSystem()
@@ -2569,6 +2570,10 @@ registerForEvent('onInit', function()
 end)
 
 registerForEvent('onUpdate', function(dt)
+    -- Cache player reference once per frame (Game.GetPlayer() crosses CET-to-RED4 boundary)
+    local ok, player = pcall(function() return Game.GetPlayer() end)
+    dsp.cachedPlayer = (ok and player and IsDefined(player)) and player or nil
+
     -- CET restart recovery (moved from onDraw: game API calls in onDraw crash with Codeware during Loading world)
     if dsp.gui and (not dsp.LoadGameRun) and (not dsp.TriedLoadGameRun) then
         local V = Game.GetPlayer()
