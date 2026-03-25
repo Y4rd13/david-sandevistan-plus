@@ -1515,6 +1515,16 @@ dsp = {
 						end
 					end
 				end
+				-- Periodic stale combatNPCs cleanup (~every 30s at 1/sec phase 3)
+				self.combatNPCCleanupAccum = (self.combatNPCCleanupAccum or 0) + 1
+				if self.combatNPCCleanupAccum >= 30 then
+					self.combatNPCCleanupAccum = 0
+					for eid, npcRef in pairs(self.combatNPCs) do
+						if not IsDefined(npcRef) then
+							self.combatNPCs[eid] = nil
+						end
+					end
+				end
 			end
 		end
 	 end)
@@ -2703,4 +2713,18 @@ registerInput("DebugForceBleed", 'DEBUG: Force BleedingEffect (psycho escalation
 	if not isKeyDown then return end
 	dsp:BleedingEffect(true)
 	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings))
+end)
+
+registerForEvent('onShutdown', function()
+    pcall(function() dsp:StopHeartbeat() end)
+    pcall(function() Game.GetAudioSystem():Stop(CName.new("ui_gmpl_perk_edgerunner")) end)
+    pcall(function() dsp.hud:StopSong() end)
+    pcall(function() dsp.hud:StopVoiceLine() end)
+    pcall(function()
+        local ts = Game.GetTimeSystem()
+        ts:UnsetTimeDilation("sandevistan")
+        ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
+    end)
+    pcall(function() dsp:DespawnAllPhantoms() end)
+    print('[DSP] onShutdown: cleanup complete')
 end)
