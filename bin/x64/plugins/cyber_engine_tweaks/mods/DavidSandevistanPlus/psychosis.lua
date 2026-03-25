@@ -11,7 +11,7 @@ local function scheduleNextPsychoMsg(self, now, isLastBreath)
 	if isLastBreath then
 		self.nextPsychoMsgTime = now + math.random(4, 8)
 	elseif self.CyberPsychoWarnings >= 5 then
-		self.nextPsychoMsgTime = now + math.random(8, 18)
+		self.nextPsychoMsgTime = now + math.random(30, 90)
 	else
 		self.nextPsychoMsgTime = now + math.random(15, 35)
 	end
@@ -309,8 +309,9 @@ function psychosis.attach(dsp)
 				pcall(function()
 					local V = Game.GetPlayer()
 					if V and IsDefined(V) then
-						if self.CyberPsychoWarnings >= 5 then
-							self.hud:PlayVoiceLine("dsp_blackwall_scream")
+						if self.CyberPsychoWarnings >= 4 then
+							-- Blackwall scream delayed 4s (plays mid-johnny VFX, not immediately)
+							self.pendingBlackwallScream = 4.0
 						else
 							local painSfx = SoundPlayEvent.new()
 							if self.CyberPsychoWarnings >= 3 then
@@ -337,6 +338,14 @@ function psychosis.attach(dsp)
 
 	-- Delayed episode execution (called from onUpdate)
 	dsp.UpdatePendingEpisode = (function(self, dt)
+		-- Delayed blackwall scream (4s after johnny VFX starts)
+		if self.pendingBlackwallScream then
+			self.pendingBlackwallScream = self.pendingBlackwallScream - dt
+			if self.pendingBlackwallScream <= 0 then
+				self.pendingBlackwallScream = nil
+				pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
+			end
+		end
 		if not self.pendingEpisode then return end
 		self.pendingEpisode.timer = self.pendingEpisode.timer - dt
 		if self.pendingEpisode.timer > 0 then return end
@@ -672,6 +681,38 @@ function psychosis.attach(dsp)
 		'Character.Chinese_Food_Woman',
 	}
 
+	-- Lover records mapped to quest facts
+	local loverRecords = {
+		{ fact = "sq030_judy_lover",  record = "Character.Judy" },
+		{ fact = "sq027_panam_lover", record = "Character.Panam" },
+		{ fact = "sq029_river_lover", record = "Character.River" },
+		{ fact = "sq028_kerry_lover", record = "Character.Kerry" },
+	}
+
+	-- Get phantom record pool (includes lover if romance active)
+	local function getPhantomPool(self)
+		local pool = {}
+		for _, r in ipairs(phantomRecords) do
+			table.insert(pool, r)
+		end
+		-- Add lover to pool (higher weight at stage 5)
+		pcall(function()
+			local QS = Game.GetQuestsSystem()
+			for _, lover in ipairs(loverRecords) do
+				if QS:GetFactStr(lover.fact) == 1 then
+					table.insert(pool, lover.record)
+					-- Extra weight at stage 5 (David saw Lucy everywhere)
+					if self.CyberPsychoWarnings >= 5 then
+						table.insert(pool, lover.record)
+						table.insert(pool, lover.record)
+					end
+					break  -- only one active romance
+				end
+			end
+		end)
+		return pool
+	end
+
 	local hallucinationMessages = {
 		[3] = {
 			{ msg = "Did someone just...?",           voice = "halluc_s3_01" },
@@ -736,16 +777,25 @@ function psychosis.attach(dsp)
 		if not V or not IsDefined(V) then return end
 
 		local vPos = V:GetWorldPosition()
-		local vFwd = V:GetWorldForward()
 
-		-- Spawn 5-15m in front of V with slight offset
-		local dist = 5 + math.random() * 10
-		local angleOffset = (math.random() - 0.5) * 2.0  -- ±1 radian lateral offset
-		local spawnX = vPos.x + vFwd.x * dist + vFwd.y * angleOffset * 3
-		local spawnY = vPos.y + vFwd.y * dist - vFwd.x * angleOffset * 3
+		-- Spawn 6-14m around V in random 360° direction
+		local dist = 6 + math.random() * 8
+		local angle = math.random() * 2 * math.pi
+		local spawnX = vPos.x + math.cos(angle) * dist
+		local spawnY = vPos.y + math.sin(angle) * dist
+		-- Raycast to ground to avoid spawning in air
 		local spawnZ = vPos.z
+		pcall(function()
+			local from = Vector4.new(spawnX, spawnY, vPos.z + 5.0, 1.0)
+			local to = Vector4.new(spawnX, spawnY, vPos.z - 10.0, 1.0)
+			local hit = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from, to, "Static", false, false)
+			if hit.result then
+				spawnZ = hit.position.z
+			end
+		end)
 
-		local record = phantomRecords[math.random(#phantomRecords)]
+		local pool = getPhantomPool(self)
+		local record = pool[math.random(#pool)]
 		local ok, entityID = pcall(function()
 			local transform = Game.GetPlayer():GetWorldTransform()
 			local pos = WorldPosition.new()
@@ -766,7 +816,7 @@ function psychosis.attach(dsp)
 
 			-- Audio hallucination on V
 			pcall(function()
-				if self.CyberPsychoWarnings >= 5 then
+				if self.CyberPsychoWarnings >= 4 then
 					self.hud:PlayVoiceLine("dsp_blackwall_scream")
 				else
 					local evt = SoundPlayEvent.new()
