@@ -731,22 +731,173 @@ function psychosis.attach(dsp)
 		},
 	}
 
-	dsp.phantomNPCs = {}  -- { entityID, despawnTime }
+	dsp.phantomNPCs = {}  -- { entityID, despawnTime, behavior, glitchTime }
 	dsp.nextHallucinationTime = nil
+
+	-- Apply phantom behavior after entity initializes (called ~0.5s after spawn)
+	local function applyPhantomBehavior(self, phantom)
+		local ent = Game.FindEntityByID(phantom.entityID)
+		if not ent or not IsDefined(ent) then return end
+		local npc = ent
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		local isLover = phantom.isLover
+
+		if phantom.behavior == 'frozen' then
+			-- Stage 3: frozen in place, staring at V
+			pcall(function()
+				-- Make NPC stare at V
+				local lookAt = LookAtAddEvent.new()
+				lookAt:SetEntityTarget(V, CName.new("pla_default_tgt"), Vector4.new(0,0,0,0))
+				lookAt:SetStyle(animLookAtStyle.Normal)
+				lookAt.request.limits.softLimitDegrees = 360.0
+				lookAt.request.limits.hardLimitDegrees = 270.0
+				lookAt.request.limits.hardLimitDistance = 1000000.0
+				lookAt.request.limits.backLimitDegrees = 210.0
+				lookAt.request.calculatePositionInParentSpace = true
+				lookAt.bodyPart = CName.new("Eyes")
+				local headPart = LookAtPartRequest.new()
+				headPart.partName = CName.new("Head")
+				headPart.weight = 0.8
+				headPart.suppress = 1.0
+				headPart.mode = 0
+				lookAt:SetAdditionalPartsArray({headPart})
+				npc:QueueEvent(lookAt)
+			end)
+			-- Freeze NPC in current pose
+			pcall(function()
+				TimeDilationHelper.SetIndividualTimeDilation(npc, CName.new("radialMenu"), 0.0)
+			end)
+			-- Subtle sound from phantom location
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_shortcircuit"
+				npc:QueueEvent(evt)
+			end)
+
+		elseif phantom.behavior == 'approach' then
+			-- Stage 4: walks toward V slowly, creepy expression
+			pcall(function()
+				-- Facial expression: fear/pain
+				local animComp = npc:FindComponentByName(CName.new("AnimationControllerComponent"))
+				if animComp then
+					local animFeat = NewObject("handle:AnimFeature_FacialReaction")
+					animFeat.category = 3  -- pain category
+					animFeat.idle = 6
+					animComp:ApplyFeature(CName.new("FacialReaction"), animFeat)
+				end
+			end)
+			pcall(function()
+				-- Walk toward V
+				local vPos = V:GetWorldPosition()
+				local dest = NewObject('WorldPosition')
+				WorldPosition.SetVector4(dest, vPos)
+				local posSpec = NewObject('AIPositionSpec')
+				posSpec:SetWorldPosition(posSpec, dest)
+				local cmd = NewObject('handle:AIMoveToCommand')
+				cmd.movementTarget = posSpec
+				cmd.rotateEntityTowardsFacingTarget = false
+				cmd.ignoreNavigation = true
+				cmd.desiredDistanceFromTarget = 1.5
+				cmd.movementType = CName.new("Walk")
+				cmd.finishWhenDestinationReached = true
+				npc:GetAIControllerComponent():SendCommand(cmd)
+			end)
+			-- 3D positioned sound from phantom
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_cyberpsychosis_mech"
+				npc:QueueEvent(evt)
+			end)
+
+		elseif phantom.behavior == 'attack' then
+			-- Stage 5 (not lover): runs at V, attacks briefly
+			pcall(function()
+				-- Make hostile
+				npc:GetAttitudeAgent():SetAttitudeGroup(CName.new("Hostile"))
+				npc:GetAttitudeAgent():SetAttitudeTowards(V:GetAttitudeAgent(), EAIAttitude.AIA_Hostile)
+				-- Trigger combat
+				local sensePreset = TweakDBInterface.GetReactionPresetRecord(TweakDBID.new("ReactionPresets.Ganger_Aggressive"))
+				npc.reactionComponent:SetReactionPreset(sensePreset)
+				npc.reactionComponent:TriggerCombat(V)
+			end)
+			-- Blackwall scream from phantom's position
+			pcall(function()
+				self.hud:PlayVoiceLine("dsp_blackwall_scream")
+			end)
+
+		elseif phantom.behavior == 'lover_stare' then
+			-- Stage 5 lover: just stares at V silently (most disturbing)
+			pcall(function()
+				local lookAt = LookAtAddEvent.new()
+				lookAt:SetEntityTarget(V, CName.new("pla_default_tgt"), Vector4.new(0,0,0,0))
+				lookAt:SetStyle(animLookAtStyle.Normal)
+				lookAt.request.limits.softLimitDegrees = 360.0
+				lookAt.request.limits.hardLimitDegrees = 270.0
+				lookAt.request.limits.hardLimitDistance = 1000000.0
+				lookAt.request.limits.backLimitDegrees = 210.0
+				lookAt.request.calculatePositionInParentSpace = true
+				lookAt.bodyPart = CName.new("Eyes")
+				local headPart = LookAtPartRequest.new()
+				headPart.partName = CName.new("Head")
+				headPart.weight = 1.0
+				headPart.suppress = 1.0
+				headPart.mode = 0
+				lookAt:SetAdditionalPartsArray({headPart})
+				npc:QueueEvent(lookAt)
+			end)
+			-- Hold position
+			pcall(function()
+				local holdCmd = NewObject('handle:AIHoldPositionCommand')
+				holdCmd.duration = 10.0
+				holdCmd.ignoreInCombat = false
+				npc:GetAIControllerComponent():SendCommand(holdCmd)
+			end)
+		end
+	end
+
+	-- Glitch-out despawn effect (called 1-2s before actual despawn)
+	local function applyGlitchDespawn(self, phantom)
+		local ent = Game.FindEntityByID(phantom.entityID)
+		if not ent or not IsDefined(ent) then return end
+		pcall(function()
+			if self.CyberPsychoWarnings >= 5 then
+				-- Blackwall corruption VFX
+				Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
+					TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
+			else
+				-- Glitch VFX
+				Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
+					TweakDBID.new('BaseStatusEffect.Stun'))
+			end
+		end)
+	end
 
 	dsp.UpdateHallucinations = (function(self, dt)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 3 then self.nextHallucinationTime = nil return end
 		if self.CachedInMenu or self.CachedBrainDance then return end
+		if not self.VIsInControl then return end
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
 		if eff == 'full' or eff == 'partial' then return end
 
 		local now = os.clock()
 
-		-- Despawn expired phantoms
+		-- Process phantom lifecycle
 		local newList = {}
 		for _, phantom in ipairs(self.phantomNPCs) do
+			-- Apply behavior once entity is ready (~0.5s after spawn)
+			if not phantom.behaviorApplied and now >= phantom.spawnTime + 0.5 then
+				phantom.behaviorApplied = true
+				pcall(function() applyPhantomBehavior(self, phantom) end)
+			end
+			-- Apply glitch VFX before despawn
+			if not phantom.glitchApplied and now >= phantom.glitchTime then
+				phantom.glitchApplied = true
+				pcall(function() applyGlitchDespawn(self, phantom) end)
+			end
+			-- Despawn
 			if now >= phantom.despawnTime then
 				pcall(function()
 					local ent = Game.FindEntityByID(phantom.entityID)
@@ -783,7 +934,7 @@ function psychosis.attach(dsp)
 		local angle = math.random() * 2 * math.pi
 		local spawnX = vPos.x + math.cos(angle) * dist
 		local spawnY = vPos.y + math.sin(angle) * dist
-		-- Raycast to ground to avoid spawning in air
+		-- Raycast to ground
 		local spawnZ = vPos.z
 		pcall(function()
 			local from = Vector4.new(spawnX, spawnY, vPos.z + 5.0, 1.0)
@@ -796,8 +947,46 @@ function psychosis.attach(dsp)
 
 		local pool = getPhantomPool(self)
 		local record = pool[math.random(#pool)]
+
+		-- Determine if this is a lover phantom
+		local isLover = false
+		pcall(function()
+			local QS = Game.GetQuestsSystem()
+			for _, lover in ipairs(loverRecords) do
+				if record == lover.record and QS:GetFactStr(lover.fact) == 1 then
+					isLover = true
+					break
+				end
+			end
+		end)
+
+		-- Choose behavior based on stage (and lover)
+		local behavior
+		if isLover and self.CyberPsychoWarnings >= 5 then
+			behavior = 'lover_stare'
+		elseif self.CyberPsychoWarnings >= 5 then
+			-- Stage 5: 70% attack, 30% frozen
+			behavior = (math.random() < 0.7) and 'attack' or 'frozen'
+		elseif self.CyberPsychoWarnings >= 4 then
+			behavior = 'approach'
+		else
+			behavior = 'frozen'
+		end
+
+		-- Despawn timing by stage + behavior
+		local despawnDelays = {
+			frozen      = { [3] = {3, 5},  [4] = {4, 6},  [5] = {2, 4} },
+			approach    = { [3] = {5, 8},  [4] = {6, 10}, [5] = {4, 6} },
+			attack      = { [3] = {3, 5},  [4] = {5, 8},  [5] = {3, 5} },
+			lover_stare = { [3] = {5, 8},  [4] = {6, 10}, [5] = {5, 8} },
+		}
+		local delays = despawnDelays[behavior] or despawnDelays.frozen
+		local stageDelay = delays[self.CyberPsychoWarnings] or {3, 5}
+		local lifetime = stageDelay[1] + math.random() * (stageDelay[2] - stageDelay[1])
+		local glitchLeadTime = 1.5  -- glitch VFX starts 1.5s before despawn
+
 		local ok, entityID = pcall(function()
-			local transform = Game.GetPlayer():GetWorldTransform()
+			local transform = V:GetWorldTransform()
 			local pos = WorldPosition.new()
 			WorldPosition.SetVector4(pos, Vector4.new(spawnX, spawnY, spawnZ, 1.0))
 			WorldTransform.SetWorldPosition(transform, pos)
@@ -805,14 +994,16 @@ function psychosis.attach(dsp)
 		end)
 
 		if ok and entityID then
-			-- Despawn timer: stage-dependent
-			local despawnDelays = { [3] = {3, 5}, [4] = {5, 8}, [5] = {2, 4} }
-			local delay = despawnDelays[self.CyberPsychoWarnings] or {3, 5}
-			local despawnTime = now + delay[1] + math.random() * (delay[2] - delay[1])
-			table.insert(self.phantomNPCs, { entityID = entityID, despawnTime = despawnTime })
-
-			-- Apply ghost VFX to spawned NPC (delayed slightly for entity init)
-			-- The VFX will be applied in the next despawn check cycle when entity is available
+			table.insert(self.phantomNPCs, {
+				entityID = entityID,
+				spawnTime = now,
+				despawnTime = now + lifetime,
+				glitchTime = now + lifetime - glitchLeadTime,
+				behavior = behavior,
+				isLover = isLover,
+				behaviorApplied = false,
+				glitchApplied = false,
+			})
 
 			-- Audio hallucination on V
 			pcall(function()
@@ -830,7 +1021,7 @@ function psychosis.attach(dsp)
 			local entry = msgs[math.random(#msgs)]
 			self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
 
-			print('[DSP] Hallucination: spawned phantom '..record..' at stage '..tostring(self.CyberPsychoWarnings))
+			print('[DSP] Hallucination: '..behavior..' phantom ('..record..') at stage '..tostring(self.CyberPsychoWarnings)..(isLover and ' [LOVER]' or ''))
 		end
 
 		-- Reset timer
