@@ -144,7 +144,8 @@ local function lastBreathContextMultiplier(ctx, self)
 	end
 	if ctx == "physical" then
 		local mult = 1.0
-		local health = pcall(function() return Game.GetPlayer():GetHealth() end) or 100
+		local ok, health = pcall(function() return Game.GetPlayer():GetHealth() end)
+		if not ok then health = 100 end
 		if health < 30 then mult = mult + 1.5 end
 		if self.tremor and self.tremor.intensity > 0.008 then mult = mult + 1.0 end
 		return mult
