@@ -1299,7 +1299,8 @@ dsp = {
 			self.displayTick = 0
 
 			-- HUD update every tick (0.25s) for smooth bar animation
-			if not (self.CachedInMenu or self.CachedBrainDance) then
+			-- Skip when Sandy is running — Running() has its own faster tick (0.2s)
+			if not self.isRunning and not (self.CachedInMenu or self.CachedBrainDance) then
 				self:UpdateUIText()
 			end
 
