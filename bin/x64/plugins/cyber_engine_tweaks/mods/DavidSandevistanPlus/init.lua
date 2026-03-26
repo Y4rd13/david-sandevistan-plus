@@ -1051,7 +1051,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckOnly = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		local V = (npcPuppet~=nil) and npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
@@ -1059,7 +1059,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndApply = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		local V = (npcPuppet~=nil) and npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
@@ -1069,7 +1069,7 @@ dsp = {
 	 end)
 	,StatusEffect_CheckAndRemove = (function(self,theStatusEffect,npcPuppet)
 		if theStatusEffect == nil then return end
-		local V = (npcPuppet~=nil) and npcPuppet or Game.GetPlayer()
+		local V = (npcPuppet~=nil) and npcPuppet or self.cachedPlayer or Game.GetPlayer()
 		if not IsDefined(V) then return end
 		local VEntity = V:GetEntityID()
 		local SEE = Game.GetStatusEffectSystem()
@@ -2582,9 +2582,12 @@ registerForEvent('onInit', function()
 end)
 
 registerForEvent('onUpdate', function(dt)
+    -- Cache player reference once per frame
+    local ok, player = pcall(function() return Game.GetPlayer() end)
+    dsp.cachedPlayer = (ok and player and IsDefined(player)) and player or nil
     -- CET restart recovery (moved from onDraw: game API calls in onDraw crash with Codeware during Loading world)
     if dsp.gui and (not dsp.LoadGameRun) and (not dsp.TriedLoadGameRun) then
-        local V = Game.GetPlayer()
+        local V = dsp.cachedPlayer
         if V and IsDefined(V) and not Game.GetSystemRequestsHandler():IsPreGame() then
             print('[DSP] CET Restart Recovery: LoadGame()')
             dsp:LoadGame()
