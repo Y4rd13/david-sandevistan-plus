@@ -310,7 +310,6 @@ dsp = {
 			print('[DSP] Init: hud.lua failed to load: '..tostring(errors))
 		else
 			self.Localization:Init()
-			self.bbs:Init()
 			self.gui:Init(self)
 			print('[DSP] sps:Init skipped (Codeware compat)')
 			self.GMGC:Init(self)
@@ -778,7 +777,6 @@ dsp = {
 		self:StatusEffect_CheckAndRemove('GameplayRestriction.BlockAllHubMenu')
 
 		self.lastTick = self.TickLength + 0.001 -- TICK NOW!
-		self.bbs:StartSandevistan()
 		self.displayTick = 1 -- do the display straight away!
 
 		-- FOV pulse on activation (perception shift like in the anime)
