@@ -285,9 +285,6 @@ dsp = {
 	,lastBreathMessage = nil  -- { elapsed = 0, duration = 3, sent = false }
 	,combatNPCs = {}  -- tracked hostile NPCs { [entityID_hash] = npcPuppet }
 	,nextTimeBombTime = nil  -- os.clock() for next Stage 5 Ticking Time Bomb
-	-- Prescription system state
-	,prescribedDoses = 0
-	,completedDoses = 0
 	-- Session fatigue state
 	,sessionActivations = 0
 	-- Max runtime degradation
@@ -1016,8 +1013,6 @@ dsp = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
-		elseif not self:IsWearingSandevistan() then
-			self:TimeDilationEffects_AllOff()
 		else
 			self:TimeDilationEffects_AllOff()
 		end
