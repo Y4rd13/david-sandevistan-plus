@@ -1422,8 +1422,6 @@ dsp = {
 					self:CheckStrainEpisode()
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
-				-- Immunoblocker consumption detection (runs even in menu — consumption happens in menu)
-				self:CheckImmunoblockerConsumed()
 				if self.CachedInMenu or self.CachedBrainDance then return end
 				-- Low runtime auto-attack check (stage 3+, runtime <10%, every 5s)
 				self.lowRuntimeAttackAccum = (self.lowRuntimeAttackAccum or 0) + 1

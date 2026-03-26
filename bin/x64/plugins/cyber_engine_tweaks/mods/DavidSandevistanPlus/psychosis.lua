@@ -360,27 +360,27 @@ function psychosis.attach(dsp)
 			[1] = {
 				"V, your neural readings just flagged on my monitor. Mild instability — nothing critical yet. Come by when you can, I want to run some tests.",
 				"Kid, I'm picking up irregularities in your neural interface. Early stage, but don't ignore it. Drop by my clinic when you get a chance.",
-				"V, your implant telemetry is showing stress patterns I don't like. Stage I — manageable, but come see me. Sooner is better.",
+				"V, your implant telemetry is showing stress patterns I don't like. Manageable, but come see me. Sooner is better.",
 			},
 			[2] = {
-				"Stage II, V. Your nervous system is showing real degradation now. You need immunoblockers — standard grade will do for now. Get to a clinic.",
-				"V, it's Viktor. Your readings jumped to Stage II. The neural degradation is progressing. Get on immunoblockers — Common grade, any medicstore should carry them.",
-				"Kid, your telemetry just spiked. Stage II neural degradation. I need you on immunoblockers before this gets worse. Standard grade for now. Don't wait.",
+				"V, your nervous system is showing real degradation. This isn't something you can walk off. Come to the clinic — I need to evaluate you in person.",
+				"V, it's Viktor. Your readings jumped again. The degradation is accelerating. I need to see you. Don't wait on this.",
+				"Kid, your telemetry just spiked. I don't like what I'm seeing. Get to my clinic before this gets worse.",
 			},
 			[3] = {
-				"V, this is Viktor. Stage III. The standard immunoblockers won't cut it anymore. You need Uncommon grade — stronger compound that hits the neural pathways harder. Don't sit on this.",
-				"Stage III, kid. I'm not going to sugarcoat it — Common grade can't keep up with this level of degradation. I'm switching you to Uncommon Immunoblockers. Find them.",
-				"Your readings hit Stage III. The standard stuff is barely slowing it down. You need Uncommon grade immunoblockers — tighter molecular bond, deeper neural penetration. Get on it.",
+				"V, this is Viktor. Your readings crossed a threshold I was hoping we'd avoid. I need to adjust your treatment. Get here.",
+				"Kid, your neural interface is deteriorating faster than expected. The current protocol isn't enough. Come see me — I need to reassess.",
+				"Your readings are getting worse. I need to run diagnostics and recalibrate your treatment. Don't put this off, V.",
 			},
 			[4] = {
-				"Stage IV, V. Only Military Grade immunoblockers can hold this back. The compound is restricted — expensive and hard to find. Get to my clinic NOW.",
-				"V, Stage IV. We're past anything commercial-grade can handle. Military Grade immunoblockers only. I stock them, but they're not cheap. Come see me.",
-				"Kid, your neural readings are critical. Stage IV. Everything below Military Grade is useless at this point. I've got the supply but you need to move. Now.",
+				"V, your neural readings are critical. I need you in my clinic. Now. Not tomorrow, not later. Now.",
+				"Kid, I've been watching your telemetry and it's bad. Really bad. Drop everything and get here.",
+				"V, this is urgent. Your nervous system is on the edge. I can help but only if you come see me immediately.",
 			},
 			[5] = {
-				"Stage V. I've seen this happen before and it never ends well. Military Grade — 10 doses and 5 visits. This is your last shot, kid. Don't waste it.",
-				"V... Stage V. Point of no return territory. This is the protocol I had ready for Maine. He never made it. Military Grade, full course. Get to my clinic.",
-				"Stage V, V. I'm going to be straight with you — most people don't come back from this. But you're not most people. Military Grade immunoblockers, full treatment. It's your only chance.",
+				"V... I've seen these readings before. On Maine. Get to my clinic. I'm not losing another one.",
+				"Kid, your neural interface is in freefall. This is it — point of no return if we don't act. Get here NOW.",
+				"V, I'm not going to sugarcoat this. You're where Maine was before the end. I have a protocol. But you need to be in my chair. Move.",
 			},
 		}
 		local alertPool = viktorStageAlerts[self.CyberPsychoWarnings]
@@ -391,10 +391,18 @@ function psychosis.attach(dsp)
 			self.completedDoses = 0
 			self.completedVisits = 0
 			self.prescribedDoses = 0
-			-- Delayed SMS: diagnosis (1-5 min), pauses during combat
+			-- Delayed SMS: higher stage = Viktor responds faster
 			local smsSelf = self
 			pcall(function()
-				local delay = 60 + math.random(0, 240)
+				local alertDelays = {
+					[1] = { 180, 300 },  -- 3-5 min: routine check
+					[2] = { 120, 240 },  -- 2-4 min: paying attention
+					[3] = { 60, 180 },   -- 1-3 min: concerned
+					[4] = { 30, 90 },    -- 30s-90s: alarmed, real-time monitoring
+					[5] = { 10, 30 },    -- 10-30s: emergency, watching readings live
+				}
+				local range = alertDelays[smsSelf.CyberPsychoWarnings] or { 60, 300 }
+				local delay = range[1] + math.random(0, range[2] - range[1])
 				smsSelf.pendingViktorSMS = { timer = delay, msg = viktorMsg }
 			end)
 		end
@@ -537,9 +545,14 @@ function psychosis.attach(dsp)
 	 end)
 
 	-- Check if taking an immunoblocker advances the treatment protocol
+	dsp.lastTreatmentDoseTime = 0
 	dsp.CheckTreatmentDose = (function(self, consumedTier)
 		if not self.treatmentActive then return end
 		if self.CyberPsychoWarnings < 1 then return end
+		-- Debounce: observer + RealTimeTick can both detect the same consumption
+		local now = os.clock()
+		if now - self.lastTreatmentDoseTime < 2.0 then return end
+		self.lastTreatmentDoseTime = now
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
 		if rx.minTier == 0 then return end
 
