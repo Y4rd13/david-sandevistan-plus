@@ -1,10 +1,10 @@
-# DSP Mod Optimization Implementation Plan
+# DSP Mod Optimization Implementation Plan — COMPLETED 2026-03-26
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status:** All tasks completed via incremental approach (13 commits). First batch attempt failed; incremental redo succeeded with zero regressions. Additional improvements made: immunoblocker persistence, Viktor alert scaling, treatment dose fallback detection.
 
 **Goal:** Fix 2 bugs, eliminate redundant Game.GetPlayer() calls, remove dead code, and add cleanup handlers across the mod.
 
-**Architecture:** All changes are in CET Lua files. Grouped into 5 commits: bugs first, then performance (player caching), then table optimization, then dead code cleanup, then polish (shutdown handler, global leaks). Each commit is independently testable.
+**Architecture:** All changes are in CET Lua files. Applied incrementally (one change at a time with in-game verification) instead of the original 5-commit batch plan.
 
 **Tech Stack:** CET Lua 5.3, Cyberpunk 2077 RED4 API
 
