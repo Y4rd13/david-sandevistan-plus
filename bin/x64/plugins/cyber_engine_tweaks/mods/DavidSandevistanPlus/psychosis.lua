@@ -885,9 +885,10 @@ function psychosis.attach(dsp)
 
 		local now = os.clock()
 
-		-- Process phantom lifecycle
-		local newList = {}
-		for _, phantom in ipairs(self.phantomNPCs) do
+		-- Process phantom lifecycle (in-place removal, iterate backwards)
+		local i = #self.phantomNPCs
+		while i >= 1 do
+			local phantom = self.phantomNPCs[i]
 			-- Apply behavior once entity is ready (~0.5s after spawn)
 			if not phantom.behaviorApplied and now >= phantom.spawnTime + 0.5 then
 				phantom.behaviorApplied = true
@@ -906,15 +907,13 @@ function psychosis.attach(dsp)
 						exEntitySpawner.Despawn(ent)
 					end
 				end)
-				-- Brief VFX on V when ghost vanishes
 				pcall(function()
 					self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
 				end)
-			else
-				table.insert(newList, phantom)
+				table.remove(self.phantomNPCs, i)
 			end
+			i = i - 1
 		end
-		self.phantomNPCs = newList
 
 		-- Schedule next hallucination
 		if self.nextHallucinationTime == nil then

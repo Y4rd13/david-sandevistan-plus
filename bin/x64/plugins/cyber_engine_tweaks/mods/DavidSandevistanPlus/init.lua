@@ -1584,6 +1584,20 @@ dsp = {
 			ts:SetIgnoreTimeDilationOnLocalPlayerZero(false)
 		end)
 		self:DisableSandevistan("LoadGamePart3")
+		-- Restore immunoblocker status effect from save
+		local savedImmunoTier = self.qs:LoadImmunoblockerTier()
+		if savedImmunoTier > 0 and not self:IsImmunoblockerActive() then
+			local immunoEffects = {
+				[1] = self.martinez.ImmunoblockerEffect_Common,
+				[2] = self.martinez.ImmunoblockerEffect_Uncommon,
+				[3] = self.martinez.ImmunoblockerEffect_Rare,
+			}
+			local effect = immunoEffects[savedImmunoTier]
+			if effect then
+				self:StatusEffect_CheckAndApply(effect)
+				print('[DSP] Restored immunoblocker tier '..tostring(savedImmunoTier)..' from save')
+			end
+		end
 		self:UpdateUIText()
 		self.OutstandingBuff = 5 -- check for sandy
 		if self.cfg.enableCyberpsychosis and (self.CyberPsychoWarnings > 0) then
@@ -1667,6 +1681,7 @@ dsp = {
 			self.qs:SaveEpisodeCooldown(self.episodeCooldownUntil)
 		end
 		self.qs:SaveTreatmentState()
+		self.qs:SaveImmunoblockerTier(self:GetImmunoblockerTier())
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DSP:SaveGame() Completed')
@@ -1902,6 +1917,7 @@ dsp = {
 		,TreatmentActiveFactName = 'martinezsandevistan_treatmentactive'
 		,CompletedVisitsFactName = 'martinezsandevistan_completedvisits'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
+		,ImmunoblockerTierFactName = 'martinezsandevistan_immunotier'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
 		 end)
@@ -1996,6 +2012,12 @@ dsp = {
 			dsp.treatmentActive = (active == 2)
 			local visits = self:GetFactValue(self.CompletedVisitsFactName) - 1
 			dsp.completedVisits = (visits >= 0) and visits or 0
+		 end)
+		,SaveImmunoblockerTier = (function(self, tier)
+			self:SetFactValue(self.ImmunoblockerTierFactName, (tier or 0) + 1)
+		 end)
+		,LoadImmunoblockerTier = (function(self)
+			return self:GetFactValue(self.ImmunoblockerTierFactName) - 1
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
