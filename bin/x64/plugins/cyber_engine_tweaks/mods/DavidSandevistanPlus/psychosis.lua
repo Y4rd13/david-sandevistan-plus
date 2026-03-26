@@ -688,11 +688,22 @@ function psychosis.attach(dsp)
 	-- ============================================================
 
 	-- NPC records for phantom spawns (generic crowd types)
+	-- Civilian phantoms (frozen, approach, lover_stare)
 	local phantomRecords = {
 		'Character.otr_service_vendor_ma',
 		'Character.otr_service_vendor_wa',
 		'Character.Grilled_Food',
 		'Character.Chinese_Food_Woman',
+	}
+
+	-- Gang members for attack behavior (have full combat AI)
+	local attackRecords = {
+		'Character.maelstrom_grunt2_melee2_machete_ma',
+		'Character.tyger_claws_grunt2_melee2_katana_ma',
+		'Character.valentinos_grunt2_ranged2_ajax_ma',
+		'Character.sixthstreet_grunt2_melee2_knife_ma',
+		'Character.maelstrom_grunt2_ranged2_saratoga_ma',
+		'Character.tyger_claws_grunt2_ranged2_shingen_ma',
 	}
 
 	-- Lover records mapped to quest facts
@@ -715,9 +726,8 @@ function psychosis.attach(dsp)
 			for _, lover in ipairs(loverRecords) do
 				if QS:GetFactStr(lover.fact) == 1 then
 					table.insert(pool, lover.record)
-					-- Extra weight at stage 5 (David saw Lucy everywhere)
+					-- Slight extra weight at stage 5 (David saw Lucy)
 					if self.CyberPsychoWarnings >= 5 then
-						table.insert(pool, lover.record)
 						table.insert(pool, lover.record)
 					end
 					break  -- only one active romance
@@ -825,19 +835,39 @@ function psychosis.attach(dsp)
 			end)
 
 		elseif phantom.behavior == 'attack' then
-			-- Stage 5 (not lover): runs at V, attacks briefly
+			-- Stage 4-5: runs at V aggressively
 			pcall(function()
 				-- Make hostile
 				npc:GetAttitudeAgent():SetAttitudeGroup(CName.new("Hostile"))
 				npc:GetAttitudeAgent():SetAttitudeTowards(V:GetAttitudeAgent(), EAIAttitude.AIA_Hostile)
-				-- Trigger combat
+			end)
+			pcall(function()
+				-- Trigger combat AI
 				local sensePreset = TweakDBInterface.GetReactionPresetRecord(TweakDBID.new("ReactionPresets.Ganger_Aggressive"))
 				npc.reactionComponent:SetReactionPreset(sensePreset)
 				npc.reactionComponent:TriggerCombat(V)
 			end)
-			-- Blackwall scream from phantom's position
 			pcall(function()
-				self.hud:PlayVoiceLine("dsp_blackwall_scream")
+				-- Fallback: run toward V (if TriggerCombat fails on civilian records)
+				local vPos = V:GetWorldPosition()
+				local dest = NewObject('WorldPosition')
+				WorldPosition.SetVector4(dest, vPos)
+				local posSpec = NewObject('AIPositionSpec')
+				posSpec:SetWorldPosition(posSpec, dest)
+				local cmd = NewObject('handle:AIMoveToCommand')
+				cmd.movementTarget = posSpec
+				cmd.rotateEntityTowardsFacingTarget = true
+				cmd.ignoreNavigation = true
+				cmd.desiredDistanceFromTarget = 0.5
+				cmd.movementType = CName.new("Sprint")
+				cmd.finishWhenDestinationReached = true
+				npc:GetAIControllerComponent():SendCommand(cmd)
+			end)
+			-- SFX from phantom
+			pcall(function()
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "quickhack_cyberpsychosis_mech"
+				npc:QueueEvent(evt)
 			end)
 
 		elseif phantom.behavior == 'lover_stare' then
@@ -875,15 +905,9 @@ function psychosis.attach(dsp)
 		local ent = Game.FindEntityByID(phantom.entityID)
 		if not ent or not IsDefined(ent) then return end
 		pcall(function()
-			if self.CyberPsychoWarnings >= 5 then
-				-- Blackwall corruption VFX
-				Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
-					TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
-			else
-				-- Glitch VFX
-				Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
-					TweakDBID.new('BaseStatusEffect.Stun'))
-			end
+			-- Blackwall corruption VFX on all stages (these aren't real NPCs)
+			Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
+				TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
 		end)
 	end
 
@@ -902,8 +926,8 @@ function psychosis.attach(dsp)
 		local i = #self.phantomNPCs
 		while i >= 1 do
 			local phantom = self.phantomNPCs[i]
-			-- Apply behavior once entity is ready (~0.5s after spawn)
-			if not phantom.behaviorApplied and now >= phantom.spawnTime + 0.5 then
+			-- Apply behavior once entity is ready (~1.0s after spawn)
+			if not phantom.behaviorApplied and now >= phantom.spawnTime + 1.0 then
 				phantom.behaviorApplied = true
 				pcall(function() applyPhantomBehavior(self, phantom) end)
 			end
@@ -958,40 +982,48 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		local pool = getPhantomPool(self)
-		local record = pool[math.random(#pool)]
-
-		-- Determine if this is a lover phantom
-		local isLover = false
-		pcall(function()
-			local QS = Game.GetQuestsSystem()
-			for _, lover in ipairs(loverRecords) do
-				if record == lover.record and QS:GetFactStr(lover.fact) == 1 then
-					isLover = true
-					break
-				end
-			end
-		end)
-
-		-- Choose behavior based on stage (and lover)
+		-- Choose behavior based on stage first
 		local behavior
-		if isLover and self.CyberPsychoWarnings >= 5 then
-			behavior = 'lover_stare'
-		elseif self.CyberPsychoWarnings >= 5 then
-			-- Stage 5: 70% attack, 30% frozen
-			behavior = (math.random() < 0.7) and 'attack' or 'frozen'
+		local isLover = false
+		if self.CyberPsychoWarnings >= 5 then
+			behavior = (math.random() < 0.8) and 'attack' or 'frozen'
 		elseif self.CyberPsychoWarnings >= 4 then
-			behavior = 'approach'
+			behavior = (math.random() < 0.7) and 'attack' or 'approach'
 		else
 			behavior = 'frozen'
 		end
 
-		-- Despawn timing by stage + behavior
+		-- Pick record based on behavior
+		local record
+		if behavior == 'attack' then
+			-- Gang members for attack (have combat AI)
+			record = attackRecords[math.random(#attackRecords)]
+		else
+			-- Civilian pool for non-attack behaviors
+			local pool = getPhantomPool(self)
+			record = pool[math.random(#pool)]
+			-- Check if this is a lover phantom
+			pcall(function()
+				local QS = Game.GetQuestsSystem()
+				for _, lover in ipairs(loverRecords) do
+					if record == lover.record and QS:GetFactStr(lover.fact) == 1 then
+						isLover = true
+						break
+					end
+				end
+			end)
+			-- Override behavior for lover
+			if isLover and self.CyberPsychoWarnings >= 4 then
+				behavior = 'lover_stare'
+			end
+		end
+
+		-- Despawn timing by stage + behavior (increased durations)
 		local despawnDelays = {
-			frozen      = { [3] = {3, 5},  [4] = {4, 6},  [5] = {2, 4} },
-			approach    = { [3] = {5, 8},  [4] = {6, 10}, [5] = {4, 6} },
-			attack      = { [3] = {3, 5},  [4] = {5, 8},  [5] = {3, 5} },
-			lover_stare = { [3] = {5, 8},  [4] = {6, 10}, [5] = {5, 8} },
+			frozen      = { [3] = {6, 10},  [4] = {8, 12},  [5] = {5, 8} },
+			approach    = { [3] = {8, 14},  [4] = {10, 16}, [5] = {8, 12} },
+			attack      = { [3] = {6, 10},  [4] = {8, 14},  [5] = {6, 10} },
+			lover_stare = { [3] = {10, 16}, [4] = {12, 20}, [5] = {10, 16} },
 		}
 		local delays = despawnDelays[behavior] or despawnDelays.frozen
 		local stageDelay = delays[self.CyberPsychoWarnings] or {3, 5}
@@ -1003,6 +1035,11 @@ function psychosis.attach(dsp)
 			local pos = WorldPosition.new()
 			WorldPosition.SetVector4(pos, Vector4.new(spawnX, spawnY, spawnZ, 1.0))
 			WorldTransform.SetWorldPosition(transform, pos)
+			-- Face toward V (add 180° — NPC model faces -Z by default)
+			local dx = vPos.x - spawnX
+			local dy = vPos.y - spawnY
+			local yaw = math.deg(math.atan(dx, dy)) + 180
+			WorldTransform.SetOrientation(transform, EulerAngles.ToQuat(EulerAngles.new(0, 0, yaw)))
 			return exEntitySpawner.SpawnRecord(record, transform)
 		end)
 
@@ -1020,12 +1057,14 @@ function psychosis.attach(dsp)
 
 			-- Audio hallucination on V
 			pcall(function()
-				if self.CyberPsychoWarnings >= 4 then
-					self.hud:PlayVoiceLine("dsp_blackwall_scream")
-				else
+				-- Blackwall scream via Audioware (all stages)
+				local screamOk = pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
+				if not screamOk then
+					-- Fallback: game SFX
 					local evt = SoundPlayEvent.new()
-					evt.soundName = "quickhack_shortcircuit"
+					evt.soundName = "quickhack_cyberpsychosis"
 					V:QueueEvent(evt)
+					print('[DSP] Blackwall scream fallback: Audioware failed')
 				end
 			end)
 

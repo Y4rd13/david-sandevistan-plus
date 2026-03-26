@@ -2724,6 +2724,12 @@ registerInput("DebugForceBleed", 'DEBUG: Force BleedingEffect (psycho escalation
 	print("[DSP DEBUG] BleedingEffect(forcePsycho=true) CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings))
 end)
 
+registerInput("DebugForcePhantom", 'DEBUG: Force Phantom NPC Now', function(isKeyDown)
+	if not isKeyDown then return end
+	dsp.nextHallucinationTime = 0
+	print("[DSP DEBUG] Forcing phantom at stage "..tostring(dsp.CyberPsychoWarnings))
+end)
+
 registerForEvent('onShutdown', function()
 	pcall(function() dsp:StopHeartbeat() end)
 	pcall(function() Game.GetAudioSystem():Stop(CName.new("ui_gmpl_perk_edgerunner")) end)
