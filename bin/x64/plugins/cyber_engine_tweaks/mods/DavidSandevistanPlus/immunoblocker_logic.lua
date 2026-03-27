@@ -111,17 +111,15 @@ function immunoblocker_logic.attach(dsp)
 	local effDisplayNames = { full = "100%", partial = "50%", ineffective = "0%", none = "—" }
 
 	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
-		local tierName = tierDisplayNames[consumedTier] or "Unknown"
-		local tolName = tolStageNames[self.toleranceStage or 0] or "None"
 		local eff = self:GetImmunoblockerEffectiveness()
-		local effName = effDisplayNames[eff] or "—"
-		-- Build status message
-		local msg = "IMMUNOBLOCKER — " .. tierName
-		if (self.toleranceStage or 0) > 0 then
-			msg = msg .. " | Tolerance: " .. tolName .. " (" .. tostring(self.toleranceStage) .. "/3)"
-		end
-		msg = msg .. " | Efficacy: " .. effName
-		self.bbs:SendWarning(msg, 5.0)
+		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
+		-- Trigger redscript biomonitor popup (fade in, hold 6s, fade out)
+		pcall(function()
+			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+			if hudSystem then
+				hudSystem:TriggerBiomonitor(consumedTier, self.toleranceStage or 0, effPct)
+			end
+		end)
 	 end)
 
 	dsp.immunoLastQty = nil

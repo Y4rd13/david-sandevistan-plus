@@ -17,6 +17,7 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_pulseTimer: Float;
     private let m_fullScreenSlot: ref<inkCompoundWidget>;
     private let m_widgetSlot: ref<inkCompoundWidget>;
+    private let m_biomonitorSlot: ref<inkCompoundWidget>;
 
     // Runtime row
     private let m_runtimeIcon: ref<inkImage>;
@@ -881,6 +882,179 @@ public class DSPHUDSystem extends ScriptableSystem {
             return IntToString(mins) + "m" + secStr + "s";
         }
         return IntToString(totalSecs) + "s";
+    }
+
+    // ---------------------------------------------------------------
+    // Biomonitor popup — shows immunoblocker status after consumption
+    // Called from CET: tier (1-3), toleranceStage (0-3), efficacyPct (0-100)
+    // ---------------------------------------------------------------
+    public func TriggerBiomonitor(tier: Int32, toleranceStage: Int32, efficacyPct: Int32) -> Void {
+        if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
+
+        // Remove existing biomonitor if present
+        if IsDefined(this.m_biomonitorSlot) {
+            this.m_fullScreenSlot.RemoveChild(this.m_biomonitorSlot);
+            this.m_biomonitorSlot = null;
+        }
+
+        // Color theme: Medtech red (matching CP2077 medical UI)
+        let red: HDRColor = new HDRColor(1.1761, 0.3809, 0.3476, 1.0);
+        let darkRed: HDRColor = new HDRColor(0.2824, 0.1137, 0.1373, 1.0);
+        let fontFamily: String = s"base\\gameplay\\gui\\fonts\\orbitron\\orbitron.inkfontfamily";
+        let fontSize: Int32 = 28;
+
+        // Tier names
+        let tierName: String;
+        if tier == 3 { tierName = "MILITARY GRADE"; }
+        else if tier == 2 { tierName = "UNCOMMON"; }
+        else { tierName = "COMMON"; }
+
+        // Tolerance names
+        let tolName: String;
+        if toleranceStage == 0 { tolName = "NONE"; }
+        else if toleranceStage == 1 { tolName = "MILD"; }
+        else if toleranceStage == 2 { tolName = "MODERATE"; }
+        else { tolName = "SEVERE"; }
+
+        // Container — bottom-right area
+        let bioSlot: ref<inkCanvas> = new inkCanvas();
+        bioSlot.SetName(n"DSPBiomonitor");
+        bioSlot.SetTranslation(2600.0, 1500.0);
+        bioSlot.SetSize(new Vector2(1000.0, 400.0));
+        bioSlot.SetOpacity(0.0);
+        bioSlot.Reparent(this.m_fullScreenSlot);
+        this.m_biomonitorSlot = bioSlot;
+
+        // Background
+        let bg: ref<inkRectangle> = new inkRectangle();
+        bg.SetAnchor(inkEAnchor.Fill);
+        bg.SetOpacity(0.25);
+        bg.SetTintColor(darkRed);
+        bg.Reparent(bioSlot);
+
+        // Header bar
+        let header: ref<inkRectangle> = new inkRectangle();
+        header.SetAnchor(inkEAnchor.TopFillHorizontaly);
+        header.SetSize(new Vector2(1.0, 6.0));
+        header.SetTintColor(red);
+        header.Reparent(bioSlot);
+
+        // Title: IMMUNOSUPPRESSANT STATUS
+        let title: ref<inkText> = new inkText();
+        title.SetText("IMMUNOSUPPRESSANT STATUS");
+        title.SetFontFamily(fontFamily);
+        title.SetFontStyle(n"Bold");
+        title.SetFontSize(fontSize);
+        title.SetTintColor(red);
+        title.SetAnchor(inkEAnchor.TopLeft);
+        title.SetMargin(new inkMargin(20.0, 20.0, 0.0, 0.0));
+        title.Reparent(bioSlot);
+
+        // Line 1: Substance
+        let line1: ref<inkText> = new inkText();
+        line1.SetText("Substance: Immunoblocker " + tierName);
+        line1.SetFontFamily(fontFamily);
+        line1.SetFontStyle(n"Semi-Bold");
+        line1.SetFontSize(fontSize - 4);
+        line1.SetTintColor(red);
+        line1.SetAnchor(inkEAnchor.TopLeft);
+        line1.SetMargin(new inkMargin(20.0, 80.0, 0.0, 0.0));
+        line1.Reparent(bioSlot);
+
+        // Line 2: Tolerance
+        let line2: ref<inkText> = new inkText();
+        line2.SetText("Tolerance: " + tolName + " (" + IntToString(toleranceStage) + "/3)");
+        line2.SetFontFamily(fontFamily);
+        line2.SetFontStyle(n"Semi-Bold");
+        line2.SetFontSize(fontSize - 4);
+        line2.SetTintColor(red);
+        line2.SetAnchor(inkEAnchor.TopLeft);
+        line2.SetMargin(new inkMargin(20.0, 130.0, 0.0, 0.0));
+        line2.Reparent(bioSlot);
+
+        // Line 3: Efficacy
+        let line3: ref<inkText> = new inkText();
+        line3.SetText("Efficacy: " + IntToString(efficacyPct) + "%");
+        line3.SetFontFamily(fontFamily);
+        line3.SetFontStyle(n"Semi-Bold");
+        line3.SetFontSize(fontSize - 4);
+        line3.SetTintColor(red);
+        line3.SetAnchor(inkEAnchor.TopLeft);
+        line3.SetMargin(new inkMargin(20.0, 180.0, 0.0, 0.0));
+        line3.Reparent(bioSlot);
+
+        // Footer
+        let footer: ref<inkText> = new inkText();
+        footer.SetText("Client: V — Viktor Vektor Medical");
+        footer.SetFontFamily(fontFamily);
+        footer.SetFontStyle(n"Semi-Bold");
+        footer.SetFontSize(fontSize - 8);
+        footer.SetTintColor(red);
+        footer.SetOpacity(0.6);
+        footer.SetAnchor(inkEAnchor.BottomLeft);
+        footer.SetMargin(new inkMargin(20.0, 0.0, 0.0, 15.0));
+        footer.Reparent(bioSlot);
+
+        // Fade in animation (0.5s)
+        let fadeIn: ref<inkAnimDef> = new inkAnimDef();
+        let fadeInInterp: ref<inkAnimTransparency> = new inkAnimTransparency();
+        fadeInInterp.SetDuration(0.5);
+        fadeInInterp.SetStartTransparency(0.0);
+        fadeInInterp.SetEndTransparency(1.0);
+        fadeInInterp.SetType(inkanimInterpolationType.Linear);
+        fadeInInterp.SetMode(inkanimInterpolationMode.EasyIn);
+        fadeIn.AddInterpolator(fadeInInterp);
+        bioSlot.PlayAnimation(fadeIn);
+
+        // Schedule fade out + removal after 6s
+        let cb: ref<DSPBiomonitorCallback> = new DSPBiomonitorCallback();
+        cb.system = this;
+        GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(cb, 6.0, false);
+    }
+
+    public func DismissBiomonitor() -> Void {
+        if !IsDefined(this.m_biomonitorSlot) { return; }
+        // Fade out animation (1s)
+        let fadeOut: ref<inkAnimDef> = new inkAnimDef();
+        let fadeOutInterp: ref<inkAnimTransparency> = new inkAnimTransparency();
+        fadeOutInterp.SetDuration(1.0);
+        fadeOutInterp.SetStartTransparency(1.0);
+        fadeOutInterp.SetEndTransparency(0.0);
+        fadeOutInterp.SetType(inkanimInterpolationType.Linear);
+        fadeOutInterp.SetMode(inkanimInterpolationMode.EasyIn);
+        fadeOut.AddInterpolator(fadeOutInterp);
+        this.m_biomonitorSlot.PlayAnimation(fadeOut);
+
+        // Schedule removal after fade completes
+        let cb: ref<DSPBiomonitorRemoveCallback> = new DSPBiomonitorRemoveCallback();
+        cb.system = this;
+        GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(cb, 1.1, false);
+    }
+
+    public func RemoveBiomonitor() -> Void {
+        if IsDefined(this.m_biomonitorSlot) && IsDefined(this.m_fullScreenSlot) {
+            this.m_fullScreenSlot.RemoveChild(this.m_biomonitorSlot);
+            this.m_biomonitorSlot = null;
+        }
+    }
+}
+
+// Callback to auto-dismiss biomonitor after display duration
+public class DSPBiomonitorCallback extends DelayCallback {
+    public let system: wref<DSPHUDSystem>;
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.DismissBiomonitor();
+        }
+    }
+}
+
+public class DSPBiomonitorRemoveCallback extends DelayCallback {
+    public let system: wref<DSPHUDSystem>;
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.RemoveBiomonitor();
+        }
     }
 }
 
