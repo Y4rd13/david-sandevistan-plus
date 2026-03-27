@@ -1311,6 +1311,9 @@ function psychosis.attach(dsp)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		if not self.VIsInControl then return end
 		if self.lastBreath then return end
+		-- No hallucinations while driving
+		local vehOk, inVehicle = pcall(function() return VehicleComponent.IsMountedToVehicle(Game.GetPlayer()) end)
+		if vehOk and inVehicle then return end
 		local eff = self:GetImmunoblockerEffectiveness()
 		if eff == 'full' or eff == 'partial' then return end
 		-- Pause normal phantoms while horde is active
@@ -1717,6 +1720,9 @@ function psychosis.attach(dsp)
 		if self.CachedInMenu or self.CachedBrainDance then return end
 		if not self.VIsInControl then return end
 		if self.lastBreath then return end
+		-- No horde while driving
+		local vehOk, inVehicle = pcall(function() return VehicleComponent.IsMountedToVehicle(Game.GetPlayer()) end)
+		if vehOk and inVehicle then return end
 
 		local now = os.clock()
 		local stage = self.CyberPsychoWarnings
