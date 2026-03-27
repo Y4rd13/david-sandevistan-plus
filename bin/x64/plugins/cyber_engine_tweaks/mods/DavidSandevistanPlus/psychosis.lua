@@ -715,7 +715,7 @@ function psychosis.attach(dsp)
 		reinforcePerKill = { [4] = {1, 2}, [5] = {1, 3} },
 		reinforceDelay = { [4] = {1.5, 3.0}, [5] = {0.8, 2.0} },
 		reinforceDist = { [4] = {12, 20}, [5] = {14, 25} },
-		maxNPCs = { [4] = 20, [5] = 30 },
+		maxNPCs = { [4] = 10, [5] = 10 },
 		cooldown = { [4] = 600, [5] = 300 },
 	}
 
