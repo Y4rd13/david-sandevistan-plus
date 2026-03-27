@@ -945,11 +945,11 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
         controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 1.5;
-        controller.m_expandAnimDuration = 1.5;
-        controller.m_listItemAnimDuration = 0.8;
-        controller.m_fadeOutDelay = 2.0;
-        controller.m_fadeOutDuration = 1.5;
+        controller.m_loadingAnimDuration = 0.8;
+        controller.m_expandAnimDuration = 0.6;
+        controller.m_listItemAnimDuration = 0.4;
+        controller.m_fadeOutDelay = 3.0;
+        controller.m_fadeOutDuration = 1.0;
 
         // Populate items
         ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
@@ -1008,11 +1008,11 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
         controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 1.5;
-        controller.m_expandAnimDuration = 1.5;
-        controller.m_listItemAnimDuration = 0.8;
-        controller.m_fadeOutDelay = 2.0;
-        controller.m_fadeOutDuration = 1.5;
+        controller.m_loadingAnimDuration = 0.8;
+        controller.m_expandAnimDuration = 0.6;
+        controller.m_listItemAnimDuration = 0.4;
+        controller.m_fadeOutDelay = 3.0;
+        controller.m_fadeOutDuration = 1.0;
 
         ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Psychosis:", -1.00, psychoName, ""));
