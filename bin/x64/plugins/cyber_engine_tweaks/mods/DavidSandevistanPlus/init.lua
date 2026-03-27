@@ -2811,6 +2811,21 @@ registerForEvent('onUpdate', function(dt)
             dsp.pendingVendorTip = nil
         end
     end
+    -- Biomonitor dismiss sound timer
+    if dsp.biomonitorDismissTimer then
+        dsp.biomonitorDismissTimer = dsp.biomonitorDismissTimer - dt
+        if dsp.biomonitorDismissTimer <= 0 then
+            dsp.biomonitorDismissTimer = nil
+            pcall(function()
+                local V = Game.GetPlayer()
+                if V and IsDefined(V) then
+                    local evt = SoundPlayEvent.new()
+                    evt.soundName = "ui_hacking_access_panel_close"
+                    V:QueueEvent(evt)
+                end
+            end)
+        end
+    end
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt
@@ -2935,20 +2950,7 @@ end)
 
 registerInput("ShowBiomonitor", 'Show Immunoblocker Status', function(isKeyDown)
 	if not isKeyDown then return end
-	pcall(function()
-		local tier = math.max(dsp:GetImmunoblockerTier(), 1)
-		local eff = dsp:GetImmunoblockerEffectiveness()
-		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
-		local threshold = dsp:GetStrainThreshold()
-		local strainPct = threshold > 0 and math.floor((dsp.neuralStrain or 0) / threshold * 100) or 0
-		local rx = dsp:GetPrescription(dsp.CyberPsychoWarnings)
-		local rxTotal = math.max(rx.doses, dsp.prescribedDoses or 0)
-		local rxCompleted = dsp.completedDoses or 0
-		local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-		if hudSystem then
-			hudSystem:ShowBiomonitorStatus(tier, dsp.toleranceStage or 0, effPct, strainPct, dsp.CyberPsychoWarnings or 0, rxCompleted, rxTotal)
-		end
-	end)
+	dsp:ShowImmunoblockerStatus(math.max(dsp:GetImmunoblockerTier(), 1))
 end)
 
 registerForEvent('onShutdown', function()

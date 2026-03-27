@@ -110,6 +110,18 @@ function immunoblocker_logic.attach(dsp)
 	local tolStageNames = { [0] = "None", "Mild", "Moderate", "Severe" }
 	local effDisplayNames = { full = "100%", partial = "50%", ineffective = "0%", none = "—" }
 
+	-- Biomonitor SFX helper
+	local function playBiomonitorSound(soundName)
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				local evt = SoundPlayEvent.new()
+				evt.soundName = soundName
+				V:QueueEvent(evt)
+			end
+		end)
+	end
+
 	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
@@ -118,6 +130,12 @@ function immunoblocker_logic.attach(dsp)
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
 		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
 		local rxCompleted = self.completedDoses or 0
+		-- Activation sound
+		playBiomonitorSound("ui_hacking_access_panel")
+		-- Scanner loop during data display
+		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
+		-- Schedule dismiss sound (~7s later: loading 0.8 + expand 0.6 + 7 items × 0.4 + hold 3.0)
+		self.biomonitorDismissTimer = 7.0
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
@@ -147,6 +165,10 @@ function immunoblocker_logic.attach(dsp)
 			local visitP = rx.visits > 0 and (visitsCompleted / rx.visits) or 1.0
 			milestonePct = math.floor((doseP + visitP) / 2.0 * 100)
 		end
+		-- Activation sound
+		playBiomonitorSound("ui_hacking_access_panel")
+		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
+		self.biomonitorDismissTimer = 6.5
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
