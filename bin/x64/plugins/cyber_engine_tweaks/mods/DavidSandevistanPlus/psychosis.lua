@@ -99,7 +99,7 @@ local lastBreathContextDetectors = {
 			local pos = V:GetWorldPosition()
 			local upTarget = Vector4.new(pos.x, pos.y, pos.z + 50.0, 1.0)
 			local hit = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(pos, upTarget, "Static", false, false)
-			return not hit.result
+			return not hit  -- hit is Bool: true = ceiling (indoors), false = no ceiling (outdoors)
 		end)
 		return ok and result
 	end,
@@ -696,14 +696,20 @@ function psychosis.attach(dsp)
 		'Character.Chinese_Food_Woman',
 	}
 
-	-- Gang members for attack behavior (have full combat AI)
+	-- Gang members for attack behavior (confirmed records from AMM database)
 	local attackRecords = {
-		'Character.maelstrom_grunt2_melee2_machete_ma',
-		'Character.tyger_claws_grunt2_melee2_katana_ma',
-		'Character.valentinos_grunt2_ranged2_ajax_ma',
-		'Character.sixthstreet_grunt2_melee2_knife_ma',
-		'Character.maelstrom_grunt2_ranged2_saratoga_ma',
-		'Character.tyger_claws_grunt2_ranged2_shingen_ma',
+		'Character.sq031_maelstrom_ajax',                           -- Maelstrom netrunner
+		'Character.sq031_maelstrom_strong_shotgunner_elite',        -- Maelstrom strong
+		'Character.kab_tyger_claws_biker2_ranged2_shingen_ma',      -- Tyger Claws ranged
+		'Character.kab_tyger_claws_martial_fmelee2_katana_ma_rare', -- Tyger Claws katana
+		'Character.dtn_valentinos_grunt2_ranged2_ajax_ma',          -- Valentinos ranged
+		'Character.gle_valentinos_machete_hmelee3_machete_mb_elite',-- Valentinos machete
+		'Character.rcr_sixthstreet_veteran3_ranged2_ajax_ma',       -- 6th Street sarge
+		'Character.rcr_sixthstreet_menace1_shotgun2_igla_ma',       -- 6th Street shotgun
+		'Character.dtn_animals_bouncer2_melee2_fists_mb',           -- Animals mauler
+		'Character.animals_grunt2_ranged2_overture_mb',             -- Animals ranged
+		'Character.arr_scavenger_grunt2_ranged2_pulsar_ma',         -- Scavengers ranged
+		'Character.cvi_scavenger_butcher3_hmelee2_machete_mb_rare', -- Scavengers machete
 	}
 
 	-- Horde system config (module-local)
@@ -926,35 +932,113 @@ function psychosis.attach(dsp)
 		end)
 	end
 
-	-- Spawn a single horde NPC behind/side of V (never in front FOV)
+	-- Find a contextual spawn position: behind walls, out of sight, or behind V
+	-- Raycast helper: SyncRaycastByCollisionGroup returns Bool + TraceResult (out param)
+	-- pcall wrapping adds a 3rd return: ok, hitBool, traceResult
+	local function raycast(sqs, from, to, group)
+		local ok, hit, result = pcall(function()
+			return sqs:SyncRaycastByCollisionGroup(from, to, group, false, false)
+		end)
+		if ok and hit and result then
+			return result  -- TraceResult with .position (Vector3), .normal (Vector3)
+		end
+		return nil
+	end
+
+	local function findHordeSpawnPos(V, vPos, vFwd, minDist, maxDist)
+		local sqs = Game.GetSpatialQueriesSystem()
+		local vYaw = math.atan(vFwd.x, vFwd.y)
+
+		-- Strategy 1: Behind a wall (raycast outward, find wall, spawn behind it)
+		for attempt = 1, 8 do
+			local offsetAngle = math.rad(45 + math.random() * 270)  -- mostly behind/side
+			local angle = vYaw + offsetAngle
+			local dirX = math.cos(angle)
+			local dirY = math.sin(angle)
+			local from = Vector4.new(vPos.x, vPos.y, vPos.z + 1.0, 1.0)
+			local to = Vector4.new(vPos.x + dirX * maxDist, vPos.y + dirY * maxDist, vPos.z + 1.0, 1.0)
+			local wallResult = raycast(sqs, from, to, "Static")
+			if wallResult then
+				local hitX = wallResult.position.x
+				local hitY = wallResult.position.y
+				local hitZ = wallResult.position.z
+				local normX = wallResult.normal.x
+				local normY = wallResult.normal.y
+				local wallDist = math.sqrt((hitX - vPos.x)^2 + (hitY - vPos.y)^2)
+				if wallDist >= minDist * 0.5 then
+					local spawnX = hitX + normX * 2.0
+					local spawnY = hitY + normY * 2.0
+					local losFrom = Vector4.new(vPos.x, vPos.y, vPos.z + 1.5, 1.0)
+					local losTo = Vector4.new(spawnX, spawnY, hitZ + 1.0, 1.0)
+					local losResult = raycast(sqs, losFrom, losTo, "Static")
+					if losResult then
+						return spawnX, spawnY, hitZ
+					end
+				end
+			end
+		end
+
+		-- Strategy 2: Out of line of sight (random behind/side position, verify LOS blocked)
+		for attempt = 1, 4 do
+			local offsetAngle = math.rad(90 + math.random() * 180)
+			local angle = vYaw + offsetAngle
+			local dist = minDist + math.random() * (maxDist - minDist)
+			local spawnX = vPos.x + math.cos(angle) * dist
+			local spawnY = vPos.y + math.sin(angle) * dist
+			local losFrom = Vector4.new(vPos.x, vPos.y, vPos.z + 1.5, 1.0)
+			local losTo = Vector4.new(spawnX, spawnY, vPos.z + 1.0, 1.0)
+			local losResult = raycast(sqs, losFrom, losTo, "Static")
+			if losResult then
+				return spawnX, spawnY, vPos.z
+			end
+		end
+
+		-- Strategy 3: Fallback — behind V (always succeeds)
+		local offsetAngle = math.rad(90 + math.random() * 180)
+		local angle = vYaw + offsetAngle
+		local dist = minDist + math.random() * (maxDist - minDist)
+		return vPos.x + math.cos(angle) * dist, vPos.y + math.sin(angle) * dist, vPos.z
+	end
+
+	-- Spawn a single horde NPC at a contextual position
 	local function spawnHordeNPC(self, minDist, maxDist)
 		local V = Game.GetPlayer()
 		if not V or not IsDefined(V) then return nil end
-		local max = hordeConfig.maxNPCs[self.CyberPsychoWarnings] or 20
+		if V:IsSwimming() then return nil end
+		local max = hordeConfig.maxNPCs[self.CyberPsychoWarnings] or 10
 		if #self.hordeNPCs >= max then return nil end
 
 		local vPos = V:GetWorldPosition()
 		local vFwd = V:GetWorldForward()
-		local dist = minDist + math.random() * (maxDist - minDist)
-		-- Spawn behind/side of V: angle between 90° and 270° relative to V's facing
-		local vYaw = math.atan(vFwd.x, vFwd.y)
-		local offsetAngle = math.rad(90 + math.random() * 180)  -- 90°-270° behind arc
-		local angle = vYaw + offsetAngle
-		local spawnX = vPos.x + math.cos(angle) * dist
-		local spawnY = vPos.y + math.sin(angle) * dist
-		local spawnZ = vPos.z
+
+		-- Find contextual position
+		local spawnX, spawnY, spawnZ = findHordeSpawnPos(V, vPos, vFwd, minDist, maxDist)
+
+		-- Ground snap (raycast from high above to find actual ground level)
+		pcall(function()
+			local sqs = Game.GetSpatialQueriesSystem()
+			local from = Vector4.new(spawnX, spawnY, spawnZ + 20.0, 1.0)
+			local to = Vector4.new(spawnX, spawnY, spawnZ - 30.0, 1.0)
+			local result = raycast(sqs, from, to, "Terrain")
+			if not result then
+				result = raycast(sqs, from, to, "Static")
+			end
+			if result then
+				spawnZ = result.position.z
+			end
+		end)
+		-- Safety offset: avoid spawning slightly underground on slopes
+		spawnZ = spawnZ + 0.15
 
 		local record = self.hordeGangRecord or attackRecords[math.random(#attackRecords)]
 
-		-- Use DynamicEntitySystem (AMM pattern) instead of exEntitySpawner
-		-- exEntitySpawner.SpawnRecord has a known CET bug where hostile NPCs don't attack
 		local ok, entityID = pcall(function()
 			local spec = DynamicEntitySpec.new()
 			spec.recordID = TweakDBID.new(record)
 			spec.persistState = false
 			spec.persistSpawn = false
 			spec.alwaysSpawned = true
-			spec.spawnInView = false
+			spec.spawnInView = true
 			spec.position = Vector4.new(spawnX, spawnY, spawnZ, 1.0)
 			-- Face toward V
 			local dx = vPos.x - spawnX
@@ -971,6 +1055,13 @@ function psychosis.attach(dsp)
 				spawnTime = now,
 				behaviorApplied = false,
 			})
+			-- First successful spawn: announce horde with NosebleedEffect
+			if not self.hordeAnnounced then
+				self.hordeAnnounced = true
+				pcall(function()
+					self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+				end)
+			end
 			-- VFX on V's vision (brief glitch)
 			pcall(function()
 				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
@@ -1089,9 +1180,9 @@ function psychosis.attach(dsp)
 		pcall(function()
 			local from = Vector4.new(spawnX, spawnY, vPos.z + 5.0, 1.0)
 			local to = Vector4.new(spawnX, spawnY, vPos.z - 10.0, 1.0)
-			local hit = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from, to, "Static", false, false)
-			if hit.result then
-				spawnZ = hit.position.z
+			local success, result = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from, to, "Static", false, false)
+			if success and result then
+				spawnZ = result.position.z
 			end
 		end)
 
@@ -1201,6 +1292,8 @@ function psychosis.attach(dsp)
 
 	dsp.StartHorde = (function(self)
 		if self.hordeActive then return end
+		local V = Game.GetPlayer()
+		if V and V:IsSwimming() then return end
 		local stage = self.CyberPsychoWarnings
 		local now = os.clock()
 
@@ -1219,15 +1312,7 @@ function psychosis.attach(dsp)
 
 		-- First spawn timer
 		self.hordeNextSpawn = now + 1.0
-
-		-- Blackwall VFX on V
-		pcall(function()
-			self:StatusEffect_CheckAndApply('BaseStatusEffect.HauntedBlackwallForceKill')
-		end)
-
-		-- Warning
-		self.bbs:SendWarning("THEY'RE COMING", 3.0, "halluc_s5_01")
-		pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
+		self.hordeAnnounced = false  -- VFX/message deferred to first successful spawn
 
 		print('[DSP] Horde started: '..self.hordeGangRecord..' duration='..(math.floor(self.hordeEndTime - now))..'s stage='..tostring(stage))
 	 end)
