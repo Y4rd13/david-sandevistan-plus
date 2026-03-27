@@ -714,15 +714,15 @@ function psychosis.attach(dsp)
 
 	-- Horde system config (module-local)
 	local hordeConfig = {
-		checkInterval = { [4] = 300, [5] = 120 },
+		checkInterval = { [4] = {300, 720}, [5] = {180, 480} },  -- random range (seconds)
 		duration = { [4] = {60, 90}, [5] = {90, 120} },
-		baseChance = { [4] = 0.3, [5] = 0.5 },
+		baseChance = { [4] = 0.08, [5] = 0.15 },
 		spawnInterval = { [4] = {3, 5}, [5] = {2, 4} },
 		reinforcePerKill = { [4] = {1, 2}, [5] = {1, 3} },
 		reinforceDelay = { [4] = {1.5, 3.0}, [5] = {0.8, 2.0} },
 		reinforceDist = { [4] = {12, 20}, [5] = {14, 25} },
 		maxNPCs = { [4] = 10, [5] = 10 },
-		cooldown = { [4] = 600, [5] = 300 },
+		cooldown = { [4] = 1200, [5] = 720 },
 	}
 
 	-- Lover records mapped to quest facts
@@ -1459,15 +1459,15 @@ function psychosis.attach(dsp)
 		if eff == 'full' or eff == 'partial' then return end
 		if now < self.hordeNextCheck then return end
 
-		local interval = hordeConfig.checkInterval[stage] or 300
-		self.hordeNextCheck = now + interval
+		local intRange = hordeConfig.checkInterval[stage] or {300, 720}
+		self.hordeNextCheck = now + intRange[1] + math.random() * (intRange[2] - intRange[1])
 
 		if now < self.hordeCooldownUntil then return end
 
-		-- Probability: base chance * strain ratio
-		local base = hordeConfig.baseChance[stage] or 0.3
+		-- Probability: base chance * strain ratio (capped at 1.0 — no bonus above threshold)
+		local base = hordeConfig.baseChance[stage] or 0.08
 		local threshold = self:GetStrainThreshold()
-		local strainRatio = math.min((self.neuralStrain or 0) / threshold, 1.5)
+		local strainRatio = math.min((self.neuralStrain or 0) / threshold, 1.0)
 		local chance = base * strainRatio
 
 		if math.random() < chance then
