@@ -269,6 +269,18 @@ local microEpisodeIntervals = {
 	[5] = { 5, 15 },      -- 5-15s
 }
 
+-- Micro-episode chain definitions: { [trigger_type] = { target, chance } }
+local microEpisodeChains = {
+	visual_glitch = { target = "tremor_burst", chance = 0.25 },
+	tremor_burst  = { target = "nosebleed",    chance = 0.20 },
+	nosebleed     = { target = "manic_laugh",  chance = 0.15 },
+	sandy_flash   = { target = "visual_glitch",chance = 0.30 },
+	medium_glitch = { target = "manic_laugh",  chance = 0.20 },
+}
+
+-- Stage multiplier for chain chance
+local chainStageMultiplier = { [1]=1.0, [2]=1.0, [3]=1.5, [4]=2.0, [5]=2.5 }
+
 function psychosis.attach(dsp)
 	print('[DSP] psychosis.lua attached')
 
@@ -610,6 +622,9 @@ function psychosis.attach(dsp)
 	 end)
 
 	dsp.ResetMicroEpisodeTimer = (function(self)
+		self.microEpisodeChainCount = 0
+		self.microEpisodeChainTimer = nil
+		self.pendingChainType = nil
 		if not self.cfg.enableMicroEpisodes then self.microEpisodeTimer = nil return end
 		if self.CyberPsychoWarnings < 1 then self.microEpisodeTimer = nil return end
 		local interval = microEpisodeIntervals[self.CyberPsychoWarnings]
@@ -683,8 +698,104 @@ function psychosis.attach(dsp)
 			self.microEpisodeCleanup = { timer = dur, type = selected.type }
 		end
 
+		-- Chain logic: check if this episode can trigger a follow-up
+		local chainDef = microEpisodeChains[selected.type]
+		if chainDef and (self.microEpisodeChainCount or 0) < 3 then
+			local eff = self:GetImmunoblockerEffectiveness()
+			if eff ~= 'full' then  -- full blocks chains
+				local stageMult = chainStageMultiplier[self.CyberPsychoWarnings] or 1.0
+				local chainChance = chainDef.chance * stageMult
+				if eff == 'partial' then chainChance = chainChance * 0.5 end
+				if math.random() < chainChance then
+					self.microEpisodeChainCount = (self.microEpisodeChainCount or 0) + 1
+					self.pendingChainType = chainDef.target
+					self.microEpisodeChainTimer = 1.5 + math.random() * 1.5  -- 1.5-3s delay
+					self.tremor.intensity = math.min(self.tremor.intensity + 0.001, 0.02)
+				end
+			end
+		end
+
 		if self.dev_mode then
-			print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings))
+			print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings)..' chain='..(self.microEpisodeChainCount or 0))
+		end
+	 end)
+
+	-- Fire a specific micro-episode type (used by chain system)
+	dsp.FireMicroEpisodeByType = (function(self, targetType)
+		if self.CachedInMenu or self.CachedBrainDance or (not self.VIsInControl) then
+			self.microEpisodeChainCount = 0
+			return
+		end
+		-- Find the episode definition
+		local selected = nil
+		for _, ep in ipairs(microEpisodePool) do
+			if ep.type == targetType and self.CyberPsychoWarnings >= ep.minLevel then
+				selected = ep
+				break
+			end
+		end
+		if not selected then
+			self.microEpisodeChainCount = 0
+			return
+		end
+		self.lastMicroEpisodeType = selected.type
+
+		-- Apply effect (same logic as FireMicroEpisode)
+		local dur = selected.duration[1] + math.random() * (selected.duration[2] - selected.duration[1])
+		if selected.type == "visual_glitch" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+		elseif selected.type == "tremor_burst" then
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
+		elseif selected.type == "nosebleed" then
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		elseif selected.type == "manic_laugh" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoLaughEffect)
+			local laughAttackChance = { [3]=0.30, [4]=0.50, [5]=0.70 }
+			self:TryAutoAttack(laughAttackChance[self.CyberPsychoWarnings] or 0.30, true)
+		elseif selected.type == "sandy_flash" then
+			if not self.isRunning and self:IsWearingSandevistan() then
+				self.bbs:StartSandevistan()
+				self.microEpisodeSandyFlash = dur
+			end
+		elseif selected.type == "medium_glitch" then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+		end
+		if selected.type == "visual_glitch" or selected.type == "medium_glitch" then
+			self.microEpisodeCleanup = { timer = dur, type = selected.type }
+		end
+
+		-- Continue chain
+		local chainDef = microEpisodeChains[selected.type]
+		if chainDef and (self.microEpisodeChainCount or 0) < 3 then
+			local eff = self:GetImmunoblockerEffectiveness()
+			if eff ~= 'full' then
+				local stageMult = chainStageMultiplier[self.CyberPsychoWarnings] or 1.0
+				local chainChance = chainDef.chance * stageMult
+				if eff == 'partial' then chainChance = chainChance * 0.5 end
+				if math.random() < chainChance then
+					self.microEpisodeChainCount = (self.microEpisodeChainCount or 0) + 1
+					self.pendingChainType = chainDef.target
+					self.microEpisodeChainTimer = 1.5 + math.random() * 1.5
+					self.tremor.intensity = math.min(self.tremor.intensity + 0.001, 0.02)
+				end
+			end
+		end
+
+		if (self.microEpisodeChainCount or 0) >= 3 or not self.pendingChainType then
+			-- Chain ended: apply cooldown and reset
+			if (self.microEpisodeChainCount or 0) >= 3 then
+				self:ResetMicroEpisodeTimer()
+				-- Double the interval for post-chain cooldown
+				if self.microEpisodeTimer then
+					self.microEpisodeTimer = self.microEpisodeTimer * 2
+				end
+			end
+			self.microEpisodeChainCount = 0
+			self.pendingChainType = nil
+		end
+
+		if self.dev_mode then
+			print('[DSP] Chain micro-episode: '..selected.type..' chain='..(self.microEpisodeChainCount or 0))
 		end
 	 end)
 

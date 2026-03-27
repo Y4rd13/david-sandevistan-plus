@@ -260,6 +260,9 @@ dsp = {
 	,lowRuntimeWarned = false
 	,comedownTimer = nil
 	,comedownTremor = false
+	,microEpisodeChainCount = 0
+	,microEpisodeChainTimer = nil
+	,pendingChainType = nil
 	,PsychoTrigger = -1
 	,RequiredHealth = -1
 	,MinorBleedingOn = false
@@ -1512,6 +1515,18 @@ dsp = {
 				end
 				-- Micro-episodes: random involuntary symptoms at psycho 1+
 				if self.cfg.enableMicroEpisodes and self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0 and not self.lastBreath then
+					-- Process pending micro-episode chain
+					if self.microEpisodeChainTimer then
+						self.microEpisodeChainTimer = self.microEpisodeChainTimer - 1
+						if self.microEpisodeChainTimer <= 0 then
+							local chainType = self.pendingChainType
+							self.microEpisodeChainTimer = nil
+							self.pendingChainType = nil
+							if chainType then
+								self:FireMicroEpisodeByType(chainType)
+							end
+						end
+					end
 					if self.microEpisodeTimer == nil then
 						self:ResetMicroEpisodeTimer()
 					elseif self.microEpisodeTimer > 0 then
