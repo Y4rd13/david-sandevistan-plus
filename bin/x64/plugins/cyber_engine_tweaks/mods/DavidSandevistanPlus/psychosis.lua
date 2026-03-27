@@ -602,9 +602,10 @@ function psychosis.attach(dsp)
 			return
 		end
 
-		-- Count as treatment dose
-		self.completedDoses = math.min((self.completedDoses or 0) + 1, rx.doses)
-		local remaining = rx.doses - self.completedDoses
+		-- Count as treatment dose (use stored prescribedDoses, not recalculated rx.doses)
+		local required = math.max(rx.doses, self.prescribedDoses or 0)
+		self.completedDoses = math.min((self.completedDoses or 0) + 1, required)
+		local remaining = required - self.completedDoses
 		if remaining > 0 then
 			self:ViktorSMS("Treatment dose registered. " .. tostring(remaining) .. " remaining.")
 		end

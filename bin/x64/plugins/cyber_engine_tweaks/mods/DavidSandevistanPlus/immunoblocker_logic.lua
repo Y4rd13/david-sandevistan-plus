@@ -28,7 +28,22 @@ function immunoblocker_logic.attach(dsp)
 			if threshold and self.toleranceAmount >= threshold then
 				self.toleranceStage = stage + 1
 				self.toleranceAmount = 0  -- reset for next stage
-				self:ViktorSMS("V, your system's building resistance to the blockers. Effectiveness is dropping. I can flush it at the clinic.")
+				local tolNames = { "Mild", "Moderate", "Severe" }
+				local tolName = tolNames[self.toleranceStage] or "High"
+				-- If treatment is active, recalculate prescription and notify with new count
+				if self.treatmentActive then
+					local rx = self:GetPrescription(self.CyberPsychoWarnings)
+					local newRequired = math.max(rx.doses, self.prescribedDoses or 0)
+					if newRequired > (self.prescribedDoses or 0) then
+						local extraDoses = newRequired - self.prescribedDoses
+						self.prescribedDoses = newRequired
+						self:ViktorSMS("V, your body's building resistance to the blockers. Tolerance: " .. tolName .. ". I'm adding " .. tostring(extraDoses) .. " more doses to the protocol. New total: " .. tostring(newRequired) .. ".")
+					else
+						self:ViktorSMS("V, your system's building resistance. Tolerance: " .. tolName .. ". I can flush it at the clinic.")
+					end
+				else
+					self:ViktorSMS("V, your system's building resistance to the blockers. Tolerance: " .. tolName .. ". I can flush it at the clinic.")
+				end
 				print('[DSP] Tolerance stage advanced to ' .. tostring(self.toleranceStage))
 			end
 		end
