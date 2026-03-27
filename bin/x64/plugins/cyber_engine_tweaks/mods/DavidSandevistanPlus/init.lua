@@ -2714,6 +2714,8 @@ registerForEvent('onInit', function()
 					dsp:CheckTreatmentDose(tier)
 					-- Tolerance buildup on consumption
 					dsp:AddToleranceOnConsumption(tier)
+					-- Show status feedback to player
+					dsp:ShowImmunoblockerStatus(tier)
 					-- Sync qty so real-time tick won't double-fire for this consumption
 					pcall(function()
 						local V = Game.GetPlayer()

@@ -105,6 +105,25 @@ function immunoblocker_logic.attach(dsp)
 		return 'ineffective'
 	 end)
 
+	-- Show immunoblocker status after consumption (tolerance + efficacy feedback)
+	local tierDisplayNames = { "Common", "Uncommon", "Military Grade" }
+	local tolStageNames = { [0] = "None", "Mild", "Moderate", "Severe" }
+	local effDisplayNames = { full = "100%", partial = "50%", ineffective = "0%", none = "—" }
+
+	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
+		local tierName = tierDisplayNames[consumedTier] or "Unknown"
+		local tolName = tolStageNames[self.toleranceStage or 0] or "None"
+		local eff = self:GetImmunoblockerEffectiveness()
+		local effName = effDisplayNames[eff] or "—"
+		-- Build status message
+		local msg = "IMMUNOBLOCKER — " .. tierName
+		if (self.toleranceStage or 0) > 0 then
+			msg = msg .. " | Tolerance: " .. tolName .. " (" .. tostring(self.toleranceStage) .. "/3)"
+		end
+		msg = msg .. " | Efficacy: " .. effName
+		self.bbs:SendWarning(msg, 5.0)
+	 end)
+
 	dsp.immunoLastQty = nil
 	dsp.immunoAnimQueue = 0
 
