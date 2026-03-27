@@ -23,6 +23,10 @@ function strain.attach(dsp)
 	-- Tuned so stage 4 reaches threshold (~40) in ~4.8min, stage 5 in ~2.8min (without combat/immunoblocker)
 	local passiveStrainPerSec = { [4]=0.04, [5]=0.08 }
 
+	-- Natural strain decay at low stages (body can still recover on its own)
+	-- Stage 3+ = no natural decay (needs external help)
+	local naturalDecayPerSec = { [0]=-0.03, [1]=-0.02, [2]=-0.01 }
+
 	-- Episode cooldown: minimum in-game hours between stage changes
 	-- Prevents speed-running through all stages in one session
 	-- Lore: nervous system needs time to destabilize further after each episode
@@ -52,15 +56,38 @@ function strain.attach(dsp)
 	dsp.UpdatePassiveStrain = (function(self)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.lastBreath then return end
-		local passive = passiveStrainPerSec[self.CyberPsychoWarnings]
-		if not passive then return end
+		local stage = self.CyberPsychoWarnings
+
+		-- Stages 4-5: strain INCREASES passively (chrome consuming you)
+		local passive = passiveStrainPerSec[stage]
+		if passive then
+			local eff = self:GetImmunoblockerEffectiveness()
+			local reduction = immunoReduction[eff] or 0
+			local effective = passive * (1 - reduction) * (self.cfg.strainBuildupMultiplier or 1.0)
+			-- Treatment milestone reduction
+			local milestoneReduction = self.treatmentMilestoneStrainMult or 1.0
+			effective = effective * milestoneReduction
+			self.neuralStrain = self.neuralStrain + effective
+			local guaranteed = self:GetStrainGuaranteed()
+			local cap = guaranteed or 150
+			if self.neuralStrain > cap then self.neuralStrain = cap end
+			return
+		end
+
+		-- Stages 0-2: strain DECAYS naturally (body recovers on its own)
+		local decay = naturalDecayPerSec[stage]
+		if not decay then return end  -- stage 3: no natural decay
+		if self.isRunning then return end  -- no decay while Sandy active
+		local rate = math.abs(decay) * (self.cfg.strainRecoveryMultiplier or 1.0)
+		-- Immunoblocker active: decay rate ×2
 		local eff = self:GetImmunoblockerEffectiveness()
-		local reduction = immunoReduction[eff] or 0
-		local effective = passive * (1 - reduction) * (self.cfg.strainBuildupMultiplier or 1.0)
-		self.neuralStrain = self.neuralStrain + effective
-		local guaranteed = self:GetStrainGuaranteed()
-		local cap = guaranteed or 150
-		if self.neuralStrain > cap then self.neuralStrain = cap end
+		if eff == 'full' or eff == 'partial' then rate = rate * 2.0 end
+		-- Treatment milestone reduction (applied as faster decay)
+		local milestoneReduction = self.treatmentMilestoneStrainMult or 1.0
+		if milestoneReduction < 1.0 then
+			rate = rate * (1.0 + (1.0 - milestoneReduction))  -- e.g. 0.7 mult → 1.3x faster decay
+		end
+		self.neuralStrain = math.max(self.neuralStrain - rate, 0)
 	 end)
 
 	dsp.CheckStrainEpisode = (function(self)
