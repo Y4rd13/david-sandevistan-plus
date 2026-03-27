@@ -609,6 +609,7 @@ function psychosis.attach(dsp)
 			self:ViktorSMS("Treatment dose registered. " .. tostring(remaining) .. " remaining.")
 		end
 		self:SaveGame("TreatmentDose")
+		self:UpdateTreatmentMilestone()
 
 		-- Check if protocol is complete
 		self:CheckTreatmentComplete()
@@ -632,6 +633,10 @@ function psychosis.attach(dsp)
 			self.prescribedDoses = 0
 			self.sandyUsesDuringTreatment = 0
 			self.sandyTreatmentWarned = false
+			self.treatmentMilestone = 0
+			self.treatmentMilestoneStrainMult = 1.0
+			self.treatmentMilestoneEpisodeMult = 1.0
+			self.treatmentMilestonePhantomMult = 1.0
 			self:SyncSafetyWithStage()
 			self:ResetMicroEpisodeTimer()
 			self:DisableSandevistan("TreatmentComplete")
@@ -644,6 +649,49 @@ function psychosis.attach(dsp)
 				self:ViktorSMS("Treatment complete. Neural readings are clean. Stay off the chrome for a while.", 8.0)
 			end
 			print('[DSP] Treatment complete: ' .. tostring(prevLevel) .. ' -> ' .. tostring(self.CyberPsychoWarnings))
+		end
+	 end)
+
+	dsp.UpdateTreatmentMilestone = (function(self)
+		if not self.treatmentActive then
+			self.treatmentMilestone = 0
+			self.treatmentMilestoneStrainMult = 1.0
+			self.treatmentMilestoneEpisodeMult = 1.0
+			self.treatmentMilestonePhantomMult = 1.0
+			return
+		end
+		local rx = self:GetPrescription(self.CyberPsychoWarnings)
+		local requiredDoses = math.max(rx.doses, self.prescribedDoses or 0)
+		if requiredDoses == 0 then return end
+		local doseProgress = (self.completedDoses or 0) / requiredDoses
+		local visitProgress = rx.visits > 0 and ((self.completedVisits or 0) / rx.visits) or 1.0
+		local progress = (doseProgress + visitProgress) / 2.0
+
+		local prevMilestone = self.treatmentMilestone or 0
+
+		if progress >= 0.66 then
+			self.treatmentMilestone = 2
+			self.treatmentMilestoneStrainMult = 0.4
+			self.treatmentMilestoneEpisodeMult = 1.6
+			self.treatmentMilestonePhantomMult = 1.5
+		elseif progress >= 0.33 then
+			self.treatmentMilestone = 1
+			self.treatmentMilestoneStrainMult = 0.7
+			self.treatmentMilestoneEpisodeMult = 1.3
+			self.treatmentMilestonePhantomMult = 1.0
+		else
+			self.treatmentMilestone = 0
+			self.treatmentMilestoneStrainMult = 1.0
+			self.treatmentMilestoneEpisodeMult = 1.0
+			self.treatmentMilestonePhantomMult = 1.0
+		end
+
+		if self.treatmentMilestone > prevMilestone then
+			if self.treatmentMilestone == 1 then
+				self:ViktorSMS("Good, V. Your readings are stabilizing. Keep taking the meds. Don't skip doses.")
+			elseif self.treatmentMilestone == 2 then
+				self:ViktorSMS("Real improvement here, kid. Neural pathways are re-routing. Almost there.")
+			end
 		end
 	 end)
 
@@ -661,6 +709,8 @@ function psychosis.attach(dsp)
 		if minT < 3 then minT = 3 end
 		if maxT < minT then maxT = minT end
 		self.microEpisodeTimer = minT + math.random() * (maxT - minT)
+		local milestoneEpMult = self.treatmentMilestoneEpisodeMult or 1.0
+		self.microEpisodeTimer = self.microEpisodeTimer * milestoneEpMult
 	 end)
 
 	dsp.FireMicroEpisode = (function(self)
@@ -1585,7 +1635,8 @@ function psychosis.attach(dsp)
 			nextDelay = nextDelay * 0.5
 		end
 
-		self.nextHallucinationTime = now + nextDelay
+		local milestonePMult = self.treatmentMilestonePhantomMult or 1.0
+		self.nextHallucinationTime = now + nextDelay * milestonePMult
 	 end)
 
 	-- Cleanup all phantoms (called on game load, death, etc.)

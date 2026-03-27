@@ -246,6 +246,10 @@ dsp = {
 	,prescribedDoses = 0
 	,sandyUsesDuringTreatment = 0
 	,sandyTreatmentWarned = false
+	,treatmentMilestone = 0
+	,treatmentMilestoneStrainMult = 1.0
+	,treatmentMilestoneEpisodeMult = 1.0
+	,treatmentMilestonePhantomMult = 1.0
 	-- Medication tolerance (Dark Future-inspired): repeated immunoblocker use builds resistance
 	,toleranceAmount = 0.0
 	,toleranceStage = 0
@@ -669,6 +673,7 @@ dsp = {
 
 				-- Check if protocol is now complete
 				self:CheckTreatmentComplete()
+				self:UpdateTreatmentMilestone()
 				self:ResetMicroEpisodeTimer()
 				self:DisableSandevistan("VisitedRipper")
 			else
@@ -1607,6 +1612,7 @@ dsp = {
 		self.episodeCooldownUntil = self.qs:LoadEpisodeCooldown()
 		self.qs:LoadTreatmentState()
 		self.qs:LoadTolerance()
+		self.qs:LoadTreatmentMilestone()
 		self:LoadVendorDiscovery()
 		self.strainComedownAccum = 0
 		self.strainActiveAccum = 0
@@ -1735,6 +1741,7 @@ dsp = {
 		self.qs:SaveTreatmentState()
 		self.qs:SaveImmunoblockerTier(self:GetImmunoblockerTier())
 		self.qs:SaveTolerance()
+		self.qs:SaveTreatmentMilestone()
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DSP:SaveGame() Completed')
@@ -1974,6 +1981,7 @@ dsp = {
 		,ToleranceAmountFactName = 'martinezsandevistan_toleranceamt'
 		,ToleranceStageFactName = 'martinezsandevistan_tolerancestage'
 		,ToleranceLastUseFactName = 'martinezsandevistan_tolerancelastuse'
+		,TreatmentMilestoneFactName = 'martinezsandevistan_treatmentmilestone'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
 		 end)
@@ -2088,6 +2096,27 @@ dsp = {
 			dsp.toleranceStage = (stage >= 0) and stage or 0
 			local lastUse = self:GetFactValue(self.ToleranceLastUseFactName) - 1
 			dsp.lastImmunoblockerGameTime = (lastUse >= 0) and lastUse or 0
+		 end)
+		,SaveTreatmentMilestone = (function(self)
+			self:SetFactValue(self.TreatmentMilestoneFactName, (dsp.treatmentMilestone or 0) + 1)
+		 end)
+		,LoadTreatmentMilestone = (function(self)
+			local v = self:GetFactValue(self.TreatmentMilestoneFactName) - 1
+			if v < 0 then v = 0 end
+			dsp.treatmentMilestone = v
+			if v >= 2 then
+				dsp.treatmentMilestoneStrainMult = 0.4
+				dsp.treatmentMilestoneEpisodeMult = 1.6
+				dsp.treatmentMilestonePhantomMult = 1.5
+			elseif v >= 1 then
+				dsp.treatmentMilestoneStrainMult = 0.7
+				dsp.treatmentMilestoneEpisodeMult = 1.3
+				dsp.treatmentMilestonePhantomMult = 1.0
+			else
+				dsp.treatmentMilestoneStrainMult = 1.0
+				dsp.treatmentMilestoneEpisodeMult = 1.0
+				dsp.treatmentMilestonePhantomMult = 1.0
+			end
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
