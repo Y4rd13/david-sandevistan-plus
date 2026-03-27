@@ -3,6 +3,59 @@ local immunoblocker_logic = {}
 function immunoblocker_logic.attach(dsp)
 	print('[DSP] immunoblocker_logic.lua attached')
 
+	-- Tolerance buildup: { chance, amount } per tier
+	local toleranceBuildup = {
+		[1] = { chance = 0.70, amount = 1.0 },  -- Common
+		[2] = { chance = 0.50, amount = 1.0 },  -- Uncommon
+		[3] = { chance = 0.30, amount = 0.5 },  -- Rare
+	}
+	local toleranceThresholds = { 4.0, 8.0, 12.0 }  -- stage 0→1, 1→2, 2→3
+
+	-- Called when immunoblocker is consumed: probabilistic tolerance buildup
+	dsp.AddToleranceOnConsumption = (function(self, tier)
+		local info = toleranceBuildup[tier]
+		if not info then return end
+		if math.random() > info.chance then return end  -- probability check failed
+		self.toleranceAmount = (self.toleranceAmount or 0) + info.amount
+		-- Record game-time of last use (for decay tracking)
+		pcall(function()
+			self.lastImmunoblockerGameTime = Game.GetTimeSystem():GetGameTimeStamp()
+		end)
+		-- Check stage advance
+		local stage = self.toleranceStage or 0
+		if stage < 3 then
+			local threshold = toleranceThresholds[stage + 1]
+			if threshold and self.toleranceAmount >= threshold then
+				self.toleranceStage = stage + 1
+				self.toleranceAmount = 0  -- reset for next stage
+				self:ViktorSMS("V, your system's building resistance to the blockers. Effectiveness is dropping. I can flush it at the clinic.")
+				print('[DSP] Tolerance stage advanced to ' .. tostring(self.toleranceStage))
+			end
+		end
+	 end)
+
+	-- Called once per second from displayTick: decays tolerance if no immunoblocker used recently
+	dsp.UpdateToleranceDecay = (function(self)
+		if (self.toleranceAmount or 0) <= 0 and (self.toleranceStage or 0) <= 0 then return end
+		local ok, now = pcall(function() return Game.GetTimeSystem():GetGameTimeStamp() end)
+		if not ok then return end
+		local lastUse = self.lastImmunoblockerGameTime or 0
+		if lastUse == 0 then return end
+		-- Only decay if 24h game-time since last use
+		local hoursSinceUse = (now - lastUse) / 3600
+		if hoursSinceUse < 24 then return end
+		-- Decay: 1.0 per game-day (called once/sec, so divide by 86400)
+		local decayPerSec = 1.0 / 86400
+		self.toleranceAmount = math.max((self.toleranceAmount or 0) - decayPerSec, 0)
+		-- Check stage decrease
+		if self.toleranceAmount <= 0 and (self.toleranceStage or 0) > 0 then
+			self.toleranceStage = self.toleranceStage - 1
+			local prevThresholds = { 0, 4.0, 8.0 }
+			self.toleranceAmount = math.max((prevThresholds[self.toleranceStage] or 0) - 0.1, 0)
+			print('[DSP] Tolerance stage decreased to ' .. tostring(self.toleranceStage))
+		end
+	 end)
+
 	dsp.IsImmunoblockerActive = (function(self)
 		return self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Common)
 			or self:StatusEffect_CheckOnly(self.martinez.ImmunoblockerEffect_Uncommon)
@@ -26,11 +79,14 @@ function immunoblocker_logic.attach(dsp)
 	dsp.GetImmunoblockerEffectiveness = (function(self)
 		local tier = self:GetImmunoblockerTier()
 		if tier == 0 then return 'none' end
+		-- Tolerance reduces effective tier
+		local effectiveTier = math.max(tier - (self.toleranceStage or 0), 0)
+		if effectiveTier == 0 then return 'ineffective' end
 		local psycho = self.CyberPsychoWarnings
 		local maxEffective = { 1, 2, 5 }   -- Common, Uncommon, Rare
 		local partialLevel = { 2, 3, -1 }  -- Common partial at 2, Uncommon at 3, Rare never
-		if psycho <= maxEffective[tier] then return 'full' end
-		if psycho == partialLevel[tier] then return 'partial' end
+		if psycho <= maxEffective[effectiveTier] then return 'full' end
+		if psycho == partialLevel[effectiveTier] then return 'partial' end
 		return 'ineffective'
 	 end)
 
@@ -92,6 +148,8 @@ function immunoblocker_logic.attach(dsp)
 					dsp:TriggerImmunoblockerAnim()
 					-- Track dose for treatment protocol (tier: 1=Common, 2=Uncommon, 3=Rare)
 					dsp:CheckTreatmentDose(tier)
+					-- Tolerance buildup on consumption
+					dsp:AddToleranceOnConsumption(tier)
 					-- Sync qty so real-time tick won't double-fire for this consumption
 					local qty = getImmunoblockerQty()
 					if qty then dsp.immunoLastQty = qty end
@@ -124,11 +182,12 @@ function immunoblocker_logic.attach(dsp)
 			for i = 1, consumed do
 				self:TriggerImmunoblockerAnim()
 			end
-			-- Fallback: if observer didn't fire, detect tier and register treatment dose
+			-- Fallback: if observer didn't fire, detect tier and register treatment dose + tolerance
 			local tier = self:GetImmunoblockerTier()
 			if tier > 0 and consumed > 0 then
 				for i = 1, consumed do
 					self:CheckTreatmentDose(tier)
+					self:AddToleranceOnConsumption(tier)
 				end
 			end
 		end

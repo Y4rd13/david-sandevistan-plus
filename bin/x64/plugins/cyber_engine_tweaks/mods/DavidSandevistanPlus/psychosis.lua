@@ -271,6 +271,7 @@ local prescriptionTable = {
 }
 
 local tierNames = { "Common", "Uncommon", "Military Grade" }
+local toleranceDoseMultiplier = { [0]=1.0, [1]=1.3, [2]=1.6, [3]=2.0 }
 
 -- Micro-episode pool: { type, minLevel, weight, effectKey, duration }
 local microEpisodePool = {
@@ -572,8 +573,11 @@ function psychosis.attach(dsp)
 
 	dsp.GetPrescription = (function(self, level)
 		local entry = prescriptionTable[level]
-		if entry then return entry end
-		return { doses = 0, visits = 0, minTier = 0 }
+		if not entry then return { doses = 0, visits = 0, minTier = 0 } end
+		-- Tolerance compensation: more doses needed when tolerance is high
+		local tolMult = toleranceDoseMultiplier[self.toleranceStage or 0] or 1.0
+		local adjustedDoses = math.ceil(entry.doses * tolMult)
+		return { doses = adjustedDoses, visits = entry.visits, minTier = entry.minTier }
 	 end)
 
 	dsp.GetTierName = (function(self, tier)

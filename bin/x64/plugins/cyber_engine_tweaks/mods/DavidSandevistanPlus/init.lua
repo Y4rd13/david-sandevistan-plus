@@ -246,6 +246,10 @@ dsp = {
 	,prescribedDoses = 0
 	,sandyUsesDuringTreatment = 0
 	,sandyTreatmentWarned = false
+	-- Medication tolerance (Dark Future-inspired): repeated immunoblocker use builds resistance
+	,toleranceAmount = 0.0
+	,toleranceStage = 0
+	,lastImmunoblockerGameTime = 0
 	-- Activity tracking for sleep multiplier (reset on sleep)
 	,activities = {
 		lover = false,          -- visited romantic partner
@@ -639,6 +643,18 @@ dsp = {
 				-- Ripper drains strain
 				local ripRecovMult = self.cfg.strainRecoveryMultiplier or 1.0
 				self.neuralStrain = math.max((self.neuralStrain or 0) - self.cfg.strainDrainRipper * ripRecovMult, 0)
+
+				-- Ripperdoc flushes tolerance buildup
+				if (self.toleranceAmount or 0) > 0 or (self.toleranceStage or 0) > 0 then
+					self.toleranceAmount = math.max((self.toleranceAmount or 0) - 4.0, 0)
+					if self.toleranceAmount <= 0 and (self.toleranceStage or 0) > 0 then
+						self.toleranceStage = self.toleranceStage - 1
+						-- Set to just below prev threshold so stage doesn't immediately re-trigger
+						local prevThresholds = { 0, 4.0, 8.0 }
+						self.toleranceAmount = math.max((prevThresholds[self.toleranceStage] or 0) - 0.1, 0)
+					end
+					print('[DSP] Ripperdoc flushed tolerance: amount=' .. tostring(self.toleranceAmount) .. ' stage=' .. tostring(self.toleranceStage))
+				end
 
 				-- Grant runtime recharge (50% max)
 				local oldRuntime = self.runTime
@@ -1352,6 +1368,9 @@ dsp = {
 				-- Passive strain at stages 4-5 (chrome consuming you)
 				self:UpdatePassiveStrain()
 
+				-- Medication tolerance natural decay (1/sec)
+				self:UpdateToleranceDecay()
+
 				-- Neural Strain tick (1/sec) — runs at all stages including 0
 				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 0 and not self.lastBreath then
 					local immunoblocker = self:IsImmunoblockerActive()
@@ -1587,6 +1606,7 @@ dsp = {
 		self.neuralStrain = self.qs:LoadNeuralStrain()
 		self.episodeCooldownUntil = self.qs:LoadEpisodeCooldown()
 		self.qs:LoadTreatmentState()
+		self.qs:LoadTolerance()
 		self:LoadVendorDiscovery()
 		self.strainComedownAccum = 0
 		self.strainActiveAccum = 0
@@ -1714,6 +1734,7 @@ dsp = {
 		end
 		self.qs:SaveTreatmentState()
 		self.qs:SaveImmunoblockerTier(self:GetImmunoblockerTier())
+		self.qs:SaveTolerance()
 		self:UpdateUIText()
 		if self.dev_mode then
 			print('DSP:SaveGame() Completed')
@@ -1950,6 +1971,9 @@ dsp = {
 		,CompletedVisitsFactName = 'martinezsandevistan_completedvisits'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,ImmunoblockerTierFactName = 'martinezsandevistan_immunotier'
+		,ToleranceAmountFactName = 'martinezsandevistan_toleranceamt'
+		,ToleranceStageFactName = 'martinezsandevistan_tolerancestage'
+		,ToleranceLastUseFactName = 'martinezsandevistan_tolerancelastuse'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
 		 end)
@@ -2050,6 +2074,20 @@ dsp = {
 		 end)
 		,LoadImmunoblockerTier = (function(self)
 			return self:GetFactValue(self.ImmunoblockerTierFactName) - 1
+		 end)
+		,SaveTolerance = (function(self)
+			-- Store amount ×100 for 0.01 resolution, +1 offset for quest facts
+			self:SetFactValue(self.ToleranceAmountFactName, math.floor((dsp.toleranceAmount or 0) * 100) + 1)
+			self:SetFactValue(self.ToleranceStageFactName, (dsp.toleranceStage or 0) + 1)
+			self:SetFactValue(self.ToleranceLastUseFactName, math.floor(dsp.lastImmunoblockerGameTime or 0) + 1)
+		 end)
+		,LoadTolerance = (function(self)
+			local amt = self:GetFactValue(self.ToleranceAmountFactName) - 1
+			dsp.toleranceAmount = (amt >= 0) and (amt / 100) or 0
+			local stage = self:GetFactValue(self.ToleranceStageFactName) - 1
+			dsp.toleranceStage = (stage >= 0) and stage or 0
+			local lastUse = self:GetFactValue(self.ToleranceLastUseFactName) - 1
+			dsp.lastImmunoblockerGameTime = (lastUse >= 0) and lastUse or 0
 		 end)
 		,GetFactValue = (function(self,factName)
 			local QS = Game.GetQuestsSystem()
