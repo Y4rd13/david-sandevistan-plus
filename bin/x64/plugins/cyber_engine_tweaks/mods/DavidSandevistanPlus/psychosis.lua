@@ -6,6 +6,28 @@ local psychoSafeMultiplier = { [0] = 1, [1] = 1.7, [2] = 2.3, [3] = 3, [4] = 4 }
 -- Hallucination spawn intervals by stage (seconds)
 local hallucinationIntervals = { [3] = {180, 300}, [4] = {60, 180}, [5] = {30, 60} }
 
+-- Stage-dependent phantom spawn distances (meters)
+local phantomDistances = { [3] = {15, 25}, [4] = {8, 15}, [5] = {3, 8} }
+
+-- Stage-dependent phantom durations (seconds)
+local phantomDurations = {
+	frozen      = { [3] = {4, 6},  [4] = {8, 14}, [5] = {10, 20} },
+	approach    = { [3] = {4, 6},  [4] = {8, 14}, [5] = {10, 20} },
+	attack      = { [3] = {4, 6},  [4] = {8, 14}, [5] = {10, 20} },
+	lover_stare = { [3] = {4, 6},  [4] = {4, 6},  [5] = {4, 6} },   -- lover: always brief
+}
+
+-- Proximity despawn distances by behavior (meters)
+local proximityDespawnDist = {
+	frozen      = 2,
+	approach    = 2,
+	attack      = nil,   -- attack: do NOT despawn on proximity
+	lover_stare = 3,     -- lover: more sensitive
+}
+
+-- False alarm chance (sound + glitch, no NPC)
+local FALSE_ALARM_CHANCE = 0.20
+
 -- Helper: schedule next PsychoMessage based on context
 local function scheduleNextPsychoMsg(self, now, isLastBreath)
 	if isLastBreath then
@@ -890,8 +912,10 @@ function psychosis.attach(dsp)
 		},
 	}
 
-	dsp.phantomNPCs = {}  -- { entityID, despawnTime, behavior, glitchTime }
+	dsp.phantomNPCs = {}  -- { entityID, despawnTime, behavior, glitchTime, isLover }
 	dsp.nextHallucinationTime = nil
+	dsp.lastPhantomRecord = nil       -- anti-repeat: last spawned record
+	dsp.phantomProximityCheck = nil    -- throttle for proximity checks (0.5s)
 
 	-- Horde state
 	dsp.hordeActive = false
@@ -1242,22 +1266,60 @@ function psychosis.attach(dsp)
 
 		local now = os.clock()
 
+		-- Proximity check throttle (every 0.5s, not every frame)
+		local doProximityCheck = false
+		if not self.phantomProximityCheck or now >= self.phantomProximityCheck then
+			doProximityCheck = true
+			self.phantomProximityCheck = now + 0.5
+		end
+
+		-- Get V position for proximity checks
+		local V = Game.GetPlayer()
+		local vPosProx = nil
+		if doProximityCheck and V and IsDefined(V) then
+			pcall(function() vPosProx = V:GetWorldPosition() end)
+		end
+
 		-- Process phantom lifecycle (in-place removal, iterate backwards)
 		local i = #self.phantomNPCs
 		while i >= 1 do
 			local phantom = self.phantomNPCs[i]
+			local shouldDespawn = false
 			-- Apply behavior once entity is ready (~1.0s after spawn)
 			if not phantom.behaviorApplied and now >= phantom.spawnTime + 1.0 then
 				phantom.behaviorApplied = true
 				pcall(function() applyPhantomBehavior(self, phantom) end)
 			end
+			-- Proximity despawn check (every 0.5s)
+			if doProximityCheck and vPosProx and phantom.behaviorApplied then
+				local proxDist = proximityDespawnDist[phantom.behavior]
+				if proxDist then  -- nil means never despawn on proximity (attack)
+					if phantom.isLover then proxDist = 3 end  -- lovers: 3m
+					pcall(function()
+						local ent = Game.FindEntityByID(phantom.entityID)
+						if ent and IsDefined(ent) then
+							local ePos = ent:GetWorldPosition()
+							local dx = vPosProx.x - ePos.x
+							local dy = vPosProx.y - ePos.y
+							local dz = vPosProx.z - ePos.z
+							local distSq = dx*dx + dy*dy + dz*dz
+							if distSq < proxDist * proxDist then
+								shouldDespawn = true
+								if self.dev_mode then
+									print('[DSP] Phantom proximity despawn: '..phantom.behavior..' at '..string.format("%.1f", math.sqrt(distSq))..'m')
+								end
+							end
+						end
+					end)
+				end
+			end
 			-- Apply glitch VFX before despawn
-			if not phantom.glitchApplied and now >= phantom.glitchTime then
+			if not phantom.glitchApplied and (now >= phantom.glitchTime or shouldDespawn) then
 				phantom.glitchApplied = true
 				pcall(function() applyGlitchDespawn(self, phantom) end)
 			end
-			-- Despawn
-			if now >= phantom.despawnTime then
+			-- Despawn (time-based or proximity-based)
+			if now >= phantom.despawnTime or shouldDespawn then
 				pcall(function()
 					local ent = Game.FindEntityByID(phantom.entityID)
 					if ent and IsDefined(ent) then
@@ -1286,9 +1348,105 @@ function psychosis.attach(dsp)
 
 		local vPos = V:GetWorldPosition()
 
-		-- Spawn 6-14m around V in random 360° direction
-		local dist = 6 + math.random() * 8
-		local angle = math.random() * 2 * math.pi
+		-- === FALSE ALARM: 20% chance — sound + glitch, no NPC ===
+		if math.random() < FALSE_ALARM_CHANCE then
+			pcall(function()
+				local screamOk = pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
+				if not screamOk then
+					local evt = SoundPlayEvent.new()
+					evt.soundName = "quickhack_cyberpsychosis"
+					V:QueueEvent(evt)
+				end
+			end)
+			pcall(function()
+				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+			end)
+			-- Reset timer with jitter (no phantom spawned)
+			local range = hallucinationIntervals[self.CyberPsychoWarnings] or {180, 300}
+			local baseInterval = range[1] + math.random() * (range[2] - range[1])
+			local jitter = 0.5 + math.random() * 1.5  -- ×0.5 to ×2.0
+			self.nextHallucinationTime = now + baseInterval * jitter
+			if self.dev_mode then
+				print('[DSP] Hallucination: FALSE ALARM (sound only) at stage '..tostring(self.CyberPsychoWarnings))
+			end
+			return
+		end
+
+		-- === Choose behavior based on stage ===
+		local behavior
+		local isLover = false
+		local stage = self.CyberPsychoWarnings
+		if stage >= 5 then
+			local roll = math.random()
+			if roll < 0.60 then behavior = 'attack'
+			elseif roll < 0.80 then behavior = 'approach'
+			elseif roll < 0.90 then behavior = 'frozen'
+			else behavior = 'lover_stare'
+			end
+		elseif stage >= 4 then
+			local roll = math.random()
+			if roll < 0.40 then behavior = 'approach'
+			elseif roll < 0.80 then behavior = 'attack'
+			else behavior = 'frozen'
+			end
+		else
+			behavior = 'frozen'
+		end
+
+		-- === Pick record based on behavior ===
+		local record
+		if behavior == 'attack' then
+			record = attackRecords[math.random(#attackRecords)]
+		else
+			local pool = getPhantomPool(self)
+			record = pool[math.random(#pool)]
+			pcall(function()
+				local QS = Game.GetQuestsSystem()
+				for _, lover in ipairs(loverRecords) do
+					if record == lover.record and QS:GetFactStr(lover.fact) == 1 then
+						isLover = true
+						break
+					end
+				end
+			end)
+			if isLover then
+				behavior = 'lover_stare'
+			end
+		end
+
+		-- Anti-repeat: don't spawn same record twice in a row
+		if record == self.lastPhantomRecord and (#phantomRecords + #attackRecords) > 1 then
+			-- Re-roll once
+			if behavior == 'attack' then
+				record = attackRecords[math.random(#attackRecords)]
+			else
+				local pool = getPhantomPool(self)
+				record = pool[math.random(#pool)]
+			end
+		end
+		self.lastPhantomRecord = record
+
+		-- === Stage-dependent spawn distance ===
+		local distRange = phantomDistances[stage] or {6, 14}
+		local dist = distRange[1] + math.random() * (distRange[2] - distRange[1])
+
+		-- === Stage-dependent spawn angle ===
+		local vFwd = V:GetWorldForward()
+		local vYaw = math.atan(vFwd.x, vFwd.y)
+		local angle
+		if stage <= 3 then
+			-- Stage 3: always outside direct FOV (behind/side: 90-270 degrees offset)
+			local offsetAngle = math.rad(90 + math.random() * 180)
+			angle = vYaw + offsetAngle
+		elseif stage == 4 then
+			-- Stage 4: can appear in FOV (full 360)
+			angle = math.random() * 2 * math.pi
+		else
+			-- Stage 5: directly in FOV (front arc: -45 to +45 degrees)
+			local offsetAngle = math.rad(-45 + math.random() * 90)
+			angle = vYaw + offsetAngle
+		end
+
 		local spawnX = vPos.x + math.cos(angle) * dist
 		local spawnY = vPos.y + math.sin(angle) * dist
 		-- Raycast to ground
@@ -1302,52 +1460,10 @@ function psychosis.attach(dsp)
 			end
 		end)
 
-		-- Choose behavior based on stage first
-		local behavior
-		local isLover = false
-		if self.CyberPsychoWarnings >= 5 then
-			behavior = (math.random() < 0.8) and 'attack' or 'frozen'
-		elseif self.CyberPsychoWarnings >= 4 then
-			behavior = (math.random() < 0.7) and 'attack' or 'approach'
-		else
-			behavior = 'frozen'
-		end
-
-		-- Pick record based on behavior
-		local record
-		if behavior == 'attack' then
-			-- Gang members for attack (have combat AI)
-			record = attackRecords[math.random(#attackRecords)]
-		else
-			-- Civilian pool for non-attack behaviors
-			local pool = getPhantomPool(self)
-			record = pool[math.random(#pool)]
-			-- Check if this is a lover phantom
-			pcall(function()
-				local QS = Game.GetQuestsSystem()
-				for _, lover in ipairs(loverRecords) do
-					if record == lover.record and QS:GetFactStr(lover.fact) == 1 then
-						isLover = true
-						break
-					end
-				end
-			end)
-			-- Override behavior for lover
-			if isLover and self.CyberPsychoWarnings >= 4 then
-				behavior = 'lover_stare'
-			end
-		end
-
-		-- Despawn timing by stage + behavior (increased durations)
-		local despawnDelays = {
-			frozen      = { [3] = {6, 10},  [4] = {8, 12},  [5] = {5, 8} },
-			approach    = { [3] = {8, 14},  [4] = {10, 16}, [5] = {8, 12} },
-			attack      = { [3] = {6, 10},  [4] = {8, 14},  [5] = {6, 10} },
-			lover_stare = { [3] = {10, 16}, [4] = {12, 20}, [5] = {10, 16} },
-		}
-		local delays = despawnDelays[behavior] or despawnDelays.frozen
-		local stageDelay = delays[self.CyberPsychoWarnings] or {3, 5}
-		local lifetime = stageDelay[1] + math.random() * (stageDelay[2] - stageDelay[1])
+		-- === Stage-dependent duration ===
+		local durTable = phantomDurations[behavior] or phantomDurations.frozen
+		local stageDur = durTable[stage] or {4, 6}
+		local lifetime = stageDur[1] + math.random() * (stageDur[2] - stageDur[1])
 		local glitchLeadTime = 1.5  -- glitch VFX starts 1.5s before despawn
 
 		local ok, entityID = pcall(function()
@@ -1377,10 +1493,8 @@ function psychosis.attach(dsp)
 
 			-- Audio hallucination on V
 			pcall(function()
-				-- Blackwall scream via Audioware (all stages)
 				local screamOk = pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
 				if not screamOk then
-					-- Fallback: game SFX
 					local evt = SoundPlayEvent.new()
 					evt.soundName = "quickhack_cyberpsychosis"
 					V:QueueEvent(evt)
@@ -1388,17 +1502,86 @@ function psychosis.attach(dsp)
 				end
 			end)
 
-			-- Message
-			local msgs = hallucinationMessages[self.CyberPsychoWarnings] or hallucinationMessages[3]
-			local entry = msgs[math.random(#msgs)]
-			self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
+			-- Stage 4: 30% chance phantom voice (hallucination subtitle)
+			if stage == 4 and math.random() < 0.30 then
+				local msgs = hallucinationMessages[4] or hallucinationMessages[3]
+				local entry = msgs[math.random(#msgs)]
+				self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
+			else
+				-- Message
+				local msgs = hallucinationMessages[self.CyberPsychoWarnings] or hallucinationMessages[3]
+				local entry = msgs[math.random(#msgs)]
+				self.bbs:SendWarning(entry.msg, 3.0, entry.voice)
+			end
+
+			-- Stage 5: 30% group spawn (spawn a second phantom nearby)
+			-- Strain >75% threshold: +20% group spawn chance
+			local groupChance = 0
+			if stage >= 5 then
+				groupChance = 0.30
+				local threshold = self:GetStrainThreshold()
+				if threshold > 0 and (self.neuralStrain or 0) > threshold * 0.75 then
+					groupChance = groupChance + 0.20
+				end
+			end
+			if groupChance > 0 and math.random() < groupChance then
+				-- Spawn second phantom offset from first
+				local angle2 = angle + math.rad(30 + math.random() * 60)
+				local dist2 = distRange[1] + math.random() * (distRange[2] - distRange[1])
+				local spawnX2 = vPos.x + math.cos(angle2) * dist2
+				local spawnY2 = vPos.y + math.sin(angle2) * dist2
+				local spawnZ2 = vPos.z
+				pcall(function()
+					local from2 = Vector4.new(spawnX2, spawnY2, vPos.z + 5.0, 1.0)
+					local to2 = Vector4.new(spawnX2, spawnY2, vPos.z - 10.0, 1.0)
+					local s2, r2 = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from2, to2, "Static", false, false)
+					if s2 and r2 then spawnZ2 = r2.position.z end
+				end)
+				local record2 = attackRecords[math.random(#attackRecords)]
+				local ok2, eid2 = pcall(function()
+					local t2 = V:GetWorldTransform()
+					local p2 = WorldPosition.new()
+					WorldPosition.SetVector4(p2, Vector4.new(spawnX2, spawnY2, spawnZ2, 1.0))
+					WorldTransform.SetWorldPosition(t2, p2)
+					local dx2 = vPos.x - spawnX2
+					local dy2 = vPos.y - spawnY2
+					local yaw2 = math.deg(math.atan(dx2, dy2)) + 180
+					WorldTransform.SetOrientation(t2, EulerAngles.ToQuat(EulerAngles.new(0, 0, yaw2)))
+					return exEntitySpawner.SpawnRecord(record2, t2)
+				end)
+				if ok2 and eid2 then
+					local lt2 = stageDur[1] + math.random() * (stageDur[2] - stageDur[1])
+					table.insert(self.phantomNPCs, {
+						entityID = eid2,
+						spawnTime = now,
+						despawnTime = now + lt2,
+						glitchTime = now + lt2 - glitchLeadTime,
+						behavior = 'attack',
+						isLover = false,
+						behaviorApplied = false,
+						glitchApplied = false,
+					})
+					if self.dev_mode then
+						print('[DSP] Hallucination: GROUP SPAWN second phantom ('..record2..')')
+					end
+				end
+			end
 
 			print('[DSP] Hallucination: '..behavior..' phantom ('..record..') at stage '..tostring(self.CyberPsychoWarnings)..(isLover and ' [LOVER]' or ''))
 		end
 
-		-- Reset timer
+		-- Reset timer with interval jitter (anti-habituation: ×0.5 to ×2.0)
 		local range = hallucinationIntervals[self.CyberPsychoWarnings] or {180, 300}
-		self.nextHallucinationTime = now + range[1] + math.random() * (range[2] - range[1])
+		local baseInterval = range[1] + math.random() * (range[2] - range[1])
+		local jitter = 0.5 + math.random() * 1.5  -- ×0.5 to ×2.0
+		local nextDelay = baseInterval * jitter
+
+		-- Intensity amplifier: Sandy used in last 30s → phantom delay halved
+		if self.sandyEndTime and (now - self.sandyEndTime) < 30 then
+			nextDelay = nextDelay * 0.5
+		end
+
+		self.nextHallucinationTime = now + nextDelay
 	 end)
 
 	-- Cleanup all phantoms (called on game load, death, etc.)
@@ -1603,6 +1786,8 @@ function psychosis.attach(dsp)
 		end
 		self.phantomNPCs = {}
 		self.nextHallucinationTime = nil
+		self.lastPhantomRecord = nil
+		self.phantomProximityCheck = nil
 		-- Cleanup horde (spawned via DynamicEntitySystem)
 		for _, h in ipairs(self.hordeNPCs) do
 			pcall(function()

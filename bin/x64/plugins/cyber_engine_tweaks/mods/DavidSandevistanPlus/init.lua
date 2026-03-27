@@ -810,6 +810,7 @@ dsp = {
 		if self.lastBreath then return end
 
 		self.isRunning = false
+		self.sandyEndTime = os.clock()  -- track for phantom intensity amplifier
 		self:RemoveRuntimeStamina()
 		if self.martinez == nil then return end
 		if not self:IsWearingSandevistan() then return end
@@ -1390,6 +1391,10 @@ dsp = {
 								+ civilian * self.cfg.strainPerKillCivilian
 							if killStrain > 0 then
 								self:AddStrain(killStrain, true)  -- raw: psychological impact, not tolerance
+								-- Kill during Sandy: 40% chance immediate phantom trigger
+								if self.isRunning and self.CyberPsychoWarnings >= 3 and math.random() < 0.40 then
+									self.nextHallucinationTime = os.clock() + 2.0 + math.random() * 3.0
+								end
 							end
 						end
 						-- Low runtime strain: body is exhausted (raw: physical stress, not tolerance)
