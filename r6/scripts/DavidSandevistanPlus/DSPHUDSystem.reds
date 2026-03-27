@@ -927,13 +927,13 @@ public class DSPHUDSystem extends ScriptableSystem {
             rxText = "No active protocol";
         }
 
-        // Create canvas
+        // Create canvas — left side, below DSP HUD bars
         let bioCanvas: ref<inkCanvas> = new inkCanvas();
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(600.0, 400.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 200.0, 0.0, 0.0));
+        bioCanvas.SetSize(new Vector2(800.0, 500.0));
+        bioCanvas.SetMargin(new inkMargin(100.0, 900.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -941,9 +941,10 @@ public class DSPHUDSystem extends ScriptableSystem {
         let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
         bioCanvas.AttachController(controller);
 
-        // Override footer
+        // Override: larger text
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
+        controller.m_textSize = 28;
         controller.m_loadingAnimDuration = 1.5;
         controller.m_expandAnimDuration = 1.5;
         controller.m_listItemAnimDuration = 0.8;
@@ -996,8 +997,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(600.0, 400.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 200.0, 0.0, 0.0));
+        bioCanvas.SetSize(new Vector2(800.0, 500.0));
+        bioCanvas.SetMargin(new inkMargin(100.0, 900.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -1006,6 +1007,7 @@ public class DSPHUDSystem extends ScriptableSystem {
 
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
+        controller.m_textSize = 28;
         controller.m_loadingAnimDuration = 1.5;
         controller.m_expandAnimDuration = 1.5;
         controller.m_listItemAnimDuration = 0.8;
