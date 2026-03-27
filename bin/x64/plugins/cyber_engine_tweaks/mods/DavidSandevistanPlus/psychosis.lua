@@ -706,6 +706,19 @@ function psychosis.attach(dsp)
 		'Character.tyger_claws_grunt2_ranged2_shingen_ma',
 	}
 
+	-- Horde system config (module-local)
+	local hordeConfig = {
+		checkInterval = { [4] = 300, [5] = 120 },
+		duration = { [4] = {60, 90}, [5] = {90, 120} },
+		baseChance = { [4] = 0.3, [5] = 0.5 },
+		spawnInterval = { [4] = {3, 5}, [5] = {2, 4} },
+		reinforcePerKill = { [4] = {1, 2}, [5] = {1, 3} },
+		reinforceDelay = { [4] = {1.5, 3.0}, [5] = {0.8, 2.0} },
+		reinforceDist = { [4] = {12, 20}, [5] = {14, 25} },
+		maxNPCs = { [4] = 20, [5] = 30 },
+		cooldown = { [4] = 600, [5] = 300 },
+	}
+
 	-- Lover records mapped to quest facts
 	local loverRecords = {
 		{ fact = "sq030_judy_lover",  record = "Character.Judy" },
@@ -757,6 +770,18 @@ function psychosis.attach(dsp)
 
 	dsp.phantomNPCs = {}  -- { entityID, despawnTime, behavior, glitchTime }
 	dsp.nextHallucinationTime = nil
+
+	-- Horde state
+	dsp.hordeActive = false
+	dsp.hordeNPCs = {}
+	dsp.hordeEndTime = 0
+	dsp.hordeNextSpawn = 0
+	dsp.hordeNextCheck = 0
+	dsp.hordeCooldownUntil = 0
+	dsp.hordeGangRecord = nil
+	dsp.hordePendingReinforce = {}
+	dsp.hordeKills = 0
+	dsp.hordeDespawnTime = nil
 
 	-- Apply phantom behavior after entity initializes (called ~0.5s after spawn)
 	local function applyPhantomBehavior(self, phantom)
@@ -835,35 +860,25 @@ function psychosis.attach(dsp)
 			end)
 
 		elseif phantom.behavior == 'attack' then
-			-- Stage 4-5: runs at V aggressively
+			-- Stage 4-5: actively attacks V (AMM pattern: AIRole + OnAttach)
 			pcall(function()
-				-- Make hostile
+				local role = AIRole.new()
+				npc:GetAIControllerComponent():SetAIRole(role)
+				npc:GetAIControllerComponent():OnAttach()
+			end)
+			pcall(function()
 				npc:GetAttitudeAgent():SetAttitudeGroup(CName.new("Hostile"))
 				npc:GetAttitudeAgent():SetAttitudeTowards(V:GetAttitudeAgent(), EAIAttitude.AIA_Hostile)
 			end)
 			pcall(function()
-				-- Trigger combat AI
+				npc.isPlayerCompanionCached = false
+				npc.isPlayerCompanionCachedTimeStamp = 0
+			end)
+			pcall(function()
 				local sensePreset = TweakDBInterface.GetReactionPresetRecord(TweakDBID.new("ReactionPresets.Ganger_Aggressive"))
 				npc.reactionComponent:SetReactionPreset(sensePreset)
 				npc.reactionComponent:TriggerCombat(V)
 			end)
-			pcall(function()
-				-- Fallback: run toward V (if TriggerCombat fails on civilian records)
-				local vPos = V:GetWorldPosition()
-				local dest = NewObject('WorldPosition')
-				WorldPosition.SetVector4(dest, vPos)
-				local posSpec = NewObject('AIPositionSpec')
-				posSpec:SetWorldPosition(posSpec, dest)
-				local cmd = NewObject('handle:AIMoveToCommand')
-				cmd.movementTarget = posSpec
-				cmd.rotateEntityTowardsFacingTarget = true
-				cmd.ignoreNavigation = true
-				cmd.desiredDistanceFromTarget = 0.5
-				cmd.movementType = CName.new("Sprint")
-				cmd.finishWhenDestinationReached = true
-				npc:GetAIControllerComponent():SendCommand(cmd)
-			end)
-			-- SFX from phantom
 			pcall(function()
 				local evt = SoundPlayEvent.new()
 				evt.soundName = "quickhack_cyberpsychosis_mech"
@@ -911,6 +926,102 @@ function psychosis.attach(dsp)
 		end)
 	end
 
+	-- Spawn a single horde NPC behind/side of V (never in front FOV)
+	local function spawnHordeNPC(self, minDist, maxDist)
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return nil end
+		local max = hordeConfig.maxNPCs[self.CyberPsychoWarnings] or 20
+		if #self.hordeNPCs >= max then return nil end
+
+		local vPos = V:GetWorldPosition()
+		local vFwd = V:GetWorldForward()
+		local dist = minDist + math.random() * (maxDist - minDist)
+		-- Spawn behind/side of V: angle between 90° and 270° relative to V's facing
+		local vYaw = math.atan(vFwd.x, vFwd.y)
+		local offsetAngle = math.rad(90 + math.random() * 180)  -- 90°-270° behind arc
+		local angle = vYaw + offsetAngle
+		local spawnX = vPos.x + math.cos(angle) * dist
+		local spawnY = vPos.y + math.sin(angle) * dist
+		local spawnZ = vPos.z
+
+		local record = self.hordeGangRecord or attackRecords[math.random(#attackRecords)]
+
+		-- Use DynamicEntitySystem (AMM pattern) instead of exEntitySpawner
+		-- exEntitySpawner.SpawnRecord has a known CET bug where hostile NPCs don't attack
+		local ok, entityID = pcall(function()
+			local spec = DynamicEntitySpec.new()
+			spec.recordID = TweakDBID.new(record)
+			spec.persistState = false
+			spec.persistSpawn = false
+			spec.alwaysSpawned = false
+			spec.spawnInView = true
+			spec.position = Vector4.new(spawnX, spawnY, spawnZ, 1.0)
+			-- Face toward V
+			local dx = vPos.x - spawnX
+			local dy = vPos.y - spawnY
+			local faceDir = Vector4.new(dx, dy, 0, 0)
+			spec.orientation = EulerAngles.ToQuat(Vector4.ToRotation(faceDir))
+			return Game.GetDynamicEntitySystem():CreateEntity(spec)
+		end)
+
+		if ok and entityID then
+			local now = os.clock()
+			table.insert(self.hordeNPCs, {
+				entityID = entityID,
+				spawnTime = now,
+				behaviorApplied = false,
+			})
+			-- VFX on V's vision (brief glitch)
+			pcall(function()
+				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+			end)
+			return entityID
+		end
+		return nil
+	end
+
+	-- Apply hostile behavior on horde NPC (AMM pattern: AIRole + OnAttach)
+	local function applyHordeBehavior(self, hordeNPC)
+		local ent = Game.FindEntityByID(hordeNPC.entityID)
+		if not ent or not IsDefined(ent) then
+			print('[DSP] Horde behavior: entity not found')
+			return
+		end
+		local V = Game.GetPlayer()
+		if not V or not IsDefined(V) then return end
+		local npc = ent
+
+		-- Initialize AI behavior tree (CRITICAL — without this NPCs aim but don't fire)
+		pcall(function()
+			local role = AIRole.new()
+			npc:GetAIControllerComponent():SetAIRole(role)
+			npc:GetAIControllerComponent():OnAttach()
+		end)
+		-- Set hostile attitude
+		pcall(function()
+			npc:GetAttitudeAgent():SetAttitudeGroup(CName.new("Hostile"))
+			npc:GetAttitudeAgent():SetAttitudeTowards(V:GetAttitudeAgent(), EAIAttitude.AIA_Hostile)
+		end)
+		-- Clear companion cache
+		pcall(function()
+			npc.isPlayerCompanionCached = false
+			npc.isPlayerCompanionCachedTimeStamp = 0
+		end)
+		-- Trigger combat
+		pcall(function()
+			local sensePreset = TweakDBInterface.GetReactionPresetRecord(TweakDBID.new("ReactionPresets.Ganger_Aggressive"))
+			npc.reactionComponent:SetReactionPreset(sensePreset)
+			npc.reactionComponent:TriggerCombat(V)
+		end)
+		-- SFX
+		pcall(function()
+			local evt = SoundPlayEvent.new()
+			evt.soundName = "quickhack_cyberpsychosis_mech"
+			npc:QueueEvent(evt)
+		end)
+		print('[DSP] Horde behavior applied')
+	end
+
 	dsp.UpdateHallucinations = (function(self, dt)
 		if not self.cfg.enableCyberpsychosis then return end
 		if self.CyberPsychoWarnings < 3 then self.nextHallucinationTime = nil return end
@@ -919,6 +1030,8 @@ function psychosis.attach(dsp)
 		if self.lastBreath then return end
 		local eff = self:GetImmunoblockerEffectiveness()
 		if eff == 'full' or eff == 'partial' then return end
+		-- Pause normal phantoms while horde is active
+		if self.hordeActive then return end
 
 		local now = os.clock()
 
@@ -1082,6 +1195,202 @@ function psychosis.attach(dsp)
 	 end)
 
 	-- Cleanup all phantoms (called on game load, death, etc.)
+	-- ============================================================
+	-- HORDE SYSTEM: Waves of hostile gang NPCs (Stage 4-5)
+	-- ============================================================
+
+	dsp.StartHorde = (function(self)
+		if self.hordeActive then return end
+		local stage = self.CyberPsychoWarnings
+		local now = os.clock()
+
+		self.hordeActive = true
+		self.hordeNPCs = {}
+		self.hordePendingReinforce = {}
+		self.hordeKills = 0
+		self.hordeDespawnTime = nil
+
+		-- Pick a single gang type for this horde
+		self.hordeGangRecord = attackRecords[math.random(#attackRecords)]
+
+		-- Duration
+		local durRange = hordeConfig.duration[stage] or {60, 90}
+		self.hordeEndTime = now + durRange[1] + math.random() * (durRange[2] - durRange[1])
+
+		-- First spawn timer
+		self.hordeNextSpawn = now + 1.0
+
+		-- Blackwall VFX on V
+		pcall(function()
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.HauntedBlackwallForceKill')
+		end)
+
+		-- Warning
+		self.bbs:SendWarning("THEY'RE COMING", 3.0, "halluc_s5_01")
+		pcall(function() self.hud:PlayVoiceLine("dsp_blackwall_scream") end)
+
+		print('[DSP] Horde started: '..self.hordeGangRecord..' duration='..(math.floor(self.hordeEndTime - now))..'s stage='..tostring(stage))
+	 end)
+
+	dsp.EndHorde = (function(self)
+		if not self.hordeActive then return end
+		local now = os.clock()
+
+		-- Blackwall VFX on all surviving horde NPCs
+		for _, h in ipairs(self.hordeNPCs) do
+			pcall(function()
+				local ent = Game.FindEntityByID(h.entityID)
+				if ent and IsDefined(ent) then
+					Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
+						TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
+				end
+			end)
+		end
+
+		-- Delayed despawn (let Blackwall VFX play for 2s)
+		self.hordeDespawnTime = now + 2.0
+
+		-- Set cooldown
+		local stage = self.CyberPsychoWarnings
+		local cd = hordeConfig.cooldown[stage] or 300
+		self.hordeCooldownUntil = now + cd
+
+		self.hordeActive = false
+		self.hordePendingReinforce = {}
+
+		-- Brief Blackwall VFX on V
+		pcall(function()
+			self:StatusEffect_CheckAndApply('BaseStatusEffect.HauntedBlackwallForceKill')
+		end)
+
+		print('[DSP] Horde ended: kills='..tostring(self.hordeKills)..' remaining='..tostring(#self.hordeNPCs))
+	 end)
+
+	dsp.UpdateHorde = (function(self, dt)
+		if not self.cfg.enableCyberpsychosis then return end
+		if self.CyberPsychoWarnings < 4 then return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		if not self.VIsInControl then return end
+		if self.lastBreath then return end
+
+		local now = os.clock()
+		local stage = self.CyberPsychoWarnings
+
+		-- Process pending despawns from EndHorde
+		if self.hordeDespawnTime and now >= self.hordeDespawnTime then
+			for _, h in ipairs(self.hordeNPCs) do
+				pcall(function()
+					Game.GetDynamicEntitySystem():DeleteEntity(h.entityID)
+				end)
+			end
+			self.hordeNPCs = {}
+			self.hordeDespawnTime = nil
+		end
+
+		-- If horde is active
+		if self.hordeActive then
+			-- Cancel if immunoblocker taken
+			local eff = self:GetImmunoblockerEffectiveness()
+			if eff == 'full' or eff == 'partial' then
+				self:EndHorde()
+				return
+			end
+
+			-- Check if time expired
+			if now >= self.hordeEndTime then
+				self:EndHorde()
+				return
+			end
+
+			-- Process horde NPC lifecycle
+			local i = #self.hordeNPCs
+			while i >= 1 do
+				local h = self.hordeNPCs[i]
+				-- Poll for entity readiness, apply behavior once ready
+				if not h.behaviorApplied then
+					local ent = nil
+					pcall(function() ent = Game.FindEntityByID(h.entityID) end)
+					if ent and IsDefined(ent) then
+						h.behaviorApplied = true
+						pcall(function() applyHordeBehavior(self, h) end)
+					elseif now >= h.spawnTime + 10.0 then
+						table.remove(self.hordeNPCs, i)
+					end
+				end
+				-- Check if dead (only after behavior applied)
+				if h.behaviorApplied then
+					local isDead = false
+					pcall(function()
+						local ent = Game.FindEntityByID(h.entityID)
+						if not ent or not IsDefined(ent) then
+							isDead = true
+						elseif ent:IsDeadNoStatPool() or ent:IsDead() then
+							isDead = true
+							Game.GetStatusEffectSystem():ApplyStatusEffect(ent:GetEntityID(),
+								TweakDBID.new('BaseStatusEffect.HauntedBlackwallForceKill'))
+						end
+					end)
+					if isDead then
+						self.hordeKills = self.hordeKills + 1
+						table.remove(self.hordeNPCs, i)
+						local reinforceRange = hordeConfig.reinforcePerKill[stage] or {1, 2}
+						local count = reinforceRange[1] + math.random(0, reinforceRange[2] - reinforceRange[1])
+						local delayRange = hordeConfig.reinforceDelay[stage] or {1.0, 2.0}
+						for r = 1, count do
+							local delay = delayRange[1] + math.random() * (delayRange[2] - delayRange[1])
+							table.insert(self.hordePendingReinforce, { time = now + delay + (r - 1) * 0.5 })
+						end
+					end
+				end
+				i = i - 1
+			end
+
+			-- Process pending reinforcements
+			local ri = #self.hordePendingReinforce
+			while ri >= 1 do
+				if now >= self.hordePendingReinforce[ri].time then
+					local distRange = hordeConfig.reinforceDist[stage] or {12, 20}
+					spawnHordeNPC(self, distRange[1], distRange[2])
+					table.remove(self.hordePendingReinforce, ri)
+				end
+				ri = ri - 1
+			end
+
+			-- Auto-spawn on interval
+			if now >= self.hordeNextSpawn then
+				local spawnRange = hordeConfig.spawnInterval[stage] or {3, 5}
+				self.hordeNextSpawn = now + spawnRange[1] + math.random() * (spawnRange[2] - spawnRange[1])
+				local eid = spawnHordeNPC(self, 8, 16)
+				if eid then
+					print('[DSP] Horde spawn: count='..tostring(#self.hordeNPCs)..' kills='..tostring(self.hordeKills)..' remaining='..(math.floor(self.hordeEndTime - now))..'s')
+				end
+			end
+
+			return
+		end
+
+		-- Not active: roll for horde event
+		local eff = self:GetImmunoblockerEffectiveness()
+		if eff == 'full' or eff == 'partial' then return end
+		if now < self.hordeNextCheck then return end
+
+		local interval = hordeConfig.checkInterval[stage] or 300
+		self.hordeNextCheck = now + interval
+
+		if now < self.hordeCooldownUntil then return end
+
+		-- Probability: base chance * strain ratio
+		local base = hordeConfig.baseChance[stage] or 0.3
+		local threshold = self:GetStrainThreshold()
+		local strainRatio = math.min((self.neuralStrain or 0) / threshold, 1.5)
+		local chance = base * strainRatio
+
+		if math.random() < chance then
+			self:StartHorde()
+		end
+	 end)
+
+	-- Cleanup all phantoms and horde (called on game load, death, etc.)
 	dsp.DespawnAllPhantoms = (function(self)
 		for _, phantom in ipairs(self.phantomNPCs) do
 			pcall(function()
@@ -1093,6 +1402,16 @@ function psychosis.attach(dsp)
 		end
 		self.phantomNPCs = {}
 		self.nextHallucinationTime = nil
+		-- Cleanup horde (spawned via DynamicEntitySystem)
+		for _, h in ipairs(self.hordeNPCs) do
+			pcall(function()
+				Game.GetDynamicEntitySystem():DeleteEntity(h.entityID)
+			end)
+		end
+		self.hordeNPCs = {}
+		self.hordeActive = false
+		self.hordePendingReinforce = {}
+		self.hordeDespawnTime = nil
 	 end)
 
 	-- ============================================================

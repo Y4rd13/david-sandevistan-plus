@@ -2601,6 +2601,7 @@ registerForEvent('onUpdate', function(dt)
     dsp:UpdateLastBreath(dt)
     dsp:UpdateBlackout(dt)
     dsp:UpdateHallucinations(dt)
+    dsp:UpdateHorde(dt)
     dsp:UpdateAutoAttack()
     dsp:UpdatePendingEpisode(dt)
     -- Delayed Viktor SMS (after stage change warning)
@@ -2728,6 +2729,22 @@ registerInput("DebugForcePhantom", 'DEBUG: Force Phantom NPC Now', function(isKe
 	if not isKeyDown then return end
 	dsp.nextHallucinationTime = 0
 	print("[DSP DEBUG] Forcing phantom at stage "..tostring(dsp.CyberPsychoWarnings))
+end)
+
+registerInput("DebugForceHorde", 'DEBUG: Start Horde', function(isKeyDown)
+	if not isKeyDown then return end
+	if dsp.hordeActive then return end  -- ignore if already active
+	if dsp.CyberPsychoWarnings < 4 then dsp.CyberPsychoWarnings = 4 end
+	dsp.hordeCooldownUntil = 0
+	dsp:StartHorde()
+	print("[DSP DEBUG] Horde started at stage "..tostring(dsp.CyberPsychoWarnings))
+end)
+
+registerInput("DebugEndHorde", 'DEBUG: End Horde', function(isKeyDown)
+	if not isKeyDown then return end
+	if not dsp.hordeActive then return end
+	dsp:EndHorde()
+	print("[DSP DEBUG] Horde ended manually")
 end)
 
 registerForEvent('onShutdown', function()
