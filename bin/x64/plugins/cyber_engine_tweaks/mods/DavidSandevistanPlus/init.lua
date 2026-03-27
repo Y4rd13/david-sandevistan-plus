@@ -2931,6 +2931,19 @@ registerInput("DebugEndHorde", 'DEBUG: End Horde', function(isKeyDown)
 	print("[DSP DEBUG] Horde ended manually")
 end)
 
+registerInput("ShowBiomonitor", 'Show Immunoblocker Status', function(isKeyDown)
+	if not isKeyDown then return end
+	pcall(function()
+		local tier = dsp:GetImmunoblockerTier()
+		local eff = dsp:GetImmunoblockerEffectiveness()
+		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
+		local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+		if hudSystem then
+			hudSystem:TriggerBiomonitor(math.max(tier, 1), dsp.toleranceStage or 0, effPct)
+		end
+	end)
+end)
+
 registerForEvent('onShutdown', function()
 	pcall(function() dsp:StopHeartbeat() end)
 	pcall(function() Game.GetAudioSystem():Stop(CName.new("ui_gmpl_perk_edgerunner")) end)
