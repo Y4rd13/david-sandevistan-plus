@@ -953,8 +953,8 @@ function psychosis.attach(dsp)
 			spec.recordID = TweakDBID.new(record)
 			spec.persistState = false
 			spec.persistSpawn = false
-			spec.alwaysSpawned = false
-			spec.spawnInView = true
+			spec.alwaysSpawned = true
+			spec.spawnInView = false
 			spec.position = Vector4.new(spawnX, spawnY, spawnZ, 1.0)
 			-- Face toward V
 			local dx = vPos.x - spawnX
