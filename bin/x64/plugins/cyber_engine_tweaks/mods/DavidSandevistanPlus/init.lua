@@ -309,6 +309,7 @@ dsp = {
 	,autoInjectorEquipped = nil  -- cached per displayTick cycle
 	,immunoWarnedThisDose = false  -- one-shot warning per immunoblocker dose
 	,immunoblockerRefreshed = false  -- set true by observer when new immunoblocker consumed; consumed by removal observer
+	,lastReboundTime = 0  -- os.clock() timestamp of last rebound effect (10s cooldown)
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -2738,6 +2739,28 @@ registerForEvent('onInit', function()
 		print('[DSP] Immunoblocker OnStatusEffectApplied observer registered (onInit)')
 	end)
 
+	-- REBOUND: Detect when immunoblocker effect expires naturally (not replaced)
+	pcall(function()
+		local immunoTierByEffect = {}
+		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common))] = 1
+		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon))] = 2
+		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare))] = 3
+
+		ObserveAfter('PlayerPuppet', 'OnStatusEffectRemoved', function(this, evt)
+			if not dsp then return end
+			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
+			if not ok or not recordID then return end
+			local tier = immunoTierByEffect[tostring(recordID)]
+			if not tier then return end
+			-- Check if this was a refresh (replaced by new immunoblocker) or natural expiration
+			if dsp.immunoblockerRefreshed then
+				dsp.immunoblockerRefreshed = false  -- consume the flag
+				return  -- no rebound on refresh
+			end
+			pcall(function() dsp:ApplyImmunoblockerRebound(tier) end)
+		end)
+		print('[DSP] Immunoblocker OnStatusEffectRemoved observer registered (onInit)')
+	end)
 end)
 
 registerForEvent('onUpdate', function(dt)

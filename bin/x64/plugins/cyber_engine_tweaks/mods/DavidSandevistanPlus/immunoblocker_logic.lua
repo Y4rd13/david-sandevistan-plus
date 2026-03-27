@@ -135,6 +135,56 @@ function immunoblocker_logic.attach(dsp)
 	-- At module load time TweakDBID is nil — the old pcall registration here failed silently.
 	-- The onInit observer is the sole source for treatment dose tracking and tolerance buildup.
 
+	-- Rebound/slingshot effect when immunoblocker expires (Doc's warning: "slingshot the other way")
+	local reboundStrainByTier = { [1] = 5, [2] = 15, [3] = 30 }
+	local reboundMessages = {
+		[1] = {
+			"Meds wearing off...",
+			"Could use another dose...",
+			"Starting to feel it again...",
+		},
+		[2] = {
+			"Crash is hitting... need another dose",
+			"Body's fighting back... the meds aren't enough",
+			"Withdrawal kicking in...",
+		},
+		[3] = {
+			"Doc warned me about this... the slingshot",
+			"Nine times the dose... and the crash is nine times worse",
+			"The edge... I can feel it pulling",
+		},
+	}
+
+	dsp.ApplyImmunoblockerRebound = (function(self, tier)
+		if self.lastBreath then return end
+		if self.CachedInMenu or self.CachedBrainDance then return end
+		-- 10s cooldown
+		local now = os.clock()
+		if now - (self.lastReboundTime or 0) < 10 then return end
+		self.lastReboundTime = now
+		-- Strain spike (raw, bypasses stage multiplier)
+		local baseStrain = reboundStrainByTier[tier] or 5
+		local tolMult = { [0]=1.0, [1]=1.3, [2]=1.6, [3]=2.0 }
+		local mult = tolMult[self.toleranceStage or 0] or 1.0
+		self:AddStrain(baseStrain * mult, true)  -- raw=true
+		-- VFX
+		if tier >= 3 then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
+		elseif tier >= 2 then
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+		else
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.008)
+		end
+		-- Message
+		local msgs = reboundMessages[tier]
+		if msgs then
+			local msg = msgs[math.random(#msgs)]
+			self.bbs:SendWarning(msg, 3.0)
+		end
+		print('[DSP] Immunoblocker rebound: tier=' .. tostring(tier) .. ' strain=+' .. tostring(math.floor(baseStrain * mult)) .. ' tolerance=' .. tostring(self.toleranceStage or 0))
+	 end)
+
 	-- Real-time immunoblocker tick: runs from onUpdate via os.clock(), works during inventory pause.
 	-- Detects qty decreases the observer missed (effect refresh = same tier used again).
 	-- Also drains animation queue when scene finishes (fact resets to 0).
