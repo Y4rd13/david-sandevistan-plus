@@ -244,6 +244,8 @@ dsp = {
 	,completedDoses = 0
 	,completedVisits = 0
 	,prescribedDoses = 0
+	,sandyUsesDuringTreatment = 0
+	,sandyTreatmentWarned = false
 	-- Activity tracking for sleep multiplier (reset on sleep)
 	,activities = {
 		lover = false,          -- visited romantic partner
@@ -578,6 +580,8 @@ dsp = {
 					self.completedDoses = 0
 					self.completedVisits = 0
 					self.prescribedDoses = rx.doses
+					self.sandyUsesDuringTreatment = 0
+					self.sandyTreatmentWarned = false
 
 					-- SMS: prescription — lore-accurate, Viktor talks like a doctor (3 variants)
 					local prescriptionMsgs = {
@@ -721,6 +725,22 @@ dsp = {
 
 			-- Base activation strain (tolerance-based: affected by stage multiplier)
 			self:AddStrain(self.cfg.strainPerActivation)
+
+			-- Treatment penalty: using Sandy fights the medication
+			if self.treatmentActive then
+				self:AddStrain(self.cfg.strainPerActivation * 0.5, true)  -- +50% raw strain
+				self.sandyUsesDuringTreatment = (self.sandyUsesDuringTreatment or 0) + 1
+				-- First use warning
+				if not self.sandyTreatmentWarned then
+					self.sandyTreatmentWarned = true
+					self:ViktorSMS("V, my readings just spiked. You're using the Sandy while on treatment? That's working against everything we're doing here. Keep it up and I'll need to adjust your prescription.")
+				end
+				-- Every 3 uses: add 1 dose to prescription
+				if self.sandyUsesDuringTreatment % 3 == 0 then
+					self.prescribedDoses = (self.prescribedDoses or 0) + 1
+					self:ViktorSMS("You're still running the Sandy. I've adjusted your prescription — you'll need " .. tostring(self.prescribedDoses - (self.completedDoses or 0)) .. " more doses now. Your call, kid.")
+				end
+			end
 
 			-- Extra strain per overuse activation
 			local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')

@@ -391,6 +391,8 @@ function psychosis.attach(dsp)
 			self.completedDoses = 0
 			self.completedVisits = 0
 			self.prescribedDoses = 0
+			self.sandyUsesDuringTreatment = 0
+			self.sandyTreatmentWarned = false
 			-- Delayed SMS: higher stage = Viktor responds faster
 			local smsSelf = self
 			pcall(function()
@@ -579,7 +581,8 @@ function psychosis.attach(dsp)
 		if not self.treatmentActive then return end
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
 		if rx.doses == 0 then return end
-		local dosesOk = (self.completedDoses or 0) >= rx.doses
+		local requiredDoses = math.max(rx.doses, self.prescribedDoses or 0)
+		local dosesOk = (self.completedDoses or 0) >= requiredDoses
 		local visitsOk = (self.completedVisits or 0) >= rx.visits
 		if dosesOk and visitsOk then
 			-- Protocol complete — reduce stage
@@ -589,6 +592,8 @@ function psychosis.attach(dsp)
 			self.completedDoses = 0
 			self.completedVisits = 0
 			self.prescribedDoses = 0
+			self.sandyUsesDuringTreatment = 0
+			self.sandyTreatmentWarned = false
 			self:SyncSafetyWithStage()
 			self:ResetMicroEpisodeTimer()
 			self:DisableSandevistan("TreatmentComplete")
