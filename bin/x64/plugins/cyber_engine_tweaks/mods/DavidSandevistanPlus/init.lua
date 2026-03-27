@@ -596,37 +596,39 @@ dsp = {
 					self.sandyUsesDuringTreatment = 0
 					self.sandyTreatmentWarned = false
 
-					-- SMS: prescription — lore-accurate, Viktor talks like a doctor (3 variants)
+					-- SMS: narrative only (numbers go to biomonitor)
 					local prescriptionMsgs = {
 						[1] = {
-							"Alright kid, I ran the diagnostics. Stage I — your neural interface is destabilizing but we caught it early. " .. tostring(rx.doses) .. " doses of standard immunoblockers. Take them, don't skip. Come back for a checkup.",
-							"Stage I, V. Your readings are off but nothing we can't handle. I'm putting you on " .. tostring(rx.doses) .. " doses Common Immunoblocker. Simple protocol — take the meds, come see me after.",
-							"Good news is we caught it early. Stage I — " .. tostring(rx.doses) .. " doses of standard grade should stabilize things. Just don't skip any, kid. I mean it.",
+							"Alright kid, I ran the diagnostics. Stage I — your neural interface is destabilizing but we caught it early. I'm uploading the protocol to your biomonitor. Take the meds, don't skip.",
+							"Stage I, V. Your readings are off but nothing we can't handle. Check your biomonitor for the protocol. Simple stuff — just follow it.",
+							"Good news is we caught it early. Stage I — I've sent the treatment protocol to your biomonitor. Just don't skip any doses, kid. I mean it.",
 						},
 						[2] = {
-							"Stage II. The degradation is accelerating. " .. tostring(rx.doses) .. " doses and " .. tostring(rx.visits) .. " follow-up visit. This isn't optional, V.",
-							"V, Stage II. Your neural pathways are degrading faster than I'd like. " .. tostring(rx.doses) .. " doses Common Immunoblocker, " .. tostring(rx.visits) .. " follow-up to recalibrate. Start today.",
-							"Alright, Stage II. Worse than last time. I need you on " .. tostring(rx.doses) .. " doses and " .. tostring(rx.visits) .. " visit to monitor. Don't make me chase you down.",
+							"Stage II. The degradation is accelerating. Protocol's on your biomonitor. This isn't optional, V.",
+							"V, Stage II. Your neural pathways are degrading faster than I'd like. I've updated your biomonitor with the new protocol. Start today.",
+							"Alright, Stage II. Worse than last time. Check your biomonitor — the protocol's there. Don't make me chase you down.",
 						},
 						[3] = {
-							"Stage III. Standard grade won't hold anymore — " .. tostring(rx.doses) .. " doses Uncommon Immunoblocker. Stronger compound. " .. tostring(rx.visits) .. " visits to monitor the response.",
-							"V, we're past Common grade. Stage III — I'm switching you to Uncommon Immunoblocker. " .. tostring(rx.doses) .. " doses, " .. tostring(rx.visits) .. " visits. The compound hits deeper neural pathways. Don't wait on this.",
-							"Stage III protocol. " .. tostring(rx.doses) .. " doses Uncommon grade, " .. tostring(rx.visits) .. " follow-ups. The standard stuff can't keep up anymore. Find the Uncommon stock and start treatment.",
+							"Stage III. Standard grade won't hold anymore — I'm switching you to a stronger compound. Protocol's on your biomonitor.",
+							"V, we're past Common grade. Stage III — check your biomonitor for the new protocol. The compound hits deeper neural pathways. Don't wait on this.",
+							"Stage III protocol. I've uploaded everything to your biomonitor. The standard stuff can't keep up anymore.",
 						},
 						[4] = {
-							"Stage IV. Only Military Grade can slow this down. " .. tostring(rx.doses) .. " doses, " .. tostring(rx.visits) .. " visits. It's expensive but the alternative is worse.",
-							"V, Stage IV. We're in critical territory. " .. tostring(rx.doses) .. " doses Military Grade Immunoblocker and " .. tostring(rx.visits) .. " visits. This is the heavy stuff — restricted compound, not cheap. But you need it.",
-							"I'm not going to sugarcoat this — Stage IV. " .. tostring(rx.doses) .. " doses Military Grade, " .. tostring(rx.visits) .. " visits. Everything below mil-spec is useless at this point. Get the eddies together.",
+							"Stage IV. Only Military Grade can slow this down. Protocol's on your biomonitor. It's expensive but the alternative is worse.",
+							"V, Stage IV. We're in critical territory. I've uploaded the protocol — check your biomonitor. This is the heavy stuff.",
+							"I'm not going to sugarcoat this — Stage IV. Check your biomonitor. Everything below mil-spec is useless at this point.",
 						},
 						[5] = {
-							"Stage V. " .. tostring(rx.doses) .. " doses Military Grade and " .. tostring(rx.visits) .. " visits. This is the protocol I had for Maine. He didn't finish it. You will.",
-							"V... Stage V. Point of no return. " .. tostring(rx.doses) .. " doses Military Grade, " .. tostring(rx.visits) .. " visits — full course, no shortcuts. Most chooms don't come back from this. But you're still here. That counts.",
-							"Stage V protocol. " .. tostring(rx.doses) .. " Military Grade doses. " .. tostring(rx.visits) .. " visits. This is everything I've got, kid. The same protocol I developed for Maine before... well. Just finish it.",
+							"Stage V. I'm uploading the protocol to your biomonitor. This is the same one I had for Maine. He didn't finish it. You will.",
+							"V... Stage V. Point of no return. Protocol's on your biomonitor — full course, no shortcuts. Most chooms don't come back from this. But you're still here.",
+							"Stage V protocol. I've uploaded everything to your biomonitor. This is everything I've got, kid. The same protocol I developed for Maine before... well. Just finish it.",
 						},
 					}
 					local pool = prescriptionMsgs[self.CyberPsychoWarnings]
-					local msg = pool and pool[math.random(#pool)] or ("Prescribing " .. tostring(rx.doses) .. " doses " .. tierName .. " Immunoblocker + " .. tostring(rx.visits) .. " follow-up visits.")
+					local msg = pool and pool[math.random(#pool)] or "I've uploaded the treatment protocol to your biomonitor."
 					self:ViktorSMS(msg, 10.0)
+					-- Trigger biomonitor Mode 2 (treatment protocol)
+					self:ShowBiomonitorProtocol()
 				end
 
 				-- Count this visit
@@ -2934,12 +2936,17 @@ end)
 registerInput("ShowBiomonitor", 'Show Immunoblocker Status', function(isKeyDown)
 	if not isKeyDown then return end
 	pcall(function()
-		local tier = dsp:GetImmunoblockerTier()
+		local tier = math.max(dsp:GetImmunoblockerTier(), 1)
 		local eff = dsp:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
+		local threshold = dsp:GetStrainThreshold()
+		local strainPct = threshold > 0 and math.floor((dsp.neuralStrain or 0) / threshold * 100) or 0
+		local rx = dsp:GetPrescription(dsp.CyberPsychoWarnings)
+		local rxTotal = math.max(rx.doses, dsp.prescribedDoses or 0)
+		local rxCompleted = dsp.completedDoses or 0
 		local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 		if hudSystem then
-			hudSystem:TriggerBiomonitor(math.max(tier, 1), dsp.toleranceStage or 0, effPct)
+			hudSystem:ShowBiomonitorStatus(tier, dsp.toleranceStage or 0, effPct, strainPct, dsp.CyberPsychoWarnings or 0, rxCompleted, rxTotal)
 		end
 	end)
 end)

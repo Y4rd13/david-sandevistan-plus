@@ -693,6 +693,8 @@ function psychosis.attach(dsp)
 			elseif self.treatmentMilestone == 2 then
 				self:ViktorSMS("Real improvement here, kid. Neural pathways are re-routing. Almost there.")
 			end
+			-- Trigger biomonitor Mode 2 (protocol update on milestone)
+			self:ShowBiomonitorProtocol()
 		end
 	 end)
 

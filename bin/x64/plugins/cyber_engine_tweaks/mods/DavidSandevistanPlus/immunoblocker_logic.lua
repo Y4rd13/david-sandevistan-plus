@@ -113,11 +113,52 @@ function immunoblocker_logic.attach(dsp)
 	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
-		-- Trigger redscript biomonitor popup (fade in, hold 6s, fade out)
+		local threshold = self:GetStrainThreshold()
+		local strainPct = threshold > 0 and math.floor((self.neuralStrain or 0) / threshold * 100) or 0
+		local rx = self:GetPrescription(self.CyberPsychoWarnings)
+		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
+		local rxCompleted = self.completedDoses or 0
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
-				hudSystem:TriggerBiomonitor(consumedTier, self.toleranceStage or 0, effPct)
+				hudSystem:ShowBiomonitorStatus(
+					consumedTier,
+					self.toleranceStage or 0,
+					effPct,
+					strainPct,
+					self.CyberPsychoWarnings or 0,
+					rxCompleted,
+					rxTotal
+				)
+			end
+		end)
+	 end)
+
+	-- Show treatment protocol biomonitor (Mode 2)
+	dsp.ShowBiomonitorProtocol = (function(self)
+		local rx = self:GetPrescription(self.CyberPsychoWarnings)
+		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
+		local tierName = tierDisplayNames[rx.minTier] or "Unknown"
+		local rxCompleted = self.completedDoses or 0
+		local visitsCompleted = self.completedVisits or 0
+		local milestonePct = 0
+		if rxTotal > 0 then
+			local doseP = rxCompleted / rxTotal
+			local visitP = rx.visits > 0 and (visitsCompleted / rx.visits) or 1.0
+			milestonePct = math.floor((doseP + visitP) / 2.0 * 100)
+		end
+		pcall(function()
+			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+			if hudSystem then
+				hudSystem:ShowBiomonitorProtocol(
+					self.CyberPsychoWarnings or 0,
+					rxTotal,
+					tierName,
+					visitsCompleted,
+					rx.visits,
+					self.toleranceStage or 0,
+					milestonePct
+				)
 			end
 		end)
 	 end)
