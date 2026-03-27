@@ -131,34 +131,9 @@ function immunoblocker_logic.attach(dsp)
 		end
 	 end)
 
-	-- PRIMARY: Immediate detection via observer (fires during inventory pause, new effects only)
-	-- TweakDBID may not be available at module load time — create inside pcall
-	local obsOk, obsErr = pcall(function()
-		local immunoEffectIDs = {
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common),
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon),
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare)
-		}
-		ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
-			if not dsp then return end
-			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
-			if not ok or not recordID then return end
-			for tier, id in ipairs(immunoEffectIDs) do
-				if recordID == id then
-					dsp:TriggerImmunoblockerAnim()
-					-- Track dose for treatment protocol (tier: 1=Common, 2=Uncommon, 3=Rare)
-					dsp:CheckTreatmentDose(tier)
-					-- Tolerance buildup on consumption
-					dsp:AddToleranceOnConsumption(tier)
-					-- Sync qty so real-time tick won't double-fire for this consumption
-					local qty = getImmunoblockerQty()
-					if qty then dsp.immunoLastQty = qty end
-					return
-				end
-			end
-		end)
-	end)
-	print('[DSP] Immunoblocker observer ' .. (obsOk and 'registered' or ('FAILED: ' .. tostring(obsErr))))
+	-- PRIMARY: Immunoblocker observer is registered in init.lua onInit (where TweakDBID is available).
+	-- At module load time TweakDBID is nil — the old pcall registration here failed silently.
+	-- The onInit observer is the sole source for treatment dose tracking and tolerance buildup.
 
 	-- Real-time immunoblocker tick: runs from onUpdate via os.clock(), works during inventory pause.
 	-- Detects qty decreases the observer missed (effect refresh = same tier used again).
@@ -182,14 +157,10 @@ function immunoblocker_logic.attach(dsp)
 			for i = 1, consumed do
 				self:TriggerImmunoblockerAnim()
 			end
-			-- Fallback: if observer didn't fire, detect tier and register treatment dose + tolerance
-			local tier = self:GetImmunoblockerTier()
-			if tier > 0 and consumed > 0 then
-				for i = 1, consumed do
-					self:CheckTreatmentDose(tier)
-					self:AddToleranceOnConsumption(tier)
-				end
-			end
+			-- NOTE: Treatment dose tracking and tolerance buildup are handled solely by the
+			-- OnStatusEffectApplied observer in init.lua onInit. This fallback only triggers
+			-- the animation and syncs qty — it cannot reliably detect the consumed tier
+			-- (GetImmunoblockerTier returns the ACTIVE effect, not what was just consumed).
 		end
 		self.immunoLastQty = totalQty
 		self:ProcessImmunoblockerAnimQueue()

@@ -308,6 +308,7 @@ dsp = {
 	,autoInjectorCooldown = 0
 	,autoInjectorEquipped = nil  -- cached per displayTick cycle
 	,immunoWarnedThisDose = false  -- one-shot warning per immunoblocker dose
+	,immunoblockerRefreshed = false  -- set true by observer when new immunoblocker consumed; consumed by removal observer
 	,Init = (function(self)
 		if self.martinez == nil then
 			local obj, errors = require('./martinez.lua')
@@ -2688,6 +2689,55 @@ registerForEvent('onInit', function()
 	Observe('gameuiPhotoModeMenuController', 'OnHide', function()
 		dsp.isPhotoMode = false
 	end)
+
+	-- ============================================================
+	-- IMMUNOBLOCKER OBSERVERS (registered here because TweakDBID
+	-- is not available at module load time — CET API not yet loaded)
+	-- ============================================================
+
+	-- PRIMARY: Immediate detection via OnStatusEffectApplied
+	pcall(function()
+		local immunoEffectIDs = {
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common),
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon),
+			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare)
+		}
+		ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
+			if not dsp then return end
+			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
+			if not ok or not recordID then return end
+			for tier, id in ipairs(immunoEffectIDs) do
+				if recordID == id then
+					dsp:TriggerImmunoblockerAnim()
+					-- Track dose for treatment protocol (tier: 1=Common, 2=Uncommon, 3=Rare)
+					dsp:CheckTreatmentDose(tier)
+					-- Tolerance buildup on consumption
+					dsp:AddToleranceOnConsumption(tier)
+					-- Sync qty so real-time tick won't double-fire for this consumption
+					pcall(function()
+						local V = Game.GetPlayer()
+						if not IsDefined(V) then return end
+						local TS = Game.GetTransactionSystem()
+						local total = 0
+						local itemNames = {
+							dsp.martinez.ImmunoblockerItem_Common,
+							dsp.martinez.ImmunoblockerItem_Uncommon,
+							dsp.martinez.ImmunoblockerItem_Rare
+						}
+						for _, itemName in ipairs(itemNames) do
+							total = total + TS:GetItemQuantity(V, ItemID.FromTDBID(TweakDBID.new(itemName)))
+						end
+						dsp.immunoLastQty = total
+					end)
+					-- Signal for rebound system: this was a refresh, not a natural expiration
+					dsp.immunoblockerRefreshed = true
+					return
+				end
+			end
+		end)
+		print('[DSP] Immunoblocker OnStatusEffectApplied observer registered (onInit)')
+	end)
+
 end)
 
 registerForEvent('onUpdate', function(dt)
