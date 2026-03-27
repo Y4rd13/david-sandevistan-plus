@@ -696,9 +696,11 @@ function psychosis.attach(dsp)
 	 end)
 
 	dsp.ResetMicroEpisodeTimer = (function(self)
-		self.microEpisodeChainCount = 0
-		self.microEpisodeChainTimer = nil
-		self.pendingChainType = nil
+		-- Preserve chain state if a chain is pending (FireMicroEpisode just set it)
+		if not self.microEpisodeChainTimer then
+			self.microEpisodeChainCount = 0
+			self.pendingChainType = nil
+		end
 		if not self.cfg.enableMicroEpisodes then self.microEpisodeTimer = nil return end
 		if self.CyberPsychoWarnings < 1 then self.microEpisodeTimer = nil return end
 		local interval = microEpisodeIntervals[self.CyberPsychoWarnings]
@@ -791,9 +793,7 @@ function psychosis.attach(dsp)
 			end
 		end
 
-		if self.dev_mode then
-			print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings)..' chain='..(self.microEpisodeChainCount or 0))
-		end
+		print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings)..' chain='..(self.microEpisodeChainCount or 0))
 	 end)
 
 	-- Fire a specific micro-episode type (used by chain system)
@@ -870,9 +870,7 @@ function psychosis.attach(dsp)
 			self.pendingChainType = nil
 		end
 
-		if self.dev_mode then
-			print('[DSP] Chain micro-episode: '..selected.type..' chain='..(self.microEpisodeChainCount or 0))
-		end
+		print('[DSP] Chain micro-episode: '..selected.type..' chain='..(self.microEpisodeChainCount or 0))
 	 end)
 
 	-- ============================================================
@@ -1503,16 +1501,21 @@ function psychosis.attach(dsp)
 
 		local spawnX = vPos.x + math.cos(angle) * dist
 		local spawnY = vPos.y + math.sin(angle) * dist
-		-- Raycast to ground
+		-- Ground snap: raycast from high above to find actual ground level
 		local spawnZ = vPos.z
 		pcall(function()
-			local from = Vector4.new(spawnX, spawnY, vPos.z + 5.0, 1.0)
-			local to = Vector4.new(spawnX, spawnY, vPos.z - 10.0, 1.0)
-			local success, result = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from, to, "Static", false, false)
-			if success and result then
+			local sqs = Game.GetSpatialQueriesSystem()
+			local from = Vector4.new(spawnX, spawnY, spawnZ + 20.0, 1.0)
+			local to = Vector4.new(spawnX, spawnY, spawnZ - 30.0, 1.0)
+			local result = raycast(sqs, from, to, "Terrain")
+			if not result then
+				result = raycast(sqs, from, to, "Static")
+			end
+			if result then
 				spawnZ = result.position.z
 			end
 		end)
+		spawnZ = spawnZ + 0.15  -- safety offset
 
 		-- === Stage-dependent duration ===
 		local durTable = phantomDurations[behavior] or phantomDurations.frozen
@@ -1586,11 +1589,14 @@ function psychosis.attach(dsp)
 				local spawnY2 = vPos.y + math.sin(angle2) * dist2
 				local spawnZ2 = vPos.z
 				pcall(function()
-					local from2 = Vector4.new(spawnX2, spawnY2, vPos.z + 5.0, 1.0)
-					local to2 = Vector4.new(spawnX2, spawnY2, vPos.z - 10.0, 1.0)
-					local s2, r2 = Game.GetSpatialQueriesSystem():SyncRaycastByCollisionGroup(from2, to2, "Static", false, false)
-					if s2 and r2 then spawnZ2 = r2.position.z end
+					local sqs = Game.GetSpatialQueriesSystem()
+					local from2 = Vector4.new(spawnX2, spawnY2, spawnZ2 + 20.0, 1.0)
+					local to2 = Vector4.new(spawnX2, spawnY2, spawnZ2 - 30.0, 1.0)
+					local r2 = raycast(sqs, from2, to2, "Terrain")
+					if not r2 then r2 = raycast(sqs, from2, to2, "Static") end
+					if r2 then spawnZ2 = r2.position.z end
 				end)
+				spawnZ2 = spawnZ2 + 0.15
 				local record2 = attackRecords[math.random(#attackRecords)]
 				local ok2, eid2 = pcall(function()
 					local t2 = V:GetWorldTransform()

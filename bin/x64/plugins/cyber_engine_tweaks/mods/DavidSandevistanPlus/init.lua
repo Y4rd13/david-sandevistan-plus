@@ -1544,7 +1544,7 @@ dsp = {
 				end
 				-- Micro-episodes: random involuntary symptoms at psycho 1+
 				if self.cfg.enableMicroEpisodes and self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings > 0 and not self.lastBreath then
-					-- Process pending micro-episode chain
+					-- Process pending micro-episode chain (pause normal timer while chain active)
 					if self.microEpisodeChainTimer then
 						self.microEpisodeChainTimer = self.microEpisodeChainTimer - 1
 						if self.microEpisodeChainTimer <= 0 then
@@ -1555,14 +1555,16 @@ dsp = {
 								self:FireMicroEpisodeByType(chainType)
 							end
 						end
-					end
-					if self.microEpisodeTimer == nil then
-						self:ResetMicroEpisodeTimer()
-					elseif self.microEpisodeTimer > 0 then
-						self.microEpisodeTimer = self.microEpisodeTimer - 1
 					else
-						self:FireMicroEpisode()
-						self:ResetMicroEpisodeTimer()
+						-- Normal micro-episode timer (only when no chain is pending)
+						if self.microEpisodeTimer == nil then
+							self:ResetMicroEpisodeTimer()
+						elseif self.microEpisodeTimer > 0 then
+							self.microEpisodeTimer = self.microEpisodeTimer - 1
+						else
+							self:FireMicroEpisode()
+							self:ResetMicroEpisodeTimer()
+						end
 					end
 				end
 				if self.LoadThreeTimer ~= nil then
