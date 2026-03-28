@@ -380,10 +380,10 @@ public class DSPHUDSystem extends ScriptableSystem {
 
             rowY += 14.0;
 
-            // Strain text: "STRAIN 45/60" or "STRAIN 45/60 BLOCKED"
+            // Neural Load text: "NEURAL LOAD 45/60" or "NEURAL LOAD 45/60 BLOCKED"
             let strainWhole: Int32 = this.m_neuralStrain / 10;
             let threshWhole: Int32 = this.m_strainThreshold / 10;
-            let strainStr: String = "STRAIN " + IntToString(strainWhole) + "/" + IntToString(threshWhole);
+            let strainStr: String = "NEURAL LOAD " + IntToString(strainWhole) + "/" + IntToString(threshWhole);
             if this.m_immunoblockerActive {
                 strainStr = strainStr + " BLOCKED";
                 this.m_strainText.SetTintColor(this.Color(0.18, 0.80, 0.44, 1.0));

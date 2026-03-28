@@ -122,16 +122,13 @@ function immunoblocker_logic.attach(dsp)
 		end)
 	end
 
-	-- Schedule biomonitor SFX sequence (scanner loop + per-line ticks)
+	-- Schedule biomonitor SFX sequence (per-line ticks)
 	-- Timing: loading 0.8s + expand 0.6s + footer 0.2s = 1.6s before items
-	-- Items: 0.4s each, 7 items for Mode 1, 6 for Mode 2
+	-- Each item: 0.4s typewriter + 0.4s value delay = ~0.8s per item in the framework
 	local function scheduleBiomonitorSFX(numItems)
-		local itemDuration = 0.4
-		local itemsStart = 1.6  -- loading + expand + footer
-		local itemsEnd = itemsStart + (numItems * itemDuration)
-		-- Scanner loop: start now, stop when items finish
-		dsp.biomonitorScannerStopTimer = nil
-		-- Per-line ticks: schedule each
+		local itemDuration = 0.8  -- actual duration per item (typewriter + value counter)
+		local itemsStart = 1.6   -- loading + expand + footer
+		-- Per-line ticks: one tick per item
 		dsp.biomonitorTickTimers = {}
 		for i = 1, numItems do
 			table.insert(dsp.biomonitorTickTimers, itemsStart + (i - 1) * itemDuration)
