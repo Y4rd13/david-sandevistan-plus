@@ -933,7 +933,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 750.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(150.0, 680.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -998,7 +998,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 750.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(150.0, 680.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
