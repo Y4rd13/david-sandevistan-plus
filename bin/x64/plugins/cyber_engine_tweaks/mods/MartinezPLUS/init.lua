@@ -68,6 +68,9 @@ local defaults = {
 	timeDilationNoPerk = 0.05,
 	timeDilationWithPerk = 0.0065,
 	tickLength = 1.25,
+	-- Biomonitor position
+	biomonitorPosX = 80,
+	biomonitorPosY = 600,
 }
 
 local cfg = {}
@@ -98,6 +101,7 @@ local gameplayKeys = {
 	"requireEdgeRunnerPerk",
 	"timeDilationNoPerk", "timeDilationWithPerk",
 	"tickLength",
+	"biomonitorPosX", "biomonitorPosY",
 }
 
 -- Persistence
@@ -198,12 +202,13 @@ local function initUI()
 	local catKS = tab .. "/KillStrain"
 	local catIB = tab .. "/Immunoblocker"
 	local catBM = tab .. "/Biomonitor"
+	local catTL = tab .. "/Tolerance"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catRX, catNLD, catME, catBM}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catRX, catNLD, catME, catBM, catTL}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
