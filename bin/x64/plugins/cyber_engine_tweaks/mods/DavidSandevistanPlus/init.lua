@@ -385,9 +385,6 @@ dsp = {
 
 		-- Doc Prescription (Graduated Recovery)
 		enablePrescription = true,       -- recovery is a process, not instant
-		maxPsychoRecoveryPerSleep = 1,   -- max levels recovered per sleep
-		ripperRecoveryLevels = 1,        -- levels per ripperdoc visit
-
 		-- Biomonitor position (3840x2160 canvas coordinates)
 		biomonitorPosX = 80,
 		biomonitorPosY = 600,
@@ -411,8 +408,6 @@ dsp = {
 		enableMicroEpisodes = true,      -- random involuntary symptoms between episodes
 		microEpisodeFrequency = 1.0,     -- multiplier (0.5 = half, 2.0 = double)
 
-		-- Tick
-		tickLength = 1.25,               -- main game loop tick interval in seconds
 	}
 	,martinez = require('./martinez.lua')
 	,gui = require('./gui.lua')
@@ -1859,7 +1854,7 @@ dsp = {
 		self.martinez:AddAutoInjectorToViktor()
 		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingSandevistan()))
 		local GetRuntime = 0
-		self.TickLength = self.cfg.tickLength
+		self.TickLength = 1.25
 		self.MaxRuntime, GetRuntime = self.qs:LoadRuntime()
 		if GetRuntime < 0 then GetRuntime = self.MaxRuntime end
 		if GetRuntime > self.MaxRuntime then GetRuntime = self.MaxRuntime end
