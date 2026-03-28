@@ -28,6 +28,9 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_protocolRestCompleted: Int32;
     private let m_protocolRestRequired: Int32;
 
+    // Menu blocking: hide HUD when menus/phone/inventory are open
+    private let m_menuBlocked: Bool;
+
     // Runtime row
     private let m_runtimeIcon: ref<inkImage>;
     private let m_runtimeBarBG: ref<inkRectangle>;
@@ -442,12 +445,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         } else if this.m_lastBreathPhase == 2 {
             status = "LAST BREATH — FADING";
             statusColor = this.Color(0.91, 0.30, 0.24, 1.0);
-        } else if this.m_immunoblockerActive {
-            status = "IMMUNOBLOCKER";
-            statusColor = this.Color(0.18, 0.80, 0.44, 1.0);
-        } else if !this.m_safetyOn {
-            status = "SAFETY OFF";
-            statusColor = this.Color(1.0, 0.15, 0.15, 1.0);
         } else if this.m_comedownTimerTenths > 0 {
             let whole: Int32 = this.m_comedownTimerTenths / 10;
             let frac: Int32 = this.m_comedownTimerTenths - (whole * 10);
@@ -976,29 +973,11 @@ public class DSPHUDSystem extends ScriptableSystem {
 
         // Populate items
         ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Substance: Immunoblocker " + tierName, -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", Cast<Float>(efficacyPct), "", "%"));
         ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", Cast<Float>(strainPct), "", "%"));
         ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
-
-        // Status indicator bar — color reflects overall state
-        let statusBar: ref<inkRectangle> = new inkRectangle();
-        statusBar.SetName(n"DSPBioStatusBar");
-        statusBar.SetAnchor(inkEAnchor.TopFillHorizontaly);
-        statusBar.SetMargin(new inkMargin(0.0, 8.0, 0.0, 0.0));
-        statusBar.SetSize(new Vector2(1.0, 4.0));
-        if efficacyPct <= 0 || toleranceStage >= 3 {
-            statusBar.SetTintColor(new HDRColor(1.4, 0.2, 0.2, 1.0));
-        } else if efficacyPct <= 50 || toleranceStage >= 2 {
-            statusBar.SetTintColor(new HDRColor(1.3, 1.0, 0.2, 1.0));
-        } else if toleranceStage >= 1 {
-            statusBar.SetTintColor(new HDRColor(1.0, 0.8, 0.2, 1.0));
-        } else {
-            statusBar.SetTintColor(new HDRColor(0.2, 1.2, 0.4, 1.0));
-        }
-        statusBar.Reparent(bioCanvas);
 
         // Start animation
         controller.StartAnimation();
@@ -1071,23 +1050,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Milestone:", Cast<Float>(milestonePct), milestoneLabel, "%"));
 
-        // Status indicator bar — color reflects overall state
-        let statusBar: ref<inkRectangle> = new inkRectangle();
-        statusBar.SetName(n"DSPBioStatusBar");
-        statusBar.SetAnchor(inkEAnchor.TopFillHorizontaly);
-        statusBar.SetMargin(new inkMargin(0.0, 8.0, 0.0, 0.0));
-        statusBar.SetSize(new Vector2(1.0, 4.0));
-        if milestonePct <= 0 || toleranceStage >= 3 {
-            statusBar.SetTintColor(new HDRColor(1.4, 0.2, 0.2, 1.0));
-        } else if milestonePct < 50 || toleranceStage >= 2 {
-            statusBar.SetTintColor(new HDRColor(1.3, 1.0, 0.2, 1.0));
-        } else if toleranceStage >= 1 {
-            statusBar.SetTintColor(new HDRColor(1.0, 0.8, 0.2, 1.0));
-        } else {
-            statusBar.SetTintColor(new HDRColor(0.2, 1.2, 0.4, 1.0));
-        }
-        statusBar.Reparent(bioCanvas);
-
         controller.StartAnimation();
     }
 
@@ -1129,7 +1091,9 @@ public class DSPHUDSystem extends ScriptableSystem {
     // Second panel — Cyberware/Sandy status (cyan theme)
     // ---------------------------------------------------------------
 
-    public func ShowBiomonitorCyberware(runtime: Int32, maxRuntime: Int32, dailyActivations: Int32, dailySafe: Int32, safetyOn: Bool, immunoblockerTier: Int32, immunoblockerTimeLeft: Int32) -> Void {
+    // Substance detection biomonitor — small notification when immunoblocker is consumed
+    // Shows detected substance + dynamic feedback message (replaces Viktor SMS for dosage feedback)
+    public func ShowSubstanceDetection(tierName: String, feedbackMsg: String) -> Void {
         if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
 
         // Remove existing
@@ -1138,29 +1102,19 @@ public class DSPHUDSystem extends ScriptableSystem {
             this.m_cyberwareWidget = null;
         }
 
-        let safetyStr: String;
-        if safetyOn { safetyStr = "ON"; } else { safetyStr = "OFF"; }
-
-        let immunoStr: String;
-        if immunoblockerTier == 0 { immunoStr = "INACTIVE"; }
-        else if immunoblockerTier == 1 { immunoStr = "COMMON"; }
-        else if immunoblockerTier == 2 { immunoStr = "UNCOMMON"; }
-        else { immunoStr = "MILITARY GRADE"; }
-
-        // Position: right of main biomonitor (main is 950 wide at posX)
         let cwCanvas: ref<inkCanvas> = new inkCanvas();
-        cwCanvas.SetName(n"DSPCyberwareMonitor");
+        cwCanvas.SetName(n"DSPSubstanceDetection");
         cwCanvas.SetAnchor(inkEAnchor.TopLeft);
         cwCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        cwCanvas.SetSize(new Vector2(700.0, 400.0));
-        cwCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX + 970.0, this.m_biomonitorPosY, 0.0, 0.0));
+        cwCanvas.SetSize(new Vector2(700.0, 300.0));
+        cwCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY + 520.0, 0.0, 0.0));
         cwCanvas.Reparent(this.m_fullScreenSlot);
         this.m_cyberwareWidget = cwCanvas;
 
         let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
         cwCanvas.AttachController(controller);
 
-        // Cyan/teal theme (like TANSTAAFL CW monitor)
+        // Cyan/teal theme
         controller.m_textColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
         controller.m_logoColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
         controller.m_loadingBarColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
@@ -1168,20 +1122,18 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_backgroundColor = new HDRColor(0.0902, 0.1725, 0.1804, 1.0);
         controller.m_borderColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
 
-        controller.m_footerText1 = s"Sandevistan";
-        controller.m_footerText2 = s"Cyberware Status";
+        controller.m_footerText1 = s"";
+        controller.m_footerText2 = s"Substance Analysis";
         controller.m_textSize = 26;
-        controller.m_loadingAnimDuration = 0.6;
-        controller.m_expandAnimDuration = 0.5;
-        controller.m_listItemAnimDuration = 0.4;
-        controller.m_fadeOutDelay = 9999.0;
+        controller.m_loadingAnimDuration = 0.4;
+        controller.m_expandAnimDuration = 0.4;
+        controller.m_listItemAnimDuration = 0.3;
+        controller.m_fadeOutDelay = 8.0;
         controller.m_fadeOutDuration = 0.5;
 
-        ArrayPush(controller.m_items, new MonitorListItem("CYBERWARE STATUS", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Runtime:", Cast<Float>(runtime), "/" + IntToString(maxRuntime) + "s", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Activations:", Cast<Float>(dailyActivations), "/" + IntToString(dailySafe) + " safe", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Safety Limiter:", -1.00, safetyStr, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker:", -1.00, immunoStr, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker " + tierName, -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem(feedbackMsg, -1.00, "", ""));
 
         controller.StartAnimation();
     }
@@ -1191,6 +1143,42 @@ public class DSPHUDSystem extends ScriptableSystem {
             this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
             this.m_cyberwareWidget = null;
         }
+    }
+
+    // Menu blocking: hide/show HUD when menus open/close
+    public func OnMenuStateChanged(menuOpen: Bool) -> Void {
+        this.m_menuBlocked = menuOpen;
+        if IsDefined(this.m_fullScreenSlot) {
+            this.m_fullScreenSlot.SetVisible(!menuOpen);
+        }
+    }
+}
+
+// UISystem wraps: detect menu/phone/inventory open/close (Dark Future pattern)
+@wrapMethod(UISystem)
+public final func PushGameContext(context: UIGameContext) -> Void {
+    wrappedMethod(context);
+    let dspSystem: ref<DSPHUDSystem> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"DSPHUDSystem") as DSPHUDSystem;
+    if IsDefined(dspSystem) {
+        dspSystem.OnMenuStateChanged(true);
+    }
+}
+
+@wrapMethod(UISystem)
+public final func PopGameContext(context: UIGameContext, opt invalidate: Bool) -> Void {
+    wrappedMethod(context, invalidate);
+    let dspSystem: ref<DSPHUDSystem> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"DSPHUDSystem") as DSPHUDSystem;
+    if IsDefined(dspSystem) {
+        dspSystem.OnMenuStateChanged(false);
+    }
+}
+
+@wrapMethod(UISystem)
+public final func ResetGameContext() -> Void {
+    wrappedMethod();
+    let dspSystem: ref<DSPHUDSystem> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"DSPHUDSystem") as DSPHUDSystem;
+    if IsDefined(dspSystem) {
+        dspSystem.OnMenuStateChanged(false);
     }
 }
 

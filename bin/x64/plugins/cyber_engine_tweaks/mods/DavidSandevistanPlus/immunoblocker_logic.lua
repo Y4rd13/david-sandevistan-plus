@@ -159,7 +159,7 @@ function immunoblocker_logic.attach(dsp)
 		local rxCompleted = self.completedDoses or 0
 		-- SFX: open + scanner loop + line ticks
 		playBiomonitorSound("ui_hacking_access_panel")
-		scheduleBiomonitorSFX(7)  -- 7 data lines in Mode 1
+		scheduleBiomonitorSFX(6)  -- 6 data lines in Mode 1 (removed Substance line)
 		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
@@ -213,6 +213,48 @@ function immunoblocker_logic.attach(dsp)
 					self.toleranceStage or 0,
 					milestonePct
 				)
+			end
+		end)
+	 end)
+
+	-- Show substance detection biomonitor when immunoblocker is consumed
+	-- Replaces Viktor SMS for dosage feedback — more natural than instant text
+	local tierDetectionNames = { "COMMON", "UNCOMMON", "MILITARY GRADE" }
+	dsp.ShowSubstanceDetection = (function(self, consumedTier)
+		local tierName = tierDetectionNames[consumedTier] or "UNKNOWN"
+		-- Build dynamic feedback message
+		local feedbackMsg = ""
+		if self.treatmentActive then
+			local rx = self:GetPrescription(self.CyberPsychoWarnings)
+			if consumedTier < rx.minTier then
+				feedbackMsg = "Insufficient for Stage " .. tostring(self.CyberPsychoWarnings) .. " — " .. self:GetTierName(rx.minTier) .. " required"
+			else
+				local remaining = math.max((self.prescribedDoses or 0) - (self.completedDoses or 0), 0)
+				if remaining > 0 then
+					feedbackMsg = "Treatment dose registered — " .. tostring(remaining) .. " remaining"
+				else
+					feedbackMsg = "Treatment dose registered"
+				end
+			end
+		else
+			local eff = self:GetImmunoblockerEffectiveness()
+			if eff == 'full' then
+				feedbackMsg = "Neural strain suppression active"
+			elseif eff == 'partial' then
+				feedbackMsg = "Partial suppression — consider higher dosage"
+			elseif eff == 'ineffective' then
+				feedbackMsg = "Ineffective at current neural degradation"
+			else
+				feedbackMsg = "Substance administered"
+			end
+		end
+		-- SFX
+		playBiomonitorSound("ui_hacking_access_panel")
+		scheduleBiomonitorSFX(3)
+		pcall(function()
+			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+			if hudSystem then
+				hudSystem:ShowSubstanceDetection(tierName, feedbackMsg)
 			end
 		end)
 	 end)

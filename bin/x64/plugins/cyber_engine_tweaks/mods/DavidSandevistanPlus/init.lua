@@ -2791,7 +2791,7 @@ registerForEvent('onInit', function()
 					-- Tolerance buildup on consumption
 					dsp:AddToleranceOnConsumption(tier)
 					-- Show status feedback to player
-					dsp:ShowImmunoblockerStatus(tier)
+					dsp:ShowSubstanceDetection(tier)
 					-- Sync qty so real-time tick won't double-fire for this consumption
 					pcall(function()
 						local V = Game.GetPlayer()
@@ -3059,16 +3059,6 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 	else
 		dsp.biomonitorOpen = true
 		dsp:ShowImmunoblockerStatus(dsp:GetBiomonitorDisplayTier())
-		-- Also show cyberware panel
-		pcall(function()
-			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then
-				local rt = math.max(math.floor(dsp.runTime or 0), 0)
-				local maxRt = math.max(math.floor(dsp.MaxRuntime or 0), 0)
-				local tier = dsp:GetImmunoblockerTier()
-				hudSystem:ShowBiomonitorCyberware(rt, maxRt, dsp.dailyActivations or 0, dsp:getEffectiveSafeActivations(), dsp.SafetyOn, tier, 0)
-			end
-		end)
 	end
 end)
 

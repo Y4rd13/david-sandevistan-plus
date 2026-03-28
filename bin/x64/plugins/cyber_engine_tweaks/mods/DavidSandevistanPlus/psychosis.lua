@@ -600,8 +600,7 @@ function psychosis.attach(dsp)
 		if rx.minTier == 0 then return end
 
 		if consumedTier < rx.minTier then
-			-- Tier too low for protocol
-			self:ViktorSMS("That dosage won't cut it at Stage " .. tostring(self.CyberPsychoWarnings) .. ". You need " .. self:GetTierName(rx.minTier) .. " grade.")
+			-- Tier too low — substance detection biomonitor handles feedback
 			return
 		end
 
@@ -609,9 +608,6 @@ function psychosis.attach(dsp)
 		local required = math.max(rx.doses, self.prescribedDoses or 0)
 		self.completedDoses = math.min((self.completedDoses or 0) + 1, required)
 		local remaining = required - self.completedDoses
-		if remaining > 0 then
-			self:ViktorSMS("Treatment dose registered. " .. tostring(remaining) .. " remaining.")
-		end
 		self:SaveGame("TreatmentDose")
 		self:UpdateTreatmentMilestone()
 
