@@ -2948,9 +2948,20 @@ registerInput("DebugEndHorde", 'DEBUG: End Horde', function(isKeyDown)
 	print("[DSP DEBUG] Horde ended manually")
 end)
 
-registerInput("ShowBiomonitor", 'Show Immunoblocker Status', function(isKeyDown)
+registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 	if not isKeyDown then return end
-	dsp:ShowImmunoblockerStatus(math.max(dsp:GetImmunoblockerTier(), 1))
+	-- Toggle: if open, close. If closed, open.
+	if dsp.biomonitorOpen then
+		dsp.biomonitorOpen = false
+		dsp.biomonitorDismissTimer = 0  -- trigger dismiss sound immediately
+		pcall(function()
+			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+			if hudSystem then hudSystem:RemoveBiomonitorWidget() end
+		end)
+	else
+		dsp.biomonitorOpen = true
+		dsp:ShowImmunoblockerStatus(math.max(dsp:GetImmunoblockerTier(), 1))
+	end
 end)
 
 registerForEvent('onShutdown', function()

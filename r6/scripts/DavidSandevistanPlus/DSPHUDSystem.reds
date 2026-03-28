@@ -932,8 +932,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(800.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 900.0, 0.0, 0.0));
+        bioCanvas.SetSize(new Vector2(950.0, 500.0));
+        bioCanvas.SetMargin(new inkMargin(100.0, 750.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -948,8 +948,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_loadingAnimDuration = 0.8;
         controller.m_expandAnimDuration = 0.6;
         controller.m_listItemAnimDuration = 0.4;
-        controller.m_fadeOutDelay = 3.0;
-        controller.m_fadeOutDuration = 1.0;
+        controller.m_fadeOutDelay = 9999.0;
+        controller.m_fadeOutDuration = 0.5;
 
         // Populate items
         ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
@@ -997,8 +997,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(800.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(100.0, 900.0, 0.0, 0.0));
+        bioCanvas.SetSize(new Vector2(950.0, 500.0));
+        bioCanvas.SetMargin(new inkMargin(100.0, 750.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -1011,8 +1011,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_loadingAnimDuration = 0.8;
         controller.m_expandAnimDuration = 0.6;
         controller.m_listItemAnimDuration = 0.4;
-        controller.m_fadeOutDelay = 3.0;
-        controller.m_fadeOutDuration = 1.0;
+        controller.m_fadeOutDelay = 9999.0;
+        controller.m_fadeOutDuration = 0.5;
 
         ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Psychosis:", -1.00, psychoName, ""));

@@ -132,10 +132,8 @@ function immunoblocker_logic.attach(dsp)
 		local rxCompleted = self.completedDoses or 0
 		-- Activation sound
 		playBiomonitorSound("ui_hacking_access_panel")
-		-- Scanner loop during data display
 		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
-		-- Schedule dismiss sound (~7s later: loading 0.8 + expand 0.6 + 7 items × 0.4 + hold 3.0)
-		self.biomonitorDismissTimer = 7.0
+		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
@@ -168,7 +166,7 @@ function immunoblocker_logic.attach(dsp)
 		-- Activation sound
 		playBiomonitorSound("ui_hacking_access_panel")
 		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
-		self.biomonitorDismissTimer = 6.5
+		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
