@@ -345,11 +345,7 @@ public class DSPHUDSystem extends ScriptableSystem {
                 this.m_psychoLine.SetText("[VI] LAST BREATH  " + this.FormatTime(Cast<Float>(this.m_runtime)));
                 this.m_psychoLine.SetTintColor(psColor);
             } else {
-                let psychoStr: String = this.PsychoLevelText(this.m_psychoLevel);
-                if this.m_prescribedDoses > 0 {
-                    psychoStr = psychoStr + "  RX " + IntToString(this.m_completedDoses) + "/" + IntToString(this.m_prescribedDoses);
-                }
-                this.m_psychoLine.SetText(psychoStr);
+                this.m_psychoLine.SetText(this.PsychoLevelText(this.m_psychoLevel));
                 this.m_psychoLine.SetTintColor(psColor);
             }
 
