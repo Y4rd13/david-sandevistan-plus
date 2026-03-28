@@ -20,6 +20,9 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_fullScreenSlot: ref<inkCompoundWidget>;
     private let m_widgetSlot: ref<inkCompoundWidget>;
     private let m_biomonitorWidget: wref<inkWidget>;
+    private let m_cyberwareWidget: wref<inkWidget>;
+    private let m_biomonitorPosX: Float;
+    private let m_biomonitorPosY: Float;
 
     // Runtime row
     private let m_runtimeIcon: ref<inkImage>;
@@ -87,6 +90,8 @@ public class DSPHUDSystem extends ScriptableSystem {
     private func OnAttach() -> Void {
         this.m_initialized = false;
         this.m_pulseTimer = 0.0;
+        this.m_biomonitorPosX = 80.0;
+        this.m_biomonitorPosY = 600.0;
         this.m_pendingKillsGang = 0;
         this.m_pendingKillsCorpo = 0;
         this.m_pendingKillsNCPD = 0;
@@ -212,6 +217,12 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_strainThreshold = strainThreshold;
         this.m_strainGuaranteed = strainGuaranteed;
         this.m_immunoblockerActive = immunoblockerActive;
+    }
+
+    // Called from CET with position from config
+    public func SetBiomonitorPosition(posX: Int32, posY: Int32) -> Void {
+        this.m_biomonitorPosX = Cast<Float>(posX);
+        this.m_biomonitorPosY = Cast<Float>(posY);
     }
 
     // ---------------------------------------------------------------
@@ -613,6 +624,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         }
         this.m_fullScreenSlot = null;
         this.m_widgetSlot = null;
+        this.m_biomonitorWidget = null;
+        this.m_cyberwareWidget = null;
         this.m_runtimeIcon = null;
         this.m_runtimeBarBG = null;
         this.m_runtimeBarFill = null;
@@ -893,8 +906,8 @@ public class DSPHUDSystem extends ScriptableSystem {
     public func ShowBiomonitorStatus(tier: Int32, toleranceStage: Int32, efficacyPct: Int32, strainPct: Int32, psychoStage: Int32, rxCompleted: Int32, rxTotal: Int32) -> Void {
         if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
 
-        // Remove existing biomonitor
-        this.RemoveBiomonitorWidget();
+        // Remove existing biomonitor (instant when replacing)
+        this.ForceRemoveBiomonitor();
 
         // Tier name
         let tierName: String;
@@ -933,7 +946,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(80.0, 600.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -960,6 +973,23 @@ public class DSPHUDSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
 
+        // Status indicator bar — color reflects overall state
+        let statusBar: ref<inkRectangle> = new inkRectangle();
+        statusBar.SetName(n"DSPBioStatusBar");
+        statusBar.SetAnchor(inkEAnchor.TopFillHorizontaly);
+        statusBar.SetMargin(new inkMargin(0.0, 8.0, 0.0, 0.0));
+        statusBar.SetSize(new Vector2(1.0, 4.0));
+        if efficacyPct <= 0 || toleranceStage >= 3 {
+            statusBar.SetTintColor(new HDRColor(1.4, 0.2, 0.2, 1.0));
+        } else if efficacyPct <= 50 || toleranceStage >= 2 {
+            statusBar.SetTintColor(new HDRColor(1.3, 1.0, 0.2, 1.0));
+        } else if toleranceStage >= 1 {
+            statusBar.SetTintColor(new HDRColor(1.0, 0.8, 0.2, 1.0));
+        } else {
+            statusBar.SetTintColor(new HDRColor(0.2, 1.2, 0.4, 1.0));
+        }
+        statusBar.Reparent(bioCanvas);
+
         // Start animation
         controller.StartAnimation();
     }
@@ -967,7 +997,8 @@ public class DSPHUDSystem extends ScriptableSystem {
     public func ShowBiomonitorProtocol(psychoStage: Int32, doses: Int32, tierName: String, visitsCompleted: Int32, visitsRequired: Int32, toleranceStage: Int32, milestonePct: Int32) -> Void {
         if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
 
-        this.RemoveBiomonitorWidget();
+        // Remove existing biomonitor (instant when replacing)
+        this.ForceRemoveBiomonitor();
 
         // Tolerance name
         let tolName: String;
@@ -998,7 +1029,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(80.0, 600.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -1021,13 +1052,125 @@ public class DSPHUDSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Milestone:", Cast<Float>(milestonePct), milestoneLabel, "%"));
 
+        // Status indicator bar — color reflects overall state
+        let statusBar: ref<inkRectangle> = new inkRectangle();
+        statusBar.SetName(n"DSPBioStatusBar");
+        statusBar.SetAnchor(inkEAnchor.TopFillHorizontaly);
+        statusBar.SetMargin(new inkMargin(0.0, 8.0, 0.0, 0.0));
+        statusBar.SetSize(new Vector2(1.0, 4.0));
+        if milestonePct <= 0 || toleranceStage >= 3 {
+            statusBar.SetTintColor(new HDRColor(1.4, 0.2, 0.2, 1.0));
+        } else if milestonePct < 50 || toleranceStage >= 2 {
+            statusBar.SetTintColor(new HDRColor(1.3, 1.0, 0.2, 1.0));
+        } else if toleranceStage >= 1 {
+            statusBar.SetTintColor(new HDRColor(1.0, 0.8, 0.2, 1.0));
+        } else {
+            statusBar.SetTintColor(new HDRColor(0.2, 1.2, 0.4, 1.0));
+        }
+        statusBar.Reparent(bioCanvas);
+
         controller.StartAnimation();
     }
 
     private func RemoveBiomonitorWidget() -> Void {
         if IsDefined(this.m_biomonitorWidget) && IsDefined(this.m_fullScreenSlot) {
+            // Slide/collapse animation before removal
+            let slideOut: ref<inkAnimDef> = new inkAnimDef();
+            let sizeInterp: ref<inkAnimSize> = new inkAnimSize();
+            sizeInterp.SetDuration(0.3);
+            sizeInterp.SetStartSize(new Vector2(950.0, 500.0));
+            sizeInterp.SetEndSize(new Vector2(0.0, 0.0));
+            sizeInterp.SetType(inkanimInterpolationType.Linear);
+            sizeInterp.SetMode(inkanimInterpolationMode.EasyOut);
+            slideOut.AddInterpolator(sizeInterp);
+            let fadeInterp: ref<inkAnimTransparency> = new inkAnimTransparency();
+            fadeInterp.SetDuration(0.3);
+            fadeInterp.SetStartTransparency(1.0);
+            fadeInterp.SetEndTransparency(0.0);
+            fadeInterp.SetType(inkanimInterpolationType.Linear);
+            fadeInterp.SetMode(inkanimInterpolationMode.EasyOut);
+            slideOut.AddInterpolator(fadeInterp);
+            (this.m_biomonitorWidget as inkCompoundWidget).PlayAnimation(slideOut);
+
+            // Schedule actual removal after animation
+            let cb: ref<DSPBiomonitorRemoveCallback> = new DSPBiomonitorRemoveCallback();
+            cb.system = this;
+            GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(cb, 0.35, false);
+        }
+    }
+
+    public func ForceRemoveBiomonitor() -> Void {
+        if IsDefined(this.m_biomonitorWidget) && IsDefined(this.m_fullScreenSlot) {
             this.m_fullScreenSlot.RemoveChild(this.m_biomonitorWidget);
             this.m_biomonitorWidget = null;
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // Second panel — Cyberware/Sandy status (cyan theme)
+    // ---------------------------------------------------------------
+
+    public func ShowBiomonitorCyberware(runtime: Int32, maxRuntime: Int32, dailyActivations: Int32, dailySafe: Int32, safetyOn: Bool, immunoblockerTier: Int32, immunoblockerTimeLeft: Int32) -> Void {
+        if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
+
+        // Remove existing
+        if IsDefined(this.m_cyberwareWidget) {
+            this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
+            this.m_cyberwareWidget = null;
+        }
+
+        let safetyStr: String;
+        if safetyOn { safetyStr = "ON"; } else { safetyStr = "OFF"; }
+
+        let immunoStr: String;
+        if immunoblockerTier == 0 { immunoStr = "INACTIVE"; }
+        else if immunoblockerTier == 1 { immunoStr = "COMMON"; }
+        else if immunoblockerTier == 2 { immunoStr = "UNCOMMON"; }
+        else { immunoStr = "MILITARY GRADE"; }
+
+        // Position: right of main biomonitor (main is 950 wide at posX)
+        let cwCanvas: ref<inkCanvas> = new inkCanvas();
+        cwCanvas.SetName(n"DSPCyberwareMonitor");
+        cwCanvas.SetAnchor(inkEAnchor.TopLeft);
+        cwCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
+        cwCanvas.SetSize(new Vector2(700.0, 400.0));
+        cwCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX + 970.0, this.m_biomonitorPosY, 0.0, 0.0));
+        cwCanvas.Reparent(this.m_fullScreenSlot);
+        this.m_cyberwareWidget = cwCanvas;
+
+        let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
+        cwCanvas.AttachController(controller);
+
+        // Cyan/teal theme (like TANSTAAFL CW monitor)
+        controller.m_textColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
+        controller.m_logoColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
+        controller.m_loadingBarColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
+        controller.m_headerColor = new HDRColor(0.1583, 1.3033, 1.4142, 1.0);
+        controller.m_backgroundColor = new HDRColor(0.0902, 0.1725, 0.1804, 1.0);
+        controller.m_borderColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
+
+        controller.m_footerText1 = s"Sandevistan";
+        controller.m_footerText2 = s"Cyberware Status";
+        controller.m_textSize = 26;
+        controller.m_loadingAnimDuration = 0.6;
+        controller.m_expandAnimDuration = 0.5;
+        controller.m_listItemAnimDuration = 0.4;
+        controller.m_fadeOutDelay = 9999.0;
+        controller.m_fadeOutDuration = 0.5;
+
+        ArrayPush(controller.m_items, new MonitorListItem("CYBERWARE STATUS", -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Runtime:", Cast<Float>(runtime), "/" + IntToString(maxRuntime) + "s", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Activations:", Cast<Float>(dailyActivations), "/" + IntToString(dailySafe) + " safe", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Safety Limiter:", -1.00, safetyStr, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker:", -1.00, immunoStr, ""));
+
+        controller.StartAnimation();
+    }
+
+    public func RemoveCyberwareWidget() -> Void {
+        if IsDefined(this.m_cyberwareWidget) && IsDefined(this.m_fullScreenSlot) {
+            this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
+            this.m_cyberwareWidget = null;
         }
     }
 }
@@ -1052,6 +1195,17 @@ public class DSPCycledSfxCallback extends DelayCallback {
     public func Call() -> Void {
         if IsDefined(this.system) {
             this.system.OnCycledSfxCallback(this.sfxName, this.interval);
+        }
+    }
+}
+
+// Callback to remove biomonitor widget after slide-out animation
+public class DSPBiomonitorRemoveCallback extends DelayCallback {
+    public let system: wref<DSPHUDSystem>;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.ForceRemoveBiomonitor();
         }
     }
 }
