@@ -953,7 +953,7 @@ public class DSPHUDSystem extends ScriptableSystem {
 
         // Populate items
         ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Substance:", -1.00, "Immunoblocker " + tierName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Substance: Immunoblocker " + tierName, -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", Cast<Float>(efficacyPct), "", "%"));
         ArrayPush(controller.m_items, new MonitorListItem("Neural Strain:", Cast<Float>(strainPct), "", "%"));
