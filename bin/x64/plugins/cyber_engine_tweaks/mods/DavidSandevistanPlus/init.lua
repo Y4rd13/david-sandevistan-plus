@@ -290,7 +290,7 @@ dsp = {
 		immunoblockerPriceRare = 100000,
 
 		-- Safety Off
-		safetyOffTimeDilation = 975,     -- time dilation index when safety off (975=97.5%, 950=95%, 1000=99.5%)
+		safetyOffTimeDilation = 0.025,   -- float time scale when safety off (e.g. 0.025 = 97.5% dilation)
 
 		-- Perk Gates
 		requireEdgeRunnerPerk = true,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
@@ -1198,7 +1198,7 @@ dsp = {
 				StatusText = "Runtime Expired"
 			end
 		elseif not self.SafetyOn then
-			local safetyTS = (1000 - self.cfg.safetyOffTimeDilation) / 1000
+			local safetyTS = self.cfg.safetyOffTimeDilation
 			if timeScale > safetyTS then
 				timeScale = safetyTS
 				StatusText = "Safety Off"
