@@ -111,18 +111,124 @@ TODO: Deconstruct Cyberpsychosis quickhack to see how it makes NPCs effected by 
       make a buff that makes gangoons, ncpd & armed civilians hostile towards V without taking any action and no wanted level.
 ]]
 
-local configFile = "config.json"
-local function loadConfig(cfg)
-	local file = io.open(configFile, "r")
-	if file then
-		local ok, loaded = pcall(json.decode, file:read("*a"))
-		file:close()
-		if ok and type(loaded) == "table" then
-			for k, v in pairs(loaded) do
-				if cfg[k] ~= nil and type(v) == type(cfg[k]) then cfg[k] = v end
-			end
+local dilationMap = {
+	[0] = 0.15, [1] = 0.10, [2] = 0.075, [3] = 0.05,
+	[4] = 0.025, [5] = 0.01, [6] = 0.0075, [7] = 0.0065, [8] = 0.005
+}
+
+local function syncSettingsFromRedscript(cfg)
+	local ok, settings = pcall(function()
+		return Game.GetScriptableSystemsContainer():Get(CName.new('DSPSettings'))
+	end)
+	if not ok or not settings then return false end
+
+	-- Enums → float time scale
+	cfg.timeDilationNoPerk = dilationMap[settings.timeDilationNoPerk] or 0.05
+	cfg.timeDilationWithPerk = dilationMap[settings.timeDilationWithPerk] or 0.0065
+	cfg.safetyOffTimeDilation = dilationMap[settings.safetyOffDilation] or 0.025
+
+	-- Booleans
+	cfg.enableCyberpsychosis = settings.enableCyberpsychosis
+	cfg.requireEdgeRunnerPerk = settings.requireEdgeRunnerPerk
+	cfg.enableHealthDrain = settings.enableHealthDrain
+	cfg.enableHealthBrake = settings.enableHealthBrake
+	cfg.enableSafetyOffKill = settings.enableSafetyOffKill
+	cfg.enableNonLinearDrain = settings.enableNonLinearDrain
+	cfg.enableSessionFatigue = settings.enableSessionFatigue
+	cfg.enableRuntimeDegradation = settings.enableRuntimeDegradation
+	cfg.enablePrescription = settings.enablePrescription
+	cfg.enableMicroEpisodes = settings.enableMicroEpisodes
+	cfg.ripperFullRestore = settings.ripperFullRestore
+
+	-- Integers
+	cfg.sandyDuration = settings.sandyDuration
+	cfg.fullRechargeHours = settings.fullRechargeHours
+	cfg.maxRechargePerSleep = settings.maxRechargePerSleep
+	cfg.dailySafeActivations = settings.dailySafeActivations
+	cfg.strainPerActivation = settings.strainPerActivation
+	cfg.strainPerOveruseBonus = settings.strainPerOveruseBonus
+	cfg.strainPerMinuteActive = settings.strainPerMinuteActive
+	cfg.strainPerKillGang = settings.strainPerKillGang
+	cfg.strainPerKillCorpo = settings.strainPerKillCorpo
+	cfg.strainPerKillNCPD = settings.strainPerKillNCPD
+	cfg.strainPerKillCivilian = settings.strainPerKillCivilian
+	cfg.strainDrainSleep = settings.strainDrainSleep
+	cfg.strainDrainRipper = settings.strainDrainRipper
+	cfg.immunoblockerPriceCommon = settings.immunoblockerPriceCommon
+	cfg.immunoblockerPriceUncommon = settings.immunoblockerPriceUncommon
+	cfg.immunoblockerPriceRare = settings.immunoblockerPriceRare
+	cfg.critChance = settings.critChance
+	cfg.critDamage = settings.critDamage
+	cfg.drainAccelStartSec = settings.drainAccelStartSec
+	cfg.safetyOffDrainMultiplier = settings.safetyOffDrainMultiplier
+	cfg.safetyOffKillThreshold = settings.safetyOffKillThreshold
+	cfg.requiredHealthMin = settings.requiredHealthMin
+	cfg.biomonitorPosX = settings.biomonitorPosX
+	cfg.biomonitorPosY = settings.biomonitorPosY
+	cfg.toleranceDecayHours = settings.toleranceDecayHours
+
+	-- Renamed field: redscript healthBrakeThreshold → internal healthBrakeDefault
+	cfg.healthBrakeDefault = settings.healthBrakeThreshold
+
+	-- Floats
+	cfg.damageMin = settings.damageMin
+	cfg.damageMax = settings.damageMax
+	cfg.rechargeDuration = settings.rechargeDuration
+	cfg.cooldownBase = settings.cooldownBase
+	cfg.enterCost = settings.enterCost
+	cfg.killRechargeValue = settings.killRechargeValue
+	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
+	cfg.healOnKill = settings.healOnKill
+	cfg.staminaOnKill = settings.staminaOnKill
+	cfg.strainPerSecSafetyOff = settings.strainPerSecSafetyOff
+	cfg.strainDrainSafeArea = settings.strainDrainSafeArea
+	cfg.strainDrainDFImmuno = settings.strainDrainDFImmuno
+	cfg.strainBuildupMultiplier = settings.strainBuildupMultiplier
+	cfg.strainRecoveryMultiplier = settings.strainRecoveryMultiplier
+	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
+	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
+	cfg.sessionFatiguePenalty = settings.sessionFatiguePenalty
+	cfg.maxSessionFatiguePenalty = settings.maxSessionFatiguePenalty
+	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
+	cfg.drainExponent = settings.drainExponent
+
+	-- Reconstruct immunoblocker drain array from split fields
+	cfg.strainDrainImmunoblocker = {
+		settings.strainDrainImmunoblockerCommon,
+		settings.strainDrainImmunoblockerUncommon,
+		settings.strainDrainImmunoblockerRare
+	}
+
+	print('[DSP] Settings synced from Mod Settings')
+	return true
+end
+
+local function applyTweakDBFromSettings(cfg)
+	local base = 'Items.MartinezSandevistanPlusPlus'
+	pcall(function()
+		TweakDB:SetFlat(base .. '_Stat_Modifier_04.value', 0.15)
+		TweakDB:SetFlat(base .. '_Stat_Modifier_03.value', cfg.sandyDuration * 1.0)
+		TweakDB:SetFlat(base .. '_Stat_Modifier_05.value', cfg.rechargeDuration * 1.0)
+		TweakDB:SetFlat(base .. '_Stat_Modifier_06.value', cfg.cooldownBase * 1.0)
+		TweakDB:SetFlat(base .. '_Stat_Modifier_07.value', cfg.killRechargeValue * 1.0)
+		TweakDB:SetFlat(base .. '_Stat_Modifier_08.value', cfg.enterCost * 1.0)
+		TweakDB:SetFlat(base .. '_Equip3_SM1.value', cfg.critChance * 1.0)
+		TweakDB:SetFlat(base .. '_Equip3_SM2.value', cfg.critDamage * 1.0)
+		TweakDB:SetFlat(base .. '_Equip3_SM3.value', cfg.headshotDamageMultiplier * 1.0)
+		TweakDB:SetFlat(base .. '_Equip4_SPU1.statPoolValue', cfg.healOnKill * 1.0)
+		TweakDB:SetFlat(base .. '_Equip4_SPU2.statPoolValue', cfg.staminaOnKill * 1.0)
+		local dilationPct = math.floor((1 - cfg.timeDilationNoPerk) * 1000 + 0.5) / 10
+		TweakDB:SetFlat(base .. '_Equip1_Various_UI.floatValues',
+			{dilationPct, cfg.critChance * 1.0, cfg.critDamage * 1.0, cfg.headshotDamageMultiplier * 1.0,
+			 cfg.healOnKill * 1.0, cfg.staminaOnKill * 1.0, cfg.sandyDuration * 1.0})
+		for _, suffix in ipairs({'_Stat_Modifier_04', '_Stat_Modifier_03', '_Stat_Modifier_05',
+			'_Stat_Modifier_06', '_Stat_Modifier_07', '_Stat_Modifier_08',
+			'_Equip3_SM1', '_Equip3_SM2', '_Equip3_SM3',
+			'_Equip4_SPU1', '_Equip4_SPU2', '_Equip1_Various_UI'}) do
+			TweakDB:Update(base .. suffix)
 		end
-	end
+	end)
+	print('[DSP] TweakDB updated from settings')
 end
 
 dsp = {
@@ -175,6 +281,8 @@ dsp = {
 		strainDrainDFImmuno = 0.08,      -- strain/sec drain while DF Immunosuppressant active
 		strainBuildupMultiplier = 1.0,   -- global multiplier for all strain accumulation
 		strainRecoveryMultiplier = 1.0,  -- global multiplier for all strain drain
+		episodeCooldownMultiplier = 1.0, -- global multiplier for episode cooldown hours
+		toleranceDecayHours = 24,        -- game-time hours before tolerance starts to decay
 
 		-- Immunoblocker prices (applied to TweakDB at game load)
 		immunoblockerPriceCommon = 6000,
@@ -1407,6 +1515,19 @@ dsp = {
 				self.CachedInMenu = self.bbs:InGameMenu() -- only check InGameMenu once per second
 				self.CachedBrainDance = self.bbs:InBrainDance() -- only check InBrainDance once per second
 				self.VIsInControl = self.sps:InControl()
+				-- Detect Mod Settings changes via quest fact bridge
+				pcall(function()
+					local changed = Game.GetQuestSystem():GetFactValue(CName.new('dsp_settings_changed'))
+					if changed and changed > 0 then
+						syncSettingsFromRedscript(self.cfg)
+						applyTweakDBFromSettings(self.cfg)
+						self:UpdateImmunoblockerPrices()
+						self.FullRechargeHours = self.cfg.fullRechargeHours
+						self.MaxRechargePerSleep = self.cfg.maxRechargePerSleep
+						Game.GetQuestSystem():SetFactValue(CName.new('dsp_settings_changed'), 0)
+						print('[DSP] Settings reloaded from Mod Settings')
+					end
+				end)
 				-- Stop edgerunner SFX when MartinezFury expires
 				if self.furyEdgerunnerActive then
 					local hasFury = self:StatusEffect_CheckOnly(self.martinez.MartinezFury)
@@ -1646,8 +1767,9 @@ dsp = {
 	 end)
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
-		loadConfig(self.cfg)
+		syncSettingsFromRedscript(self.cfg)
 		self:UpdateImmunoblockerPrices()
+		applyTweakDBFromSettings(self.cfg)
 		self:UpdateViksLoot()
 		self.martinez:AddAutoInjectorToViktor()
 		print('[DSP] LoadGamePart1: ViksLevelCheck='..tostring(self.martinez:CheckRequiredLevel())..' IsWearing='..tostring(self:IsWearingSandevistan()))
