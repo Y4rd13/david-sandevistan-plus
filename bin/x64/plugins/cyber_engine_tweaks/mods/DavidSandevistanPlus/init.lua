@@ -2811,20 +2811,32 @@ registerForEvent('onUpdate', function(dt)
             dsp.pendingVendorTip = nil
         end
     end
-    -- Biomonitor dismiss sound timer
-    if dsp.biomonitorDismissTimer then
-        dsp.biomonitorDismissTimer = dsp.biomonitorDismissTimer - dt
-        if dsp.biomonitorDismissTimer <= 0 then
-            dsp.biomonitorDismissTimer = nil
-            pcall(function()
-                local V = Game.GetPlayer()
-                if V and IsDefined(V) then
-                    local evt = SoundPlayEvent.new()
-                    evt.soundName = "ui_hacking_access_panel_close"
-                    V:QueueEvent(evt)
-                end
-            end)
+    -- Biomonitor SFX timers (scanner loop stop + per-line ticks)
+    if dsp.biomonitorScannerStopTimer then
+        dsp.biomonitorScannerStopTimer = dsp.biomonitorScannerStopTimer - dt
+        if dsp.biomonitorScannerStopTimer <= 0 then
+            dsp.biomonitorScannerStopTimer = nil
+            pcall(function() Game.GetAudioSystem():Stop(CName.new("q305_sc_11_medic_scanner_sequence_01")) end)
         end
+    end
+    if dsp.biomonitorTickTimers then
+        local V = dsp.cachedPlayer or Game.GetPlayer()
+        local i = #dsp.biomonitorTickTimers
+        while i >= 1 do
+            dsp.biomonitorTickTimers[i] = dsp.biomonitorTickTimers[i] - dt
+            if dsp.biomonitorTickTimers[i] <= 0 then
+                pcall(function()
+                    if V and IsDefined(V) then
+                        local evt = SoundPlayEvent.new()
+                        evt.soundName = "ui_hacking_hover"
+                        V:QueueEvent(evt)
+                    end
+                end)
+                table.remove(dsp.biomonitorTickTimers, i)
+            end
+            i = i - 1
+        end
+        if #dsp.biomonitorTickTimers == 0 then dsp.biomonitorTickTimers = nil end
     end
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
@@ -2953,7 +2965,19 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 	-- Toggle: if open, close. If closed, open.
 	if dsp.biomonitorOpen then
 		dsp.biomonitorOpen = false
-		dsp.biomonitorDismissTimer = 0  -- trigger dismiss sound immediately
+		-- Stop scanner loop + clear tick timers
+		pcall(function() Game.GetAudioSystem():Stop(CName.new("q305_sc_11_medic_scanner_sequence_01")) end)
+		dsp.biomonitorScannerStopTimer = nil
+		dsp.biomonitorTickTimers = nil
+		-- Close sound
+		pcall(function()
+			local V = Game.GetPlayer()
+			if V and IsDefined(V) then
+				local evt = SoundPlayEvent.new()
+				evt.soundName = "ui_hacking_access_panel_close"
+				V:QueueEvent(evt)
+			end
+		end)
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then hudSystem:RemoveBiomonitorWidget() end

@@ -122,6 +122,23 @@ function immunoblocker_logic.attach(dsp)
 		end)
 	end
 
+	-- Schedule biomonitor SFX sequence (scanner loop + per-line ticks)
+	-- Timing: loading 0.8s + expand 0.6s + footer 0.2s = 1.6s before items
+	-- Items: 0.4s each, 7 items for Mode 1, 6 for Mode 2
+	local function scheduleBiomonitorSFX(numItems)
+		local itemDuration = 0.4
+		local itemsStart = 1.6  -- loading + expand + footer
+		local itemsEnd = itemsStart + (numItems * itemDuration)
+		-- Scanner loop: start now, stop when items finish
+		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
+		dsp.biomonitorScannerStopTimer = itemsEnd
+		-- Per-line ticks: schedule each
+		dsp.biomonitorTickTimers = {}
+		for i = 1, numItems do
+			table.insert(dsp.biomonitorTickTimers, itemsStart + (i - 1) * itemDuration)
+		end
+	end
+
 	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
@@ -130,8 +147,9 @@ function immunoblocker_logic.attach(dsp)
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
 		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
 		local rxCompleted = self.completedDoses or 0
-		-- Activation sound
+		-- SFX: open + scanner loop + line ticks
 		playBiomonitorSound("ui_hacking_access_panel")
+		scheduleBiomonitorSFX(7)  -- 7 data lines in Mode 1
 		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
@@ -162,8 +180,9 @@ function immunoblocker_logic.attach(dsp)
 			local visitP = rx.visits > 0 and (visitsCompleted / rx.visits) or 1.0
 			milestonePct = math.floor((doseP + visitP) / 2.0 * 100)
 		end
-		-- Activation sound
+		-- SFX: open + scanner loop + line ticks
 		playBiomonitorSound("ui_hacking_access_panel")
+		scheduleBiomonitorSFX(6)  -- 6 data lines in Mode 2
 		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
