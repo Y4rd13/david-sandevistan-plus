@@ -173,7 +173,8 @@ function strain.attach(dsp)
 			pcall(function()
 				local ts = Game.GetTimeSystem()
 				local now = ts:GetGameTimeStamp()
-				self.episodeCooldownUntil = now + (cooldownH * 3600)
+				local mult = self.cfg.episodeCooldownMultiplier or 1.0
+				self.episodeCooldownUntil = now + (cooldownH * mult * 3600)
 				self.qs:SaveEpisodeCooldown(self.episodeCooldownUntil)
 			end)
 		end

@@ -56,9 +56,9 @@ function immunoblocker_logic.attach(dsp)
 		if not ok then return end
 		local lastUse = self.lastImmunoblockerGameTime or 0
 		if lastUse == 0 then return end
-		-- Only decay if 24h game-time since last use
+		-- Only decay if configured threshold of game-time since last use
 		local hoursSinceUse = (now - lastUse) / 3600
-		if hoursSinceUse < 24 then return end
+		if hoursSinceUse < (self.cfg.toleranceDecayHours or 24) then return end
 		-- Decay: 1.0 per game-day (called once/sec, so divide by 86400)
 		local decayPerSec = 1.0 / 86400
 		self.toleranceAmount = math.max((self.toleranceAmount or 0) - decayPerSec, 0)
