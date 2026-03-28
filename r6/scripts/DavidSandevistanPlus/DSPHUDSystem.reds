@@ -24,9 +24,13 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_biomonitorPosX: Float;
     private let m_biomonitorPosY: Float;
 
-    // Protocol rest data (set before ShowBiomonitorProtocol)
-    private let m_protocolRestCompleted: Int32;
-    private let m_protocolRestRequired: Int32;
+    // Biomonitor stored data (set via small setters before ShowBiomonitor)
+    private let m_bioRestCompleted: Int32;
+    private let m_bioRestRequired: Int32;
+    private let m_bioVisitsCompleted: Int32;
+    private let m_bioVisitsRequired: Int32;
+    private let m_bioDoses: Int32;
+    private let m_bioMilestonePct: Int32;
 
     // Menu blocking: hide HUD when menus/phone/inventory are open
     private let m_menuBlocked: Bool;
@@ -232,9 +236,13 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_biomonitorPosY = Cast<Float>(posY);
     }
 
-    public func SetProtocolRestData(restCompleted: Int32, restRequired: Int32) -> Void {
-        this.m_protocolRestCompleted = restCompleted;
-        this.m_protocolRestRequired = restRequired;
+    public func SetBiomonitorProtocolData(restCompleted: Int32, restRequired: Int32, visitsCompleted: Int32, visitsRequired: Int32, doses: Int32, milestonePct: Int32) -> Void {
+        this.m_bioRestCompleted = restCompleted;
+        this.m_bioRestRequired = restRequired;
+        this.m_bioVisitsCompleted = visitsCompleted;
+        this.m_bioVisitsRequired = visitsRequired;
+        this.m_bioDoses = doses;
+        this.m_bioMilestonePct = milestonePct;
     }
 
     // ---------------------------------------------------------------
@@ -902,10 +910,12 @@ public class DSPHUDSystem extends ScriptableSystem {
     // Biomonitor — animated Medtech panel via Animated Widgets Framework
     // ---------------------------------------------------------------
 
-    public func ShowBiomonitorStatus(tier: Int32, toleranceStage: Int32, efficacyPct: Int32, strainPct: Int32, psychoStage: Int32, rxCompleted: Int32, rxTotal: Int32) -> Void {
+    // Unified biomonitor — shows all status + protocol data in one panel
+    // Params: status data (tier, tolerance, efficacy, strain, psycho stage, rx progress)
+    // Protocol data stored via SetBiomonitorProtocolData() setter before calling this
+    public func ShowBiomonitor(tier: Int32, toleranceStage: Int32, efficacyPct: Int32, strainPct: Int32, psychoStage: Int32, rxCompleted: Int32, rxTotal: Int32) -> Void {
         if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
 
-        // Remove existing biomonitor (instant when replacing)
         this.ForceRemoveBiomonitor();
 
         // Tier name
@@ -917,10 +927,10 @@ public class DSPHUDSystem extends ScriptableSystem {
 
         // Tolerance name
         let tolName: String;
-        if toleranceStage == 0 { tolName = "NONE"; }
-        else if toleranceStage == 1 { tolName = "MILD"; }
-        else if toleranceStage == 2 { tolName = "MODERATE"; }
-        else { tolName = "SEVERE"; }
+        if toleranceStage == 0 { tolName = "None"; }
+        else if toleranceStage == 1 { tolName = "Mild"; }
+        else if toleranceStage == 2 { tolName = "Moderate"; }
+        else { tolName = "Severe"; }
 
         // Psycho stage name
         let psychoName: String;
@@ -940,21 +950,50 @@ public class DSPHUDSystem extends ScriptableSystem {
             rxText = "No active protocol";
         }
 
-        // Create canvas — left side, below DSP HUD bars
+        // Rest text (from stored data)
+        let restText: String;
+        if this.m_bioRestRequired > 0 {
+            restText = IntToString(this.m_bioRestCompleted) + "/" + IntToString(this.m_bioRestRequired) + "h";
+        } else {
+            restText = "—";
+        }
+
+        // Visits text
+        let visitsText: String;
+        if this.m_bioVisitsRequired > 0 {
+            visitsText = IntToString(this.m_bioVisitsCompleted) + "/" + IntToString(this.m_bioVisitsRequired);
+        } else {
+            visitsText = "—";
+        }
+
+        // Prescribed text
+        let prescribedText: String;
+        if this.m_bioDoses > 0 {
+            prescribedText = IntToString(this.m_bioDoses) + " doses " + tierName;
+        } else {
+            prescribedText = "—";
+        }
+
+        // Milestone text
+        let milestoneText: String;
+        if this.m_bioMilestonePct <= 0 { milestoneText = "Not started"; }
+        else if this.m_bioMilestonePct < 33 { milestoneText = "In progress"; }
+        else if this.m_bioMilestonePct < 66 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Stabilizing"; }
+        else if this.m_bioMilestonePct < 100 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Improving"; }
+        else { milestoneText = "Complete"; }
+
         let bioCanvas: ref<inkCanvas> = new inkCanvas();
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(950.0, 500.0));
+        bioCanvas.SetSize(new Vector2(950.0, 600.0));
         bioCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
-        // Attach controller
         let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
         bioCanvas.AttachController(controller);
 
-        // Override: larger text
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
         controller.m_textSize = 28;
@@ -965,95 +1004,18 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_fadeOutDuration = 0.5;
 
         // Items rendered bottom-to-top — reverse order
+        // Protocol section
+        ArrayPush(controller.m_items, new MonitorListItem("Milestone:", -1.00, milestoneText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Rest:", -1.00, restText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, visitsText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", -1.00, prescribedText, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
+        // Status section
         ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", -1.00, IntToString(strainPct) + "%", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", -1.00, IntToString(efficacyPct) + "%", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
-
-        // Start animation
-        controller.StartAnimation();
-    }
-
-    public func ShowBiomonitorProtocol(psychoStage: Int32, doses: Int32, tierName: String, visitsCompleted: Int32, visitsRequired: Int32, toleranceStage: Int32, milestonePct: Int32) -> Void {
-        if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
-
-        // Remove existing biomonitor (instant when replacing)
-        this.ForceRemoveBiomonitor();
-
-        // Tolerance name
-        let tolName: String;
-        if toleranceStage == 0 { tolName = "NONE"; }
-        else if toleranceStage == 1 { tolName = "MILD"; }
-        else if toleranceStage == 2 { tolName = "MODERATE"; }
-        else { tolName = "SEVERE"; }
-
-        // Psycho stage name
-        let psychoName: String;
-        if psychoStage <= 0 { psychoName = "Clear"; }
-        else if psychoStage == 1 { psychoName = "Stage I"; }
-        else if psychoStage == 2 { psychoName = "Stage II"; }
-        else if psychoStage == 3 { psychoName = "Stage III"; }
-        else if psychoStage == 4 { psychoName = "Stage IV"; }
-        else { psychoName = "Stage V"; }
-
-        // Milestone label
-        let milestoneLabel: String;
-        if milestonePct <= 0 { milestoneLabel = "Not started"; }
-        else if milestonePct < 33 { milestoneLabel = "In progress"; }
-        else if milestonePct < 66 { milestoneLabel = "Stabilizing"; }
-        else if milestonePct < 100 { milestoneLabel = "Improving"; }
-        else { milestoneLabel = "Complete"; }
-
-        let bioCanvas: ref<inkCanvas> = new inkCanvas();
-        bioCanvas.SetName(n"DSPBiomonitor");
-        bioCanvas.SetAnchor(inkEAnchor.TopLeft);
-        bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY, 0.0, 0.0));
-        bioCanvas.Reparent(this.m_fullScreenSlot);
-        this.m_biomonitorWidget = bioCanvas;
-
-        let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
-        bioCanvas.AttachController(controller);
-
-        controller.m_footerText1 = s"Client: V";
-        controller.m_footerText2 = s"Viktor Vektor Medical";
-        controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 0.8;
-        controller.m_expandAnimDuration = 0.6;
-        controller.m_listItemAnimDuration = 0.4;
-        controller.m_fadeOutDelay = 9999.0;
-        controller.m_fadeOutDuration = 0.5;
-
-        // Rest progress text
-        let restText: String;
-        if this.m_protocolRestRequired > 0 {
-            restText = IntToString(this.m_protocolRestCompleted) + "/" + IntToString(this.m_protocolRestRequired) + "h";
-        } else {
-            restText = "Not required";
-        }
-
-        // Milestone text (avoid "0Not started%" glue — use text-only when 0)
-        let milestoneText: String;
-        if milestonePct <= 0 {
-            milestoneText = milestoneLabel;
-        } else {
-            milestoneText = IntToString(milestonePct) + "% — " + milestoneLabel;
-        }
-
-        // Prescribed text (avoid "5doses" glue — format as text)
-        let prescribedText: String = IntToString(doses) + " doses " + tierName;
-
-        // Items are rendered bottom-to-top by the framework — reverse order
-        ArrayPush(controller.m_items, new MonitorListItem("Milestone:", -1.00, milestoneText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Rest:", -1.00, restText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, IntToString(visitsCompleted) + "/" + IntToString(visitsRequired), ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", -1.00, prescribedText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("BIOMONITOR STATUS", -1.00, "", ""));
 
         controller.StartAnimation();
     }

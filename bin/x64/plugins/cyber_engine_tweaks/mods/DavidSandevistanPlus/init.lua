@@ -649,7 +649,7 @@ dsp = {
 					local msg = pool and pool[math.random(#pool)] or "I've uploaded the treatment protocol to your biomonitor."
 					self:ViktorSMS(msg, 10.0)
 					-- Trigger biomonitor Mode 2 (treatment protocol)
-					self:ShowBiomonitorProtocol()
+					self:ShowBiomonitor()
 				end
 
 				-- Count this visit
@@ -1498,7 +1498,7 @@ dsp = {
 						local strainPct = (self.neuralStrain or 0) / threshold
 						if strainPct >= 0.75 and not self.biomonitorStrainWarned then
 							self.biomonitorStrainWarned = true
-							pcall(function() self:ShowImmunoblockerStatus(self:GetBiomonitorDisplayTier()) end)
+							pcall(function() self:ShowBiomonitor() end)
 						elseif strainPct < 0.50 then
 							self.biomonitorStrainWarned = false  -- reset when strain drops
 						end
@@ -3058,7 +3058,7 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 		end)
 	else
 		dsp.biomonitorOpen = true
-		dsp:ShowImmunoblockerStatus(dsp:GetBiomonitorDisplayTier())
+		dsp:ShowBiomonitor()
 	end
 end)
 

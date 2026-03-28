@@ -392,7 +392,7 @@ function psychosis.attach(dsp)
 
 		if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
 		-- Auto-trigger biomonitor on stage change
-		pcall(function() self:ShowImmunoblockerStatus(self:GetBiomonitorDisplayTier()) end)
+		pcall(function() self:ShowBiomonitor() end)
 		-- Viktor SMS: alert on stage change (3 variants per stage for variety)
 		local viktorStageAlerts = {
 			[1] = {
@@ -698,7 +698,7 @@ function psychosis.attach(dsp)
 				self:ViktorSMS("Real improvement here, kid. Neural pathways are re-routing. Almost there.")
 			end
 			-- Trigger biomonitor Mode 2 (protocol update on milestone)
-			self:ShowBiomonitorProtocol()
+			self:ShowBiomonitor()
 		end
 	 end)
 

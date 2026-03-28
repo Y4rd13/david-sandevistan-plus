@@ -149,7 +149,8 @@ function immunoblocker_logic.attach(dsp)
 		end
 	end
 
-	dsp.ShowImmunoblockerStatus = (function(self, consumedTier)
+	-- Unified biomonitor — shows all status + protocol data in one panel
+	dsp.ShowBiomonitor = (function(self)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
 		local threshold = self:GetStrainThreshold()
@@ -157,32 +158,8 @@ function immunoblocker_logic.attach(dsp)
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
 		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
 		local rxCompleted = self.completedDoses or 0
-		-- SFX: open + scanner loop + line ticks
-		playBiomonitorSound("ui_hacking_access_panel")
-		scheduleBiomonitorSFX(6)  -- 6 data lines in Mode 1 (removed Substance line)
-		self.biomonitorOpen = true
-		pcall(function()
-			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then
-				hudSystem:ShowBiomonitorStatus(
-					consumedTier,
-					self.toleranceStage or 0,
-					effPct,
-					strainPct,
-					self.CyberPsychoWarnings or 0,
-					rxCompleted,
-					rxTotal
-				)
-			end
-		end)
-	 end)
-
-	-- Show treatment protocol biomonitor (Mode 2)
-	dsp.ShowBiomonitorProtocol = (function(self)
-		local rx = self:GetPrescription(self.CyberPsychoWarnings)
-		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
-		local tierName = tierDisplayNames[rx.minTier] or "Unknown"
-		local rxCompleted = self.completedDoses or 0
+		local displayTier = self:GetBiomonitorDisplayTier()
+		-- Protocol data
 		local visitsCompleted = self.completedVisits or 0
 		local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
 		local completedRest = math.min(self.completedRestHours or 0, requiredRest)
@@ -193,25 +170,29 @@ function immunoblocker_logic.attach(dsp)
 			local restP = requiredRest > 0 and (completedRest / requiredRest) or 1.0
 			milestonePct = math.floor((doseP + visitP + restP) / 3.0 * 100)
 		end
-		-- SFX: open + scanner loop + line ticks
+		-- SFX
 		playBiomonitorSound("ui_hacking_access_panel")
-		scheduleBiomonitorSFX(7)  -- 7 data lines in Mode 2 (added rest)
+		scheduleBiomonitorSFX(10)  -- 10 data lines
 		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
-				hudSystem:SetProtocolRestData(
+				hudSystem:SetBiomonitorProtocolData(
 					math.floor(completedRest),
-					math.floor(requiredRest)
-				)
-				hudSystem:ShowBiomonitorProtocol(
-					self.CyberPsychoWarnings or 0,
-					rxTotal,
-					tierName,
+					math.floor(requiredRest),
 					visitsCompleted,
 					rx.visits,
-					self.toleranceStage or 0,
+					rxTotal,
 					milestonePct
+				)
+				hudSystem:ShowBiomonitor(
+					displayTier,
+					self.toleranceStage or 0,
+					effPct,
+					strainPct,
+					self.CyberPsychoWarnings or 0,
+					rxCompleted,
+					rxTotal
 				)
 			end
 		end)
