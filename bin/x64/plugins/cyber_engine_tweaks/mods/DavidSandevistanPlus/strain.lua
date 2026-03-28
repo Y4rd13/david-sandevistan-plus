@@ -155,9 +155,18 @@ function strain.attach(dsp)
 	dsp.TriggerStrainEpisode = (function(self)
 		-- Fire a psycho episode: escalate level, MartinezFury, reset strain
 		-- Set episode cooldown (game time) — prevents rapid stage jumping
+		-- Treatment milestone extends cooldown: following the protocol slows degradation
+		--   0% milestone → base cooldown
+		--   33% (milestone 1) → ×1.66
+		--   66% (milestone 2) → ×2.33
 		local nextStage = math.min(self.CyberPsychoWarnings + 1, 5)
 		local cooldownH = episodeCooldownHours[nextStage]
 		if cooldownH then
+			-- Treatment protection: milestone extends cooldown
+			if self.treatmentActive and (self.treatmentMilestone or 0) > 0 then
+				local factor = 1.0 + ((self.treatmentMilestone or 0) / 3.0) * 2.0
+				cooldownH = cooldownH * factor
+			end
 			pcall(function()
 				local ts = Game.GetTimeSystem()
 				local now = ts:GetGameTimeStamp()

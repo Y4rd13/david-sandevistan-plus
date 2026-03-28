@@ -288,6 +288,7 @@ dsp = {
 	,TimeDilationActiveEffect = nil
 	,TimeDilationActualSpeed = nil
 	,ViktorCooldown = nil
+	,visitCooldownUntil = nil  -- game timestamp: next visit allowed after this
 	,isPhotoMode = false
 	,VIsDead = false
 	,VIsInControl = false
@@ -598,6 +599,19 @@ dsp = {
 	,VisitedRipper = (function(self,VendorName)
 		local isRested = ""
 		if VendorName == nil then VendorName = "" end
+		-- Check 24h game-time visit cooldown (separate from 5min ViktorCooldown)
+		if self.visitCooldownUntil then
+			pcall(function()
+				local now = Game.GetTimeSystem():GetGameTimeStamp()
+				if now < self.visitCooldownUntil then
+					local remainH = math.ceil((self.visitCooldownUntil - now) / 3600)
+					print('[DSP] Visit cooldown: ' .. tostring(remainH) .. 'h remaining')
+					VendorName = ""  -- block this visit
+				else
+					self.visitCooldownUntil = nil
+				end
+			end)
+		end
 		if VendorName ~= "" and self.ViktorCooldown == nil then -- At Ripper + no cooldown
 			local stageNames = { "I", "II", "III", "IV", "V" }
 
@@ -660,10 +674,11 @@ dsp = {
 				-- Progress SMS (if not first visit and not completing)
 				if self.completedVisits > 1 or (self.completedDoses or 0) > 0 then
 					if remainDoses > 0 or remainVisits > 0 then
+						local comeback = remainVisits > 0 and " Come back tomorrow." or ""
 						local progressMsgs = {
-							"Good, you came back. " .. tostring(remainDoses) .. " doses left, " .. tostring(math.max(remainVisits, 0)) .. " more visits. Keep at it.",
-							"Progress looks decent. " .. tostring(remainDoses) .. " doses to go, " .. tostring(math.max(remainVisits, 0)) .. " visits remaining. Don't stop now.",
-							"Readings are improving. " .. tostring(remainDoses) .. " doses and " .. tostring(math.max(remainVisits, 0)) .. " visits to finish the protocol. Almost there, kid.",
+							"Good, you came back. " .. tostring(remainDoses) .. " doses left, " .. tostring(math.max(remainVisits, 0)) .. " more visits. Keep at it." .. comeback,
+							"Progress looks decent. " .. tostring(remainDoses) .. " doses to go, " .. tostring(math.max(remainVisits, 0)) .. " visits remaining." .. comeback,
+							"Readings are improving. " .. tostring(remainDoses) .. " doses and " .. tostring(math.max(remainVisits, 0)) .. " visits to finish the protocol." .. comeback,
 						}
 						self:ViktorSMS(progressMsgs[math.random(#progressMsgs)], 6.0)
 					end
@@ -706,7 +721,17 @@ dsp = {
 				self:Rested(8)
 			end
 			isRested = "Treatment"
-			self.ViktorCooldown = 300 -- 5min cooldown
+			self.ViktorCooldown = 300 -- 5min real-time cooldown (prevents UI spam)
+			-- 24h game-time cooldown between treatment visits
+			if self.treatmentActive then
+				pcall(function()
+					local now = Game.GetTimeSystem():GetGameTimeStamp()
+					self.visitCooldownUntil = now + (24 * 3600)  -- 24 game-hours
+					-- Signal redscript: block stabilize button until cooldown expires
+					local QS = Game.GetQuestsSystem()
+					QS:SetFactStr("dsp_visit_cooldown_until", math.floor(self.visitCooldownUntil))
+				end)
+			end
 		end
 		if self.dev_mode then
 			print('DSP:VisitedRipper("'..VendorName..'") '..tostring(isRested)..' completedDoses='..tostring(self.completedDoses)..' completedVisits='..tostring(self.completedVisits))
@@ -1651,6 +1676,7 @@ dsp = {
 		self.maxRuntimeDegraded = self.qs:LoadRuntimeDegraded()
 		self.neuralStrain = self.qs:LoadNeuralStrain()
 		self.episodeCooldownUntil = self.qs:LoadEpisodeCooldown()
+		self.visitCooldownUntil = self.qs:LoadVisitCooldown()
 		self.qs:LoadTreatmentState()
 		self.qs:LoadTolerance()
 		self.qs:LoadTreatmentMilestone()
@@ -1778,6 +1804,9 @@ dsp = {
 		self.qs:SaveNeuralStrain(self.neuralStrain or 0)
 		if self.episodeCooldownUntil then
 			self.qs:SaveEpisodeCooldown(self.episodeCooldownUntil)
+		end
+		if self.visitCooldownUntil then
+			self.qs:SaveVisitCooldown(self.visitCooldownUntil)
 		end
 		self.qs:SaveTreatmentState()
 		self.qs:SaveImmunoblockerTier(self:GetImmunoblockerTier())
@@ -2025,6 +2054,7 @@ dsp = {
 		,ToleranceStageFactName = 'martinezsandevistan_tolerancestage'
 		,ToleranceLastUseFactName = 'martinezsandevistan_tolerancelastuse'
 		,TreatmentMilestoneFactName = 'martinezsandevistan_treatmentmilestone'
+		,VisitCooldownFactName = 'martinezsandevistan_visitcooldown'
 		,GetJohnnyFactName = (function(self)
 			return PlayerSystem.GetPossessedByJohnnyFactName()
 		 end)
@@ -2107,6 +2137,14 @@ dsp = {
 		 end)
 		,LoadEpisodeCooldown = (function(self)
 			local v = self:GetFactValue(self.EpisodeCooldownFactName) - 1
+			if v <= 0 then return nil end
+			return v
+		 end)
+		,SaveVisitCooldown = (function(self, timestamp)
+			self:SetFactValue(self.VisitCooldownFactName, math.floor(timestamp or 0) + 1)
+		 end)
+		,LoadVisitCooldown = (function(self)
+			local v = self:GetFactValue(self.VisitCooldownFactName) - 1
 			if v <= 0 then return nil end
 			return v
 		 end)

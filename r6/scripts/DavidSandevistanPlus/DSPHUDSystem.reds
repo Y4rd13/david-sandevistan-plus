@@ -958,10 +958,21 @@ public class DSPHUDSystem extends ScriptableSystem {
             restText = "—";
         }
 
-        // Visits text
+        // Visits text + cooldown indicator
         let visitsText: String;
         if this.m_bioVisitsRequired > 0 {
             visitsText = IntToString(this.m_bioVisitsCompleted) + "/" + IntToString(this.m_bioVisitsRequired);
+            // Check visit cooldown from quest fact
+            let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(GetGameInstance());
+            let visitCooldownUntil: Int32 = questsSystem.GetFactStr("dsp_visit_cooldown_until");
+            if visitCooldownUntil > 0 {
+                let now: Float = GameInstance.GetTimeSystem(GetGameInstance()).GetGameTimeStamp();
+                let remaining: Float = Cast<Float>(visitCooldownUntil) - now;
+                if remaining > 0.0 {
+                    let hoursLeft: Int32 = Cast<Int32>(remaining / 3600.0) + 1;
+                    visitsText = visitsText + " (next in " + IntToString(hoursLeft) + "h)";
+                };
+            };
         } else {
             visitsText = "—";
         }

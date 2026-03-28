@@ -163,6 +163,16 @@ function immunoblocker_logic.attach(dsp)
 		local visitsCompleted = self.completedVisits or 0
 		local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
 		local completedRest = math.min(self.completedRestHours or 0, requiredRest)
+		-- Visit cooldown remaining (hours until next visit allowed)
+		local visitCooldownH = 0
+		if self.visitCooldownUntil then
+			pcall(function()
+				local now = Game.GetTimeSystem():GetGameTimeStamp()
+				if self.visitCooldownUntil > now then
+					visitCooldownH = math.ceil((self.visitCooldownUntil - now) / 3600)
+				end
+			end)
+		end
 		local milestonePct = 0
 		if rxTotal > 0 then
 			local doseP = rxCompleted / rxTotal

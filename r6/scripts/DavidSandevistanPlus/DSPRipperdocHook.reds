@@ -22,6 +22,16 @@ private final func SetButtonHintsHover(item: wref<UIInventoryItem>, isVendorItem
             let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(this.m_player.GetGame());
             let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 10;
             if psychoStage > 0 {
+                // Check 24h visit cooldown
+                let visitCooldownUntil: Int32 = questsSystem.GetFactStr("dsp_visit_cooldown_until");
+                if visitCooldownUntil > 0 {
+                    let now: Float = GameInstance.GetTimeSystem(this.m_player.GetGame()).GetGameTimeStamp();
+                    if Cast<Float>(visitCooldownUntil) > now {
+                        // Still on cooldown — don't show button
+                        wrappedMethod(item, isVendorItem);
+                        return;
+                    };
+                };
                 this.m_buttonHintsController.AddButtonHint(n"unequip_item", "Stabilize Sandevistan");
                 wrappedMethod(item, isVendorItem);
                 return;
@@ -40,6 +50,14 @@ protected cb func OnSlotClick(evt: ref<ItemDisplayClickEvent>) -> Bool {
             let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(this.m_player.GetGame());
             let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 10;
             if psychoStage > 0 {
+                // Check 24h visit cooldown
+                let visitCooldownUntil: Int32 = questsSystem.GetFactStr("dsp_visit_cooldown_until");
+                if visitCooldownUntil > 0 {
+                    let now: Float = GameInstance.GetTimeSystem(this.m_player.GetGame()).GetGameTimeStamp();
+                    if Cast<Float>(visitCooldownUntil) > now {
+                        return false;
+                    };
+                };
                 let stabilizeCost: Int32 = this.DSPGetStabilizeCost(psychoStage);
                 if stabilizeCost > this.m_VendorDataManager.GetLocalPlayerCurrencyAmount() {
                     let notification: ref<UIMenuNotificationEvent> = new UIMenuNotificationEvent();
