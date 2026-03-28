@@ -216,7 +216,7 @@ local function applyTweakDBFromSettings(cfg)
 		TweakDB:SetFlat(base .. '_Equip3_SM3.value', cfg.headshotDamageMultiplier * 1.0)
 		TweakDB:SetFlat(base .. '_Equip4_SPU1.statPoolValue', cfg.healOnKill * 1.0)
 		TweakDB:SetFlat(base .. '_Equip4_SPU2.statPoolValue', cfg.staminaOnKill * 1.0)
-		local dilationPct = math.floor((1 - cfg.timeDilationNoPerk) * 1000 + 0.5) / 10
+		local dilationPct = 95.0  -- canonical no-perk dilation for item tooltip
 		TweakDB:SetFlat(base .. '_Equip1_Various_UI.floatValues',
 			{dilationPct, cfg.critChance * 1.0, cfg.critDamage * 1.0, cfg.headshotDamageMultiplier * 1.0,
 			 cfg.healOnKill * 1.0, cfg.staminaOnKill * 1.0, cfg.sandyDuration * 1.0})
@@ -379,8 +379,6 @@ dsp = {
 		requireEdgeRunnerPerk = true,   -- require EdgeRunner perk for full runtime (false = full access from day 1)
 
 		-- Time Dilation
-		timeDilationNoPerk = 0.05,       -- time scale without EdgeRunner perk (95%)
-		timeDilationWithPerk = 0.0065,   -- time scale with EdgeRunner perk (99.35%)
 
 		-- Doc Prescription (Graduated Recovery)
 		enablePrescription = true,       -- recovery is a process, not instant
@@ -1234,7 +1232,7 @@ dsp = {
 		end
 
 		local IsEdgeRunner = (self.sps:IsEdgeRunner() == true)
-		local baseTimeScale = IsEdgeRunner and self.cfg.timeDilationWithPerk or self.cfg.timeDilationNoPerk
+		local baseTimeScale = IsEdgeRunner and 0.0065 or 0.05  -- 99.35% with perk, 95% without
 		local timeScale = baseTimeScale
 		local StatusText = 'Default'
 		local outtaTime = (self.runTime < 1)
