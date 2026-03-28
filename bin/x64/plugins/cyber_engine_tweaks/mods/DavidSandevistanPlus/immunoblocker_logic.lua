@@ -1,7 +1,7 @@
 local immunoblocker_logic = {}
 
 function immunoblocker_logic.attach(dsp)
-	print('[DSP] immunoblocker_logic.lua attached')
+	dlog('[DSP] immunoblocker_logic.lua attached')
 
 	-- Tolerance buildup: { chance, amount } per tier
 	local toleranceBuildup = {
@@ -44,7 +44,7 @@ function immunoblocker_logic.attach(dsp)
 				else
 					self:ViktorSMS("V, your system's building resistance to the blockers. Tolerance: " .. tolName .. ". I can flush it at the clinic.")
 				end
-				print('[DSP] Tolerance stage advanced to ' .. tostring(self.toleranceStage))
+				dlog('[DSP] Tolerance stage advanced to ' .. tostring(self.toleranceStage))
 			end
 		end
 	 end)
@@ -67,7 +67,7 @@ function immunoblocker_logic.attach(dsp)
 			self.toleranceStage = self.toleranceStage - 1
 			local prevThresholds = { 0, 4.0, 8.0 }
 			self.toleranceAmount = math.max((prevThresholds[self.toleranceStage] or 0) - 0.1, 0)
-			print('[DSP] Tolerance stage decreased to ' .. tostring(self.toleranceStage))
+			dlog('[DSP] Tolerance stage decreased to ' .. tostring(self.toleranceStage))
 		end
 	 end)
 
@@ -275,7 +275,7 @@ function immunoblocker_logic.attach(dsp)
 	-- Queue-based animation trigger: enqueues and tries to drain immediately
 	dsp.TriggerImmunoblockerAnim = (function(self)
 		self.immunoAnimQueue = self.immunoAnimQueue + 1
-		print('[DSP] Immunoblocker consumed — queued (queue=' .. self.immunoAnimQueue .. ')')
+		dlog('[DSP] Immunoblocker consumed — queued (queue=' .. self.immunoAnimQueue .. ')')
 		self:ProcessImmunoblockerAnimQueue()
 	 end)
 
@@ -287,7 +287,7 @@ function immunoblocker_logic.attach(dsp)
 		if QS:GetFactStr("dsp_immunoblocker_inject") <= 0 then
 			QS:SetFactStr("dsp_immunoblocker_inject", 1)
 			self.immunoAnimQueue = self.immunoAnimQueue - 1
-			print('[DSP] Animation triggered (remaining=' .. self.immunoAnimQueue .. ')')
+			dlog('[DSP] Animation triggered (remaining=' .. self.immunoAnimQueue .. ')')
 		end
 	 end)
 
@@ -342,7 +342,7 @@ function immunoblocker_logic.attach(dsp)
 			local msg = msgs[math.random(#msgs)]
 			self.bbs:SendWarning(msg, 3.0)
 		end
-		print('[DSP] Immunoblocker rebound: tier=' .. tostring(tier) .. ' strain=+' .. tostring(math.floor(baseStrain * mult)) .. ' tolerance=' .. tostring(self.toleranceStage or 0))
+		dlog('[DSP] Immunoblocker rebound: tier=' .. tostring(tier) .. ' strain=+' .. tostring(math.floor(baseStrain * mult)) .. ' tolerance=' .. tostring(self.toleranceStage or 0))
 	 end)
 
 	-- Real-time immunoblocker tick: runs from onUpdate via os.clock(), works during inventory pause.
@@ -414,7 +414,7 @@ function immunoblocker_logic.attach(dsp)
 		self.autoInjectorCooldown = 120
 		-- Notification
 		self.bbs:SendWarning("MARTINEZ PROTOCOL \xe2\x80\x94 IMMUNOBLOCKER ADMINISTERED", 4.0)
-		print('[DSP] TryAutoInject: Military-Grade Immunoblocker consumed, effect applied')
+		dlog('[DSP] TryAutoInject: Military-Grade Immunoblocker consumed, effect applied')
 		return true
 	 end)
 end

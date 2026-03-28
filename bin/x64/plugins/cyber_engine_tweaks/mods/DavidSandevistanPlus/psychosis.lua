@@ -306,7 +306,7 @@ local microEpisodeChains = {
 local chainStageMultiplier = { [1]=1.0, [2]=1.0, [3]=1.5, [4]=2.0, [5]=2.5 }
 
 function psychosis.attach(dsp)
-	print('[DSP] psychosis.lua attached')
+	dlog('[DSP] psychosis.lua attached')
 
 	-- Psycho-scaled safe activations: higher psycho = higher tolerance
 	dsp.getEffectiveSafeActivations = (function(self)
@@ -651,7 +651,7 @@ function psychosis.attach(dsp)
 			else
 				self:ViktorSMS("Treatment complete. Neural readings are clean. Stay off the chrome for a while.", 8.0)
 			end
-			print('[DSP] Treatment complete: ' .. tostring(prevLevel) .. ' -> ' .. tostring(self.CyberPsychoWarnings))
+			dlog('[DSP] Treatment complete: ' .. tostring(prevLevel) .. ' -> ' .. tostring(self.CyberPsychoWarnings))
 		end
 	 end)
 
@@ -800,7 +800,7 @@ function psychosis.attach(dsp)
 			end
 		end
 
-		print('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings)..' chain='..(self.microEpisodeChainCount or 0))
+		dlog('[DSP] Micro-episode: '..selected.type..' dur='..string.format("%.1f",dur)..'s psycho='..tostring(self.CyberPsychoWarnings)..' chain='..(self.microEpisodeChainCount or 0))
 	 end)
 
 	-- Fire a specific micro-episode type (used by chain system)
@@ -877,7 +877,7 @@ function psychosis.attach(dsp)
 			self.pendingChainType = nil
 		end
 
-		print('[DSP] Chain micro-episode: '..selected.type..' chain='..(self.microEpisodeChainCount or 0))
+		dlog('[DSP] Chain micro-episode: '..selected.type..' chain='..(self.microEpisodeChainCount or 0))
 	 end)
 
 	-- ============================================================
@@ -1274,7 +1274,7 @@ function psychosis.attach(dsp)
 	local function applyHordeBehavior(self, hordeNPC)
 		local ent = Game.FindEntityByID(hordeNPC.entityID)
 		if not ent or not IsDefined(ent) then
-			print('[DSP] Horde behavior: entity not found')
+			dlog('[DSP] Horde behavior: entity not found')
 			return
 		end
 		local V = Game.GetPlayer()
@@ -1309,7 +1309,7 @@ function psychosis.attach(dsp)
 			evt.soundName = "quickhack_cyberpsychosis_mech"
 			npc:QueueEvent(evt)
 		end)
-		print('[DSP] Horde behavior applied')
+		dlog('[DSP] Horde behavior applied')
 	end
 
 	dsp.UpdateHallucinations = (function(self, dt)
@@ -1368,7 +1368,7 @@ function psychosis.attach(dsp)
 							if distSq < proxDist * proxDist then
 								shouldDespawn = true
 								if self.dev_mode then
-									print('[DSP] Phantom proximity despawn: '..phantom.behavior..' at '..string.format("%.1f", math.sqrt(distSq))..'m')
+									dlog('[DSP] Phantom proximity despawn: '..phantom.behavior..' at '..string.format("%.1f", math.sqrt(distSq))..'m')
 								end
 							end
 						end
@@ -1429,7 +1429,7 @@ function psychosis.attach(dsp)
 			local jitter = 0.5 + math.random() * 1.5  -- ×0.5 to ×2.0
 			self.nextHallucinationTime = now + baseInterval * jitter
 			if self.dev_mode then
-				print('[DSP] Hallucination: FALSE ALARM (sound only) at stage '..tostring(self.CyberPsychoWarnings))
+				dlog('[DSP] Hallucination: FALSE ALARM (sound only) at stage '..tostring(self.CyberPsychoWarnings))
 			end
 			return
 		end
@@ -1565,7 +1565,7 @@ function psychosis.attach(dsp)
 					local evt = SoundPlayEvent.new()
 					evt.soundName = "quickhack_cyberpsychosis"
 					V:QueueEvent(evt)
-					print('[DSP] Blackwall scream fallback: Audioware failed')
+					dlog('[DSP] Blackwall scream fallback: Audioware failed')
 				end
 			end)
 
@@ -1632,12 +1632,12 @@ function psychosis.attach(dsp)
 						glitchApplied = false,
 					})
 					if self.dev_mode then
-						print('[DSP] Hallucination: GROUP SPAWN second phantom ('..record2..')')
+						dlog('[DSP] Hallucination: GROUP SPAWN second phantom ('..record2..')')
 					end
 				end
 			end
 
-			print('[DSP] Hallucination: '..behavior..' phantom ('..record..') at stage '..tostring(self.CyberPsychoWarnings)..(isLover and ' [LOVER]' or ''))
+			dlog('[DSP] Hallucination: '..behavior..' phantom ('..record..') at stage '..tostring(self.CyberPsychoWarnings)..(isLover and ' [LOVER]' or ''))
 		end
 
 		-- Reset timer with interval jitter (anti-habituation: ×0.5 to ×2.0)
@@ -1684,7 +1684,7 @@ function psychosis.attach(dsp)
 		self.hordeNextSpawn = now + 1.0
 		self.hordeAnnounced = false  -- VFX/message deferred to first successful spawn
 
-		print('[DSP] Horde started: '..self.hordeGangRecord..' duration='..(math.floor(self.hordeEndTime - now))..'s stage='..tostring(stage))
+		dlog('[DSP] Horde started: '..self.hordeGangRecord..' duration='..(math.floor(self.hordeEndTime - now))..'s stage='..tostring(stage))
 	 end)
 
 	dsp.EndHorde = (function(self)
@@ -1718,7 +1718,7 @@ function psychosis.attach(dsp)
 			self:StatusEffect_CheckAndApply('BaseStatusEffect.HauntedBlackwallForceKill')
 		end)
 
-		print('[DSP] Horde ended: kills='..tostring(self.hordeKills)..' remaining='..tostring(#self.hordeNPCs))
+		dlog('[DSP] Horde ended: kills='..tostring(self.hordeKills)..' remaining='..tostring(#self.hordeNPCs))
 	 end)
 
 	dsp.UpdateHorde = (function(self, dt)
@@ -1820,7 +1820,7 @@ function psychosis.attach(dsp)
 				self.hordeNextSpawn = now + spawnRange[1] + math.random() * (spawnRange[2] - spawnRange[1])
 				local eid = spawnHordeNPC(self, 8, 16)
 				if eid then
-					print('[DSP] Horde spawn: count='..tostring(#self.hordeNPCs)..' kills='..tostring(self.hordeKills)..' remaining='..(math.floor(self.hordeEndTime - now))..'s')
+					dlog('[DSP] Horde spawn: count='..tostring(#self.hordeNPCs)..' kills='..tostring(self.hordeKills)..' remaining='..(math.floor(self.hordeEndTime - now))..'s')
 				end
 			end
 
@@ -2009,7 +2009,7 @@ function psychosis.attach(dsp)
 		-- Broadcast gunshot stimulus (NPCs flee, NCPD reacts)
 		StimBroadcasterComponent.BroadcastStim(V, gamedataStimType.Gunshot, 30.0)
 
-		print('[DSP] Auto-attack: fired at NPC, stage '..tostring(self.CyberPsychoWarnings)..' fromLaugh='..tostring(fromLaugh))
+		dlog('[DSP] Auto-attack: fired at NPC, stage '..tostring(self.CyberPsychoWarnings)..' fromLaugh='..tostring(fromLaugh))
 		return true
 	 end)
 

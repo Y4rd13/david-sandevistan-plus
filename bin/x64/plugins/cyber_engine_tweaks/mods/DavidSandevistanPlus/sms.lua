@@ -64,7 +64,7 @@ local vendorZones = {
 }
 
 function sms.attach(dsp)
-	print('[DSP] sms.lua attached')
+	dlog('[DSP] sms.lua attached')
 
 	-- Track which vendor zones have been discovered (persists via quest facts)
 	dsp.vendorZonesDiscovered = {}
@@ -78,7 +78,7 @@ function sms.attach(dsp)
 			local v = QS:GetFactStr(factName)
 			self.vendorZonesDiscovered[zone.id] = (v > 0)
 		end
-		print('[DSP] Vendor discovery loaded: ' .. tostring(#vendorZones) .. ' zones')
+		dlog('[DSP] Vendor discovery loaded: ' .. tostring(#vendorZones) .. ' zones')
 	 end)
 
 	-- Save a zone as discovered
@@ -113,7 +113,7 @@ function sms.attach(dsp)
 					local msg = zone.messages[math.random(#zone.messages)]
 					-- Delay 30-90s so it doesn't fire immediately on zone entry
 					self.pendingVendorTip = { timer = 30 + math.random(0, 60), msg = msg }
-					print('[DSP] Vendor zone discovered: ' .. zone.id .. ' (dist=' .. string.format("%.0f", dist) .. ')')
+					dlog('[DSP] Vendor zone discovered: ' .. zone.id .. ' (dist=' .. string.format("%.0f", dist) .. ')')
 					return  -- only one discovery per check
 				end
 			end
@@ -126,11 +126,11 @@ function sms.attach(dsp)
 			local bridge = Game.GetScriptableSystemsContainer():Get(CName.new("DSPViktorBridge"))
 			if not bridge then error("DSPViktorBridge not found") end
 			bridge:NotifyViktor(messageText)
-			print('[DSP] Viktor SMS sent: ' .. messageText)
+			dlog('[DSP] Viktor SMS sent: ' .. messageText)
 		end)
 
 		if not ok then
-			print('[DSP] Viktor SMS fallback (' .. tostring(err) .. '): ' .. messageText)
+			dlog('[DSP] Viktor SMS fallback (' .. tostring(err) .. '): ' .. messageText)
 			local V = Game.GetPlayer()
 			if V and IsDefined(V) then
 				pcall(function() V:SetWarningMessage("Viktor: " .. messageText) end)

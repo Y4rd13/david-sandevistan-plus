@@ -166,6 +166,7 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.biomonitorPosX = settings.biomonitorPosX
 	cfg.biomonitorPosY = settings.biomonitorPosY
 	cfg.toleranceDecayHours = settings.toleranceDecayHours
+	cfg.enableDebugLogs = settings.enableDebugLogs
 
 	-- Renamed field: redscript healthBrakeThreshold → internal healthBrakeDefault
 	cfg.healthBrakeDefault = settings.healthBrakeThreshold
@@ -199,7 +200,7 @@ local function syncSettingsFromRedscript(cfg)
 		settings.strainDrainImmunoblockerRare
 	}
 
-	print('[DSP] Settings synced from Mod Settings')
+	dlog('[DSP] Settings synced from Mod Settings')
 	return true
 end
 
@@ -228,7 +229,11 @@ local function applyTweakDBFromSettings(cfg)
 			TweakDB:Update(base .. suffix)
 		end
 	end)
-	print('[DSP] TweakDB updated from settings')
+	dlog('[DSP] TweakDB updated from settings')
+end
+
+function dlog(msg)
+	if dsp and dsp.cfg and dsp.cfg.enableDebugLogs then print(msg) end
 end
 
 local function migrateConfigJson()
@@ -385,6 +390,8 @@ dsp = {
 
 		-- Doc Prescription (Graduated Recovery)
 		enablePrescription = true,       -- recovery is a process, not instant
+		-- Debug logging
+		enableDebugLogs = false,         -- print detailed debug messages to the CET console
 		-- Biomonitor position (3840x2160 canvas coordinates)
 		biomonitorPosX = 80,
 		biomonitorPosY = 600,
@@ -692,7 +699,7 @@ dsp = {
 		local prevStrain = self.neuralStrain or 0
 		self.neuralStrain = math.max(prevStrain - strainDrain, 0)
 		if self.activityCount > 0 then
-			print('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
+			dlog('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
 		end
 
 		-- Count rest hours toward treatment protocol
@@ -702,7 +709,7 @@ dsp = {
 			if requiredRest > 0 then
 				local prevRest = self.completedRestHours or 0
 				self.completedRestHours = math.min(prevRest + RestedHours, requiredRest)
-				print('[DSP] Treatment rest: ' .. tostring(self.completedRestHours) .. '/' .. tostring(requiredRest) .. 'h')
+				dlog('[DSP] Treatment rest: ' .. tostring(self.completedRestHours) .. '/' .. tostring(requiredRest) .. 'h')
 				self:CheckTreatmentComplete()
 				self:UpdateTreatmentMilestone()
 			end
@@ -792,7 +799,7 @@ dsp = {
 				local now = Game.GetTimeSystem():GetGameTimeStamp()
 				if now < self.visitCooldownUntil then
 					local remainH = math.ceil((self.visitCooldownUntil - now) / 3600)
-					print('[DSP] Visit cooldown: ' .. tostring(remainH) .. 'h remaining')
+					dlog('[DSP] Visit cooldown: ' .. tostring(remainH) .. 'h remaining')
 					VendorName = ""  -- block this visit
 				else
 					self.visitCooldownUntil = nil
@@ -884,7 +891,7 @@ dsp = {
 						local prevThresholds = { 0, 4.0, 8.0 }
 						self.toleranceAmount = math.max((prevThresholds[self.toleranceStage] or 0) - 0.1, 0)
 					end
-					print('[DSP] Ripperdoc flushed tolerance: amount=' .. tostring(self.toleranceAmount) .. ' stage=' .. tostring(self.toleranceStage))
+					dlog('[DSP] Ripperdoc flushed tolerance: amount=' .. tostring(self.toleranceAmount) .. ' stage=' .. tostring(self.toleranceStage))
 				end
 
 				-- Grant runtime recharge (50% max)
@@ -939,10 +946,10 @@ dsp = {
 	,Start = (function(self)
 		if self.martinez == nil then print('[DSP] Start: martinez nil!') return end
 		local isWearing = self:IsWearingSandevistan()
-		if not isWearing then print('[DSP] Start: IsWearing='..tostring(isWearing)..' — not our Sandy, skipping') return end
+		if not isWearing then dlog('[DSP] Start: IsWearing='..tostring(isWearing)..' — not our Sandy, skipping') return end
 		-- Last Breath: Sandy is auto-managed, don't count reactivations
 		if self.lastBreath then return end
-		print('[DSP] Start: IsWearing=true, dailyActivations='..tostring(self.dailyActivations))
+		dlog('[DSP] Start: IsWearing=true, dailyActivations='..tostring(self.dailyActivations))
 
 		-- No reactivation block — David can always reactivate (lore-accurate)
 		-- The cost is progressive: low runtime = debuffs + strain
@@ -1604,7 +1611,7 @@ dsp = {
 						self.FullRechargeHours = self.cfg.fullRechargeHours
 						self.MaxRechargePerSleep = self.cfg.maxRechargePerSleep
 						Game.GetQuestSystem():SetFactValue(CName.new('dsp_settings_changed'), 0)
-						print('[DSP] Settings reloaded from Mod Settings')
+						dlog('[DSP] Settings reloaded from Mod Settings')
 					end
 				end)
 				-- Stop edgerunner SFX when MartinezFury expires
@@ -1922,7 +1929,7 @@ dsp = {
 			local effect = immunoEffects[savedImmunoTier]
 			if effect then
 				self:StatusEffect_CheckAndApply(effect)
-				print('[DSP] Restored immunoblocker tier '..tostring(savedImmunoTier)..' from save')
+				dlog('[DSP] Restored immunoblocker tier '..tostring(savedImmunoTier)..' from save')
 			end
 		end
 		self:UpdateUIText()
@@ -2639,7 +2646,7 @@ dsp.UpdateImmunoblockerPrices = (function(self)
 			TweakDB:Update(p[1])
 		end)
 	end
-	print('[DSP] Immunoblocker prices updated: ' .. self.cfg.immunoblockerPriceCommon .. '/' .. self.cfg.immunoblockerPriceUncommon .. '/' .. self.cfg.immunoblockerPriceRare)
+	dlog('[DSP] Immunoblocker prices updated: ' .. self.cfg.immunoblockerPriceCommon .. '/' .. self.cfg.immunoblockerPriceUncommon .. '/' .. self.cfg.immunoblockerPriceRare)
  end)
 -- Runtime-based stamina management (applied during Sandy, removed on End)
 dsp.currentStaminaState = nil  -- nil, 'boost', 'drain'
@@ -2741,7 +2748,7 @@ dsp.RegisterActivity = (function(self, activityName)
 			self.bbs:SendMessage(entry.msg, 3.0, entry.voice)
 		end
 
-		print('[DSP] Activity registered: '..activityName..' (count='..tostring(self.activityCount)..' strain=-'..tostring(drain)..')')
+		dlog('[DSP] Activity registered: '..activityName..' (count='..tostring(self.activityCount)..' strain=-'..tostring(drain)..')')
 	end
  end)
 
@@ -2776,7 +2783,7 @@ registerForEvent('onInit', function()
 	
     Observe('SandevistanEvents', 'OnEnter', function(self, event)
 		local isWearing = dsp:IsWearingSandevistan()
-		print('[DSP] SandevistanEvents.OnEnter: IsWearing='..tostring(isWearing)..' PlayerAttached='..tostring(dsp.PlayerAttached)..' LoadGameRun='..tostring(dsp.LoadGameRun))
+		dlog('[DSP] SandevistanEvents.OnEnter: IsWearing='..tostring(isWearing)..' PlayerAttached='..tostring(dsp.PlayerAttached)..' LoadGameRun='..tostring(dsp.LoadGameRun))
 		if isWearing then
 			dsp:Start()
 			return false
@@ -2865,7 +2872,7 @@ registerForEvent('onInit', function()
 		-- When psychosis is active, only the "Stabilize Sandevistan" button counts as a visit.
 		-- The observer still handles non-psychosis rest (Rested) and strain drain.
 		if dsp.CyberPsychoWarnings > 0 and dsp.cfg.enablePrescription then
-			print('[DSP] Ripperdoc UI opened (psychosis active) — waiting for Stabilize button')
+			dlog('[DSP] Ripperdoc UI opened (psychosis active) — waiting for Stabilize button')
 			return
 		end
 		dsp:VisitedRipper(VendorName)
@@ -2915,7 +2922,7 @@ registerForEvent('onInit', function()
 						end
 					end
 				end)
-				print('[DSP] Ripperdoc stabilize button pressed — triggering VisitedRipper')
+				dlog('[DSP] Ripperdoc stabilize button pressed — triggering VisitedRipper')
 				self:VisitedRipper(VendorName)
 			end
 		end)
@@ -3089,7 +3096,7 @@ registerForEvent('onUpdate', function(dt)
     if dsp.gui and (not dsp.LoadGameRun) and (not dsp.TriedLoadGameRun) then
         local V = dsp.cachedPlayer
         if V and IsDefined(V) and not Game.GetSystemRequestsHandler():IsPreGame() then
-            print('[DSP] CET Restart Recovery: LoadGame()')
+            dlog('[DSP] CET Restart Recovery: LoadGame()')
             dsp:LoadGame()
         end
     end

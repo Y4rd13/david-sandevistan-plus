@@ -6,7 +6,7 @@ local strainGuaranteed = { [2]=120, [3]=100, [4]=80, [5]=70 }
 local immunoReduction = { full = 0.8, partial = 0.5 }
 
 function strain.attach(dsp)
-	print('[DSP] strain.lua attached')
+	dlog('[DSP] strain.lua attached')
 
 	dsp.GetStrainThreshold = (function(self)
 		return strainThresholds[self.CyberPsychoWarnings] or 100

@@ -661,6 +661,13 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
     @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Enable Debug Logs")
+    @runtimeProperty("ModSettings.description", "Print detailed debug messages to the CET console. Useful for troubleshooting. Disable for a clean console.")
+    public let enableDebugLogs: Bool = false;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Economy & Interface")
+    @runtimeProperty("ModSettings.category.order", "7")
     @runtimeProperty("ModSettings.displayName", "Biomonitor Position X")
     @runtimeProperty("ModSettings.description", "Horizontal position on 3840x2160 canvas. Auto-scales to your resolution.")
     @runtimeProperty("ModSettings.step", "10")
