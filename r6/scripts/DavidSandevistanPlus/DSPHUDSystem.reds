@@ -933,7 +933,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(150.0, 680.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(80.0, 600.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -956,8 +956,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("Substance: Immunoblocker " + tierName, -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", Cast<Float>(efficacyPct), "", "%"));
-        ArrayPush(controller.m_items, new MonitorListItem("Neural Strain:", Cast<Float>(strainPct), "", "%"));
-        ArrayPush(controller.m_items, new MonitorListItem("Psychosis:", -1.00, psychoName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", Cast<Float>(strainPct), "", "%"));
+        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
 
         // Start animation
@@ -998,7 +998,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
         bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
         bioCanvas.SetSize(new Vector2(950.0, 500.0));
-        bioCanvas.SetMargin(new inkMargin(150.0, 680.0, 0.0, 0.0));
+        bioCanvas.SetMargin(new inkMargin(80.0, 600.0, 0.0, 0.0));
         bioCanvas.Reparent(this.m_fullScreenSlot);
         this.m_biomonitorWidget = bioCanvas;
 
@@ -1015,7 +1015,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_fadeOutDuration = 0.5;
 
         ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Psychosis:", -1.00, psychoName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", Cast<Float>(doses), "doses " + tierName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, IntToString(visitsCompleted) + "/" + IntToString(visitsRequired) + " completed", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
