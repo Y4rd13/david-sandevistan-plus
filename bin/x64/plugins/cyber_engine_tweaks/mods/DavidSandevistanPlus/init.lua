@@ -231,6 +231,90 @@ local function applyTweakDBFromSettings(cfg)
 	print('[DSP] TweakDB updated from settings')
 end
 
+local function migrateConfigJson()
+	local file = io.open("config.json", "r")
+	if not file then return end
+	local ok, loaded = pcall(json.decode, file:read("*a"))
+	file:close()
+	if not ok or type(loaded) ~= "table" then return end
+
+	-- Check if user.ini already has [DSPSettings] section — don't overwrite
+	local userIniPath = "../../../red4ext/plugins/mod_settings/user.ini"
+	local iniFile = io.open(userIniPath, "r")
+	local iniContent = ""
+	if iniFile then
+		iniContent = iniFile:read("*a") or ""
+		iniFile:close()
+	end
+	if iniContent:find("%[DSPSettings%]") then
+		-- Already migrated or user configured manually — just archive old config
+		os.rename("config.json", "config.json.migrated")
+		print('[DSP] config.json archived (user.ini already has DSPSettings)')
+		return
+	end
+
+	-- Build INI section from old config
+	local lines = { "\n[DSPSettings]" }
+
+	-- Dilation enum mapping: float → enum name
+	local dilationToEnum = {
+		[0.15] = "Pct85", [0.10] = "Pct90", [0.075] = "Pct92_5", [0.05] = "Pct95",
+		[0.025] = "Pct97_5", [0.01] = "Pct99", [0.0075] = "Pct99_25",
+		[0.0065] = "Pct99_35", [0.005] = "Pct99_5"
+	}
+	local function findClosestEnum(val)
+		local best, bestDiff = "Pct95", 999
+		for fv, name in pairs(dilationToEnum) do
+			local diff = math.abs(fv - val)
+			if diff < bestDiff then best, bestDiff = name, diff end
+		end
+		return best
+	end
+
+	-- safetyOffTimeDilation: int 975 → enum
+	local function safetyOffToEnum(val)
+		local scale = (1000 - val) / 1000
+		return findClosestEnum(scale)
+	end
+
+	-- Keys to skip (removed settings)
+	local skip = { maxPsychoRecoveryPerSleep=true, ripperRecoveryLevels=true, tickLength=true }
+
+	for key, val in pairs(loaded) do
+		if not skip[key] then
+			if key == "timeDilationNoPerk" then
+				lines[#lines+1] = "timeDilationNoPerk = " .. findClosestEnum(tonumber(val) or 0.05)
+			elseif key == "timeDilationWithPerk" then
+				lines[#lines+1] = "timeDilationWithPerk = " .. findClosestEnum(tonumber(val) or 0.0065)
+			elseif key == "safetyOffTimeDilation" then
+				lines[#lines+1] = "safetyOffDilation = " .. safetyOffToEnum(tonumber(val) or 975)
+			elseif key == "healthBrakeDefault" then
+				lines[#lines+1] = "healthBrakeThreshold = " .. tostring(val)
+			elseif key == "strainDrainImmunoblocker" and type(val) == "table" then
+				lines[#lines+1] = "strainDrainImmunoblockerCommon = " .. tostring(val[1] or 0.08)
+				lines[#lines+1] = "strainDrainImmunoblockerUncommon = " .. tostring(val[2] or 0.18)
+				lines[#lines+1] = "strainDrainImmunoblockerRare = " .. tostring(val[3] or 0.35)
+			elseif type(val) == "boolean" then
+				lines[#lines+1] = key .. " = " .. tostring(val)
+			elseif type(val) == "number" then
+				lines[#lines+1] = key .. " = " .. tostring(val)
+			end
+		end
+	end
+
+	-- Append to user.ini
+	local outFile = io.open(userIniPath, "a")
+	if outFile then
+		outFile:write(table.concat(lines, "\n") .. "\n")
+		outFile:close()
+		print('[DSP] Config migrated to user.ini (' .. (#lines - 1) .. ' settings)')
+	end
+
+	-- Archive old config
+	os.rename("config.json", "config.json.migrated")
+	print('[DSP] config.json renamed to config.json.migrated')
+end
+
 dsp = {
 	 version = '2.25.3'
 	,debug = false -- change to true to get the CET Debugging UI
@@ -1768,6 +1852,7 @@ dsp = {
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		syncSettingsFromRedscript(self.cfg)
+		migrateConfigJson()
 		self:UpdateImmunoblockerPrices()
 		applyTweakDBFromSettings(self.cfg)
 		self:UpdateViksLoot()
