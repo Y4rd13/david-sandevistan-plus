@@ -968,13 +968,13 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_fadeOutDelay = 9999.0;
         controller.m_fadeOutDuration = 0.5;
 
-        // Populate items
-        ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", Cast<Float>(efficacyPct), "", "%"));
-        ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", Cast<Float>(strainPct), "", "%"));
-        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
+        // Items rendered bottom-to-top — reverse order
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", -1.00, IntToString(strainPct) + "%", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", -1.00, IntToString(efficacyPct) + "%", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("IMMUNOSUPPRESSANT STATUS", -1.00, "", ""));
 
         // Start animation
         controller.StartAnimation();
@@ -1039,13 +1039,25 @@ public class DSPHUDSystem extends ScriptableSystem {
             restText = "Not required";
         }
 
-        ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", Cast<Float>(doses), "doses " + tierName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, IntToString(visitsCompleted) + "/" + IntToString(visitsRequired) + " completed", ""));
+        // Milestone text (avoid "0Not started%" glue — use text-only when 0)
+        let milestoneText: String;
+        if milestonePct <= 0 {
+            milestoneText = milestoneLabel;
+        } else {
+            milestoneText = IntToString(milestonePct) + "% — " + milestoneLabel;
+        }
+
+        // Prescribed text (avoid "5doses" glue — format as text)
+        let prescribedText: String = IntToString(doses) + " doses " + tierName;
+
+        // Items are rendered bottom-to-top by the framework — reverse order
+        ArrayPush(controller.m_items, new MonitorListItem("Milestone:", -1.00, milestoneText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Rest:", -1.00, restText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Milestone:", Cast<Float>(milestonePct), milestoneLabel, "%"));
+        ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, IntToString(visitsCompleted) + "/" + IntToString(visitsRequired), ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", -1.00, prescribedText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
 
         controller.StartAnimation();
     }
@@ -1128,9 +1140,10 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_fadeOutDelay = 8.0;
         controller.m_fadeOutDuration = 0.5;
 
-        ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker " + tierName, -1.00, "", ""));
+        // Items rendered bottom-to-top — reverse order
         ArrayPush(controller.m_items, new MonitorListItem(feedbackMsg, -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker " + tierName, -1.00, "", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
 
         controller.StartAnimation();
     }
