@@ -913,7 +913,8 @@ public class DSPHUDSystem extends ScriptableSystem {
         let tierName: String;
         if tier == 3 { tierName = "MILITARY GRADE"; }
         else if tier == 2 { tierName = "UNCOMMON"; }
-        else { tierName = "COMMON"; }
+        else if tier == 1 { tierName = "COMMON"; }
+        else { tierName = "NONE"; }
 
         // Tolerance name
         let tolName: String;

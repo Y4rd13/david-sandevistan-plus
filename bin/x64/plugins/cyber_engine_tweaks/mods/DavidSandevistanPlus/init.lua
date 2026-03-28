@@ -1481,7 +1481,7 @@ dsp = {
 						local strainPct = (self.neuralStrain or 0) / threshold
 						if strainPct >= 0.75 and not self.biomonitorStrainWarned then
 							self.biomonitorStrainWarned = true
-							pcall(function() self:ShowImmunoblockerStatus(math.max(self:GetImmunoblockerTier(), 1)) end)
+							pcall(function() self:ShowImmunoblockerStatus(self:GetBiomonitorDisplayTier()) end)
 						elseif strainPct < 0.50 then
 							self.biomonitorStrainWarned = false  -- reset when strain drops
 						end
@@ -3000,7 +3000,7 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 		end)
 	else
 		dsp.biomonitorOpen = true
-		dsp:ShowImmunoblockerStatus(math.max(dsp:GetImmunoblockerTier(), 1))
+		dsp:ShowImmunoblockerStatus(dsp:GetBiomonitorDisplayTier())
 		-- Also show cyberware panel
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))

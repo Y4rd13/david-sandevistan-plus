@@ -85,6 +85,18 @@ function immunoblocker_logic.attach(dsp)
 		return 0
 	 end)
 
+	-- Returns the tier to display in biomonitor for auto-triggers (not consumption events).
+	-- Priority: active immunoblocker > prescribed tier (treatment) > 0
+	dsp.GetBiomonitorDisplayTier = (function(self)
+		local activeTier = self:GetImmunoblockerTier()
+		if activeTier > 0 then return activeTier end
+		if self.treatmentActive then
+			local rx = self:GetPrescription(self.CyberPsychoWarnings)
+			return rx.minTier
+		end
+		return 0
+	 end)
+
 	-- Returns immunoblocker effectiveness vs current psycho level:
 	--   'full'        = within effective range (blocks strain + micro-episodes)
 	--   'partial'     = at boundary level (blocks strain, 50% micro-episode suppression)
