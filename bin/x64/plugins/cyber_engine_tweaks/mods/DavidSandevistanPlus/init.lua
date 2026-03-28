@@ -247,7 +247,9 @@ dsp = {
 	,treatmentActive = false
 	,completedDoses = 0
 	,completedVisits = 0
+	,completedRestHours = 0
 	,prescribedDoses = 0
+	,prescribedRestHours = 0
 	,sandyUsesDuringTreatment = 0
 	,sandyTreatmentWarned = false
 	,treatmentMilestone = 0
@@ -495,7 +497,7 @@ dsp = {
 		if RestedHours < 1 then return end
 
 		-- Sleep drains strain but does NOT reduce psycho stage
-		-- Stage reduction only comes from completing treatment protocol (ripper + immunoblockers)
+		-- Stage reduction only comes from completing treatment protocol (ripper + immunoblockers + rest)
 		local recovMult = self.cfg.strainRecoveryMultiplier or 1.0
 		local sleepMult = self:GetSleepMultiplier()
 		local strainDrain = self.cfg.strainDrainSleep * (RestedHours / 8) * recovMult * sleepMult
@@ -503,6 +505,19 @@ dsp = {
 		self.neuralStrain = math.max(prevStrain - strainDrain, 0)
 		if self.activityCount > 0 then
 			print('[DSP] Sleep multiplier: x'..string.format("%.1f", sleepMult)..' ('..tostring(self.activityCount)..' activities)')
+		end
+
+		-- Count rest hours toward treatment protocol
+		if self.treatmentActive then
+			local rx = self:GetPrescription(self.CyberPsychoWarnings)
+			local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
+			if requiredRest > 0 then
+				local prevRest = self.completedRestHours or 0
+				self.completedRestHours = math.min(prevRest + RestedHours, requiredRest)
+				print('[DSP] Treatment rest: ' .. tostring(self.completedRestHours) .. '/' .. tostring(requiredRest) .. 'h')
+				self:CheckTreatmentComplete()
+				self:UpdateTreatmentMilestone()
+			end
 		end
 
 		-- Sleep messages based on psycho level
@@ -596,36 +611,38 @@ dsp = {
 					self.treatmentActive = true
 					self.completedDoses = 0
 					self.completedVisits = 0
+					self.completedRestHours = 0
 					self.prescribedDoses = rx.doses
+					self.prescribedRestHours = rx.restHours
 					self.sandyUsesDuringTreatment = 0
 					self.sandyTreatmentWarned = false
 
 					-- SMS: narrative only (numbers go to biomonitor)
 					local prescriptionMsgs = {
 						[1] = {
-							"Alright kid, I ran the diagnostics. Stage I — your neural interface is destabilizing but we caught it early. I'm uploading the protocol to your biomonitor. Take the meds, don't skip.",
-							"Stage I, V. Your readings are off but nothing we can't handle. Check your biomonitor for the protocol. Simple stuff — just follow it.",
-							"Good news is we caught it early. Stage I — I've sent the treatment protocol to your biomonitor. Just don't skip any doses, kid. I mean it.",
+							"Alright kid, I ran the diagnostics. Stage I — your neural interface is destabilizing but we caught it early. I'm uploading the protocol to your biomonitor. Take the meds, get some rest. Don't skip.",
+							"Stage I, V. Your readings are off but nothing we can't handle. Check your biomonitor for the protocol. Meds and sleep — just follow it.",
+							"Good news is we caught it early. Stage I — I've sent the treatment protocol to your biomonitor. Take your doses and get some real sleep, kid. I mean it.",
 						},
 						[2] = {
-							"Stage II. The degradation is accelerating. Protocol's on your biomonitor. This isn't optional, V.",
-							"V, Stage II. Your neural pathways are degrading faster than I'd like. I've updated your biomonitor with the new protocol. Start today.",
-							"Alright, Stage II. Worse than last time. Check your biomonitor — the protocol's there. Don't make me chase you down.",
+							"Stage II. The degradation is accelerating. Protocol's on your biomonitor. Meds, rest, and come see me. This isn't optional, V.",
+							"V, Stage II. Your neural pathways are degrading faster than I'd like. I've updated your biomonitor with the new protocol. Your body needs downtime to let the treatment work.",
+							"Alright, Stage II. Worse than last time. Check your biomonitor — the protocol's there. And V? Sleep. Your nervous system needs it.",
 						},
 						[3] = {
-							"Stage III. Standard grade won't hold anymore — I'm switching you to a stronger compound. Protocol's on your biomonitor.",
-							"V, we're past Common grade. Stage III — check your biomonitor for the new protocol. The compound hits deeper neural pathways. Don't wait on this.",
-							"Stage III protocol. I've uploaded everything to your biomonitor. The standard stuff can't keep up anymore.",
+							"Stage III. Standard grade won't hold anymore — I'm switching you to a stronger compound. Protocol's on your biomonitor. And you need real rest, V. The neural pathways can't repair while you're running around Night City.",
+							"V, we're past Common grade. Stage III — check your biomonitor for the new protocol. More visits, stronger meds, and more sleep. The compound hits deeper neural pathways but it needs downtime to work.",
+							"Stage III protocol. I've uploaded everything to your biomonitor. Meds, visits, rest — all three, V. The standard stuff can't keep up anymore.",
 						},
 						[4] = {
-							"Stage IV. Only Military Grade can slow this down. Protocol's on your biomonitor. It's expensive but the alternative is worse.",
-							"V, Stage IV. We're in critical territory. I've uploaded the protocol — check your biomonitor. This is the heavy stuff.",
-							"I'm not going to sugarcoat this — Stage IV. Check your biomonitor. Everything below mil-spec is useless at this point.",
+							"Stage IV. Only Military Grade can slow this down. Protocol's on your biomonitor. It's expensive but the alternative is worse. And V — I need you sleeping. Not 4 hours, real sleep. Your neural tissue needs time to regenerate.",
+							"V, Stage IV. We're in critical territory. I've uploaded the protocol — check your biomonitor. Mil-spec meds, frequent visits, and mandatory rest. Your body is fighting itself.",
+							"I'm not going to sugarcoat this — Stage IV. Check your biomonitor. Everything below mil-spec is useless at this point. And get some sleep — the treatment won't hold if you keep pushing.",
 						},
 						[5] = {
-							"Stage V. I'm uploading the protocol to your biomonitor. This is the same one I had for Maine. He didn't finish it. You will.",
-							"V... Stage V. Point of no return. Protocol's on your biomonitor — full course, no shortcuts. Most chooms don't come back from this. But you're still here.",
-							"Stage V protocol. I've uploaded everything to your biomonitor. This is everything I've got, kid. The same protocol I developed for Maine before... well. Just finish it.",
+							"Stage V. I'm uploading the protocol to your biomonitor. This is the same one I had for Maine. Meds, visits, and a full rest cycle. He didn't finish it. You will.",
+							"V... Stage V. Point of no return. Protocol's on your biomonitor — full course, no shortcuts. Meds, rest, everything. Most chooms don't come back from this. But you're still here.",
+							"Stage V protocol. I've uploaded everything to your biomonitor. This is everything I've got, kid. Meds, visits, rest — the full protocol. The same one I developed for Maine before... well. Just finish it.",
 						},
 					}
 					local pool = prescriptionMsgs[self.CyberPsychoWarnings]
@@ -1497,6 +1514,8 @@ dsp = {
 				end
 				-- Poll activity quest fact from redscript LocKey tracker
 				self:CheckActivityQuestFact()
+				-- Poll ripperdoc stabilize button (from DSPRipperdocHook.reds)
+				self:CheckRipperStabilizeFact()
 				-- Auto-injector cooldown decrement (~1/sec)
 				if self.autoInjectorCooldown > 0 then
 					self.autoInjectorCooldown = self.autoInjectorCooldown - 1
@@ -1998,6 +2017,8 @@ dsp = {
 		,EpisodeCooldownFactName = 'martinezsandevistan_episodecooldown'
 		,TreatmentActiveFactName = 'martinezsandevistan_treatmentactive'
 		,CompletedVisitsFactName = 'martinezsandevistan_completedvisits'
+		,CompletedRestFactName = 'martinezsandevistan_completedrest'
+		,PrescribedRestFactName = 'martinezsandevistan_prescribedrest'
 		,ViksMessageFactName = 'martinezsandevistan_smssent'
 		,ImmunoblockerTierFactName = 'martinezsandevistan_immunotier'
 		,ToleranceAmountFactName = 'martinezsandevistan_toleranceamt'
@@ -2092,12 +2113,18 @@ dsp = {
 		,SaveTreatmentState = (function(self)
 			self:SetFactValue(self.TreatmentActiveFactName, dsp.treatmentActive and 2 or 1)
 			self:SetFactValue(self.CompletedVisitsFactName, (dsp.completedVisits or 0) + 1)
+			self:SetFactValue(self.CompletedRestFactName, math.floor(dsp.completedRestHours or 0) + 1)
+			self:SetFactValue(self.PrescribedRestFactName, math.floor(dsp.prescribedRestHours or 0) + 1)
 		 end)
 		,LoadTreatmentState = (function(self)
 			local active = self:GetFactValue(self.TreatmentActiveFactName)
 			dsp.treatmentActive = (active == 2)
 			local visits = self:GetFactValue(self.CompletedVisitsFactName) - 1
 			dsp.completedVisits = (visits >= 0) and visits or 0
+			local rest = self:GetFactValue(self.CompletedRestFactName) - 1
+			dsp.completedRestHours = (rest >= 0) and rest or 0
+			local prescRest = self:GetFactValue(self.PrescribedRestFactName) - 1
+			dsp.prescribedRestHours = (prescRest >= 0) and prescRest or 0
 		 end)
 		,SaveImmunoblockerTier = (function(self, tier)
 			self:SetFactValue(self.ImmunoblockerTierFactName, (tier or 0) + 1)
@@ -2595,6 +2622,12 @@ registerForEvent('onInit', function()
 		local VDM = this.VendorDataManager
 		if VDM == nil then return end
 		local VendorName = GetLocalizedText(VDM:GetVendorName())
+		-- When psychosis is active, only the "Stabilize Sandevistan" button counts as a visit.
+		-- The observer still handles non-psychosis rest (Rested) and strain drain.
+		if dsp.CyberPsychoWarnings > 0 and dsp.cfg.enablePrescription then
+			print('[DSP] Ripperdoc UI opened (psychosis active) — waiting for Stabilize button')
+			return
+		end
 		dsp:VisitedRipper(VendorName)
 	end)
 
@@ -2619,6 +2652,31 @@ registerForEvent('onInit', function()
 					self:RegisterActivity(name)
 				end
 				QS:SetFactStr("dsp_activity_detected", 0)  -- consume the fact
+			end
+		end)
+	 end)
+
+	-- Poll quest fact set by DSPRipperdocHook.reds when player clicks "Stabilize Sandevistan"
+	dsp.CheckRipperStabilizeFact = (function(self)
+		pcall(function()
+			local QS = Game.GetQuestsSystem()
+			if not QS then return end
+			local stabilize = QS:GetFactStr("dsp_ripper_stabilize")
+			if stabilize > 0 then
+				QS:SetFactStr("dsp_ripper_stabilize", 0)  -- consume the fact
+				-- Get vendor name from ripperdoc context
+				local VendorName = "Ripperdoc"
+				pcall(function()
+					local container = Game.GetScriptableSystemsContainer()
+					if container then
+						local hudSystem = container:Get(CName.new('DSPHUDSystem'))
+						if hudSystem then
+							VendorName = "Viktor"
+						end
+					end
+				end)
+				print('[DSP] Ripperdoc stabilize button pressed — triggering VisitedRipper')
+				self:VisitedRipper(VendorName)
 			end
 		end)
 	 end)

@@ -258,16 +258,17 @@ local function ContextualLastBreathLine(self)
 	return pool[#pool].line
 end
 
--- Treatment protocol: { doses, ripperVisits, minTier }
+-- Treatment protocol: { doses, visits, minTier, restHours }
 -- minTier: 1=Common, 2=Uncommon, 3=Rare (Military Grade)
+-- restHours: total hours of sleep required as part of treatment
 -- Stage reduction only happens when FULL protocol is complete
 local prescriptionTable = {
-	[0] = { doses = 0, visits = 0, minTier = 0 },
-	[1] = { doses = 3, visits = 1, minTier = 1 },
-	[2] = { doses = 5, visits = 1, minTier = 1 },
-	[3] = { doses = 5, visits = 2, minTier = 2 },
-	[4] = { doses = 7, visits = 3, minTier = 3 },
-	[5] = { doses = 10, visits = 5, minTier = 3 },
+	[0] = { doses = 0, visits = 0, minTier = 0, restHours = 0 },
+	[1] = { doses = 3, visits = 1, minTier = 1, restHours = 8 },
+	[2] = { doses = 5, visits = 1, minTier = 1, restHours = 8 },
+	[3] = { doses = 5, visits = 2, minTier = 2, restHours = 12 },
+	[4] = { doses = 7, visits = 3, minTier = 3, restHours = 16 },
+	[5] = { doses = 10, visits = 5, minTier = 3, restHours = 24 },
 }
 
 local tierNames = { "Common", "Uncommon", "Military Grade" }
@@ -575,11 +576,11 @@ function psychosis.attach(dsp)
 
 	dsp.GetPrescription = (function(self, level)
 		local entry = prescriptionTable[level]
-		if not entry then return { doses = 0, visits = 0, minTier = 0 } end
+		if not entry then return { doses = 0, visits = 0, minTier = 0, restHours = 0 } end
 		-- Tolerance compensation: more doses needed when tolerance is high
 		local tolMult = toleranceDoseMultiplier[self.toleranceStage or 0] or 1.0
 		local adjustedDoses = math.ceil(entry.doses * tolMult)
-		return { doses = adjustedDoses, visits = entry.visits, minTier = entry.minTier }
+		return { doses = adjustedDoses, visits = entry.visits, minTier = entry.minTier, restHours = entry.restHours }
 	 end)
 
 	dsp.GetTierName = (function(self, tier)
@@ -618,7 +619,7 @@ function psychosis.attach(dsp)
 		self:CheckTreatmentComplete()
 	 end)
 
-	-- Check if full treatment protocol is complete (all doses + all visits)
+	-- Check if full treatment protocol is complete (all doses + all visits + all rest)
 	dsp.CheckTreatmentComplete = (function(self)
 		if not self.treatmentActive then return end
 		local rx = self:GetPrescription(self.CyberPsychoWarnings)
@@ -626,14 +627,17 @@ function psychosis.attach(dsp)
 		local requiredDoses = math.max(rx.doses, self.prescribedDoses or 0)
 		local dosesOk = (self.completedDoses or 0) >= requiredDoses
 		local visitsOk = (self.completedVisits or 0) >= rx.visits
-		if dosesOk and visitsOk then
+		local restOk = rx.restHours <= 0 or (self.completedRestHours or 0) >= rx.restHours
+		if dosesOk and visitsOk and restOk then
 			-- Protocol complete — reduce stage
 			local prevLevel = self.CyberPsychoWarnings
 			self.CyberPsychoWarnings = math.max(self.CyberPsychoWarnings - 1, 0)
 			self.treatmentActive = false
 			self.completedDoses = 0
 			self.completedVisits = 0
+			self.completedRestHours = 0
 			self.prescribedDoses = 0
+			self.prescribedRestHours = 0
 			self.sandyUsesDuringTreatment = 0
 			self.sandyTreatmentWarned = false
 			self.treatmentMilestone = 0
@@ -668,7 +672,9 @@ function psychosis.attach(dsp)
 		if requiredDoses == 0 then return end
 		local doseProgress = (self.completedDoses or 0) / requiredDoses
 		local visitProgress = rx.visits > 0 and ((self.completedVisits or 0) / rx.visits) or 1.0
-		local progress = (doseProgress + visitProgress) / 2.0
+		local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
+		local restProgress = requiredRest > 0 and (math.min(self.completedRestHours or 0, requiredRest) / requiredRest) or 1.0
+		local progress = (doseProgress + visitProgress + restProgress) / 3.0
 
 		local prevMilestone = self.treatmentMilestone or 0
 

@@ -24,6 +24,10 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_biomonitorPosX: Float;
     private let m_biomonitorPosY: Float;
 
+    // Protocol rest data (set before ShowBiomonitorProtocol)
+    private let m_protocolRestCompleted: Int32;
+    private let m_protocolRestRequired: Int32;
+
     // Runtime row
     private let m_runtimeIcon: ref<inkImage>;
     private let m_runtimeBarBG: ref<inkRectangle>;
@@ -223,6 +227,11 @@ public class DSPHUDSystem extends ScriptableSystem {
     public func SetBiomonitorPosition(posX: Int32, posY: Int32) -> Void {
         this.m_biomonitorPosX = Cast<Float>(posX);
         this.m_biomonitorPosY = Cast<Float>(posY);
+    }
+
+    public func SetProtocolRestData(restCompleted: Int32, restRequired: Int32) -> Void {
+        this.m_protocolRestCompleted = restCompleted;
+        this.m_protocolRestRequired = restRequired;
     }
 
     // ---------------------------------------------------------------
@@ -1046,10 +1055,19 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_fadeOutDelay = 9999.0;
         controller.m_fadeOutDuration = 0.5;
 
+        // Rest progress text
+        let restText: String;
+        if this.m_protocolRestRequired > 0 {
+            restText = IntToString(this.m_protocolRestCompleted) + "/" + IntToString(this.m_protocolRestRequired) + "h";
+        } else {
+            restText = "Not required";
+        }
+
         ArrayPush(controller.m_items, new MonitorListItem("TREATMENT PROTOCOL UPDATED", -1.00, "", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", Cast<Float>(doses), "doses " + tierName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, IntToString(visitsCompleted) + "/" + IntToString(visitsRequired) + " completed", ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Rest:", -1.00, restText, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName + " (" + IntToString(toleranceStage) + "/3)", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Milestone:", Cast<Float>(milestonePct), milestoneLabel, "%"));
 

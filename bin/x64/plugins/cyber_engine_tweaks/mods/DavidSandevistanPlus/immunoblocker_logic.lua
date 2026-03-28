@@ -184,19 +184,26 @@ function immunoblocker_logic.attach(dsp)
 		local tierName = tierDisplayNames[rx.minTier] or "Unknown"
 		local rxCompleted = self.completedDoses or 0
 		local visitsCompleted = self.completedVisits or 0
+		local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
+		local completedRest = math.min(self.completedRestHours or 0, requiredRest)
 		local milestonePct = 0
 		if rxTotal > 0 then
 			local doseP = rxCompleted / rxTotal
 			local visitP = rx.visits > 0 and (visitsCompleted / rx.visits) or 1.0
-			milestonePct = math.floor((doseP + visitP) / 2.0 * 100)
+			local restP = requiredRest > 0 and (completedRest / requiredRest) or 1.0
+			milestonePct = math.floor((doseP + visitP + restP) / 3.0 * 100)
 		end
 		-- SFX: open + scanner loop + line ticks
 		playBiomonitorSound("ui_hacking_access_panel")
-		scheduleBiomonitorSFX(6)  -- 6 data lines in Mode 2
+		scheduleBiomonitorSFX(7)  -- 7 data lines in Mode 2 (added rest)
 		self.biomonitorOpen = true
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
 			if hudSystem then
+				hudSystem:SetProtocolRestData(
+					math.floor(completedRest),
+					math.floor(requiredRest)
+				)
 				hudSystem:ShowBiomonitorProtocol(
 					self.CyberPsychoWarnings or 0,
 					rxTotal,
