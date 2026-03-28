@@ -30,6 +30,12 @@ hud.Init = (function(self, DSP, doDebug)
 	end
 	print('[DSP-HUD] Init: system acquired, calling InitHUD()')
 	pcall(function() self.system:InitHUD() end)
+	-- Set biomonitor position from config
+	pcall(function()
+		if self.DSP and self.DSP.cfg then
+			self.system:SetBiomonitorPosition(self.DSP.cfg.biomonitorPosX or 80, self.DSP.cfg.biomonitorPosY or 600)
+		end
+	end)
 end)
 
 ----------------------------------------------------------------

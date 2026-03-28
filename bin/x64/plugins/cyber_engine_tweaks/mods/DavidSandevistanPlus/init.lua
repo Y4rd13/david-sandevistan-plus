@@ -196,6 +196,10 @@ dsp = {
 		maxPsychoRecoveryPerSleep = 1,   -- max levels recovered per sleep
 		ripperRecoveryLevels = 1,        -- levels per ripperdoc visit
 
+		-- Biomonitor position (3840x2160 canvas coordinates)
+		biomonitorPosX = 80,
+		biomonitorPosY = 600,
+
 		-- Non-Linear Runtime Drain
 		enableNonLinearDrain = true,     -- drain accelerates the longer Sandy is active
 		drainExponent = 1.5,             -- acceleration curve exponent
@@ -1470,6 +1474,18 @@ dsp = {
 
 					-- Dice roll: check for strain episode
 					self:CheckStrainEpisode()
+
+					-- Auto-trigger biomonitor when neural load crosses 75% threshold
+					local threshold = self:GetStrainThreshold()
+					if threshold > 0 then
+						local strainPct = (self.neuralStrain or 0) / threshold
+						if strainPct >= 0.75 and not self.biomonitorStrainWarned then
+							self.biomonitorStrainWarned = true
+							pcall(function() self:ShowImmunoblockerStatus(math.max(self:GetImmunoblockerTier(), 1)) end)
+						elseif strainPct < 0.50 then
+							self.biomonitorStrainWarned = false  -- reset when strain drops
+						end
+					end
 				end
 			elseif self.displayTick2 == 2 then -- 1/sec +0.5 offset
 				if self.CachedInMenu or self.CachedBrainDance then return end
@@ -2965,9 +2981,6 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 	-- Toggle: if open, close. If closed, open.
 	if dsp.biomonitorOpen then
 		dsp.biomonitorOpen = false
-		-- Stop scanner loop + clear tick timers
-		pcall(function() Game.GetAudioSystem():Stop(CName.new("q305_sc_11_medic_scanner_sequence_01")) end)
-		dsp.biomonitorScannerStopTimer = nil
 		dsp.biomonitorTickTimers = nil
 		-- Close sound
 		pcall(function()
@@ -2980,11 +2993,24 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 		end)
 		pcall(function()
 			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then hudSystem:RemoveBiomonitorWidget() end
+			if hudSystem then
+				hudSystem:RemoveBiomonitorWidget()
+				hudSystem:RemoveCyberwareWidget()
+			end
 		end)
 	else
 		dsp.biomonitorOpen = true
 		dsp:ShowImmunoblockerStatus(math.max(dsp:GetImmunoblockerTier(), 1))
+		-- Also show cyberware panel
+		pcall(function()
+			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
+			if hudSystem then
+				local rt = math.max(math.floor(dsp.runTime or 0), 0)
+				local maxRt = math.max(math.floor(dsp.MaxRuntime or 0), 0)
+				local tier = dsp:GetImmunoblockerTier()
+				hudSystem:ShowBiomonitorCyberware(rt, maxRt, dsp.dailyActivations or 0, dsp:getEffectiveSafeActivations(), dsp.SafetyOn, tier, 0)
+			end
+		end)
 	end
 end)
 

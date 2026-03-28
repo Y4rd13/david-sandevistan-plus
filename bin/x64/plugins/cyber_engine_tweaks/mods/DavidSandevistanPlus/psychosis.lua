@@ -390,6 +390,8 @@ function psychosis.attach(dsp)
 		self.pendingEpisode = nil
 
 		if self.CyberPsychoWarnings < 5 then self.CyberPsychoWarnings = self.CyberPsychoWarnings + 1 end
+		-- Auto-trigger biomonitor on stage change
+		pcall(function() self:ShowImmunoblockerStatus(math.max(self:GetImmunoblockerTier(), 1)) end)
 		-- Viktor SMS: alert on stage change (3 variants per stage for variety)
 		local viktorStageAlerts = {
 			[1] = {

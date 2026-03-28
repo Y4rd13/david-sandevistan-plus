@@ -197,12 +197,13 @@ local function initUI()
 	local catME = tab .. "/MicroEpisodes"
 	local catKS = tab .. "/KillStrain"
 	local catIB = tab .. "/Immunoblocker"
+	local catBM = tab .. "/Biomonitor"
 
 	if not nativeSettings.pathExists(tab) then
 		nativeSettings.addTab(tab, "Martinez Sandy+")
 	end
 
-	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catRX, catNLD, catME}) do
+	for _, path in ipairs({catTD, catDC, catCS, catOK, catHD, catHB, catRC, catCP, catNS, catKS, catIB, catRX, catNLD, catME, catBM}) do
 		if nativeSettings.pathExists(path) then
 			nativeSettings.removeSubcategory(path)
 		end
@@ -918,6 +919,35 @@ local function initUI()
 		defaults.microEpisodeFrequency,
 		function(value)
 			cfg.microEpisodeFrequency = value
+			applyAll()
+		end)
+
+	-- ═══════════════════ Biomonitor ═══════════════════
+	nativeSettings.addSubcategory(catBM, "Biomonitor (Medtech Panel)")
+
+	nativeSettings.addRangeInt(
+		catBM,
+		"Position X",
+		"Horizontal position of biomonitor panel on screen. (Default: 80)\n"
+			.. "Coordinates are on 3840x2160 canvas, auto-scaled to your resolution.",
+		0, 3000, 10,
+		cfg.biomonitorPosX,
+		defaults.biomonitorPosX,
+		function(value)
+			cfg.biomonitorPosX = value
+			applyAll()
+		end)
+
+	nativeSettings.addRangeInt(
+		catBM,
+		"Position Y",
+		"Vertical position of biomonitor panel on screen. (Default: 600)\n"
+			.. "Coordinates are on 3840x2160 canvas, auto-scaled to your resolution.",
+		0, 2000, 10,
+		cfg.biomonitorPosY,
+		defaults.biomonitorPosY,
+		function(value)
+			cfg.biomonitorPosY = value
 			applyAll()
 		end)
 
