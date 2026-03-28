@@ -97,12 +97,23 @@ function strain.attach(dsp)
 		-- Suppress during dialogues/cutscenes — strain builds but episodes wait
 		if not self.VIsInControl then return false end
 		-- Episode cooldown: nervous system needs time to destabilize after each episode
+		-- Treatment milestone DYNAMICALLY extends cooldown (evaluated every check, not just at set time)
 		if self.episodeCooldownUntil then
 			local ok, now = pcall(function()
 				local ts = Game.GetTimeSystem()
 				return ts:GetGameTimeStamp()
 			end)
-			if ok and now < self.episodeCooldownUntil then return false end
+			if ok then
+				local effectiveEnd = self.episodeCooldownUntil
+				if self.treatmentActive and (self.treatmentMilestone or 0) > 0 then
+					local nextStage = math.min(self.CyberPsychoWarnings + 1, 5)
+					local baseH = episodeCooldownHours[nextStage] or 24
+					local factor = 1.0 + ((self.treatmentMilestone or 0) / 3.0) * 2.0
+					local extensionSec = (baseH * 3600) * (factor - 1.0)
+					effectiveEnd = self.episodeCooldownUntil + extensionSec
+				end
+				if now < effectiveEnd then return false end
+			end
 			-- Cooldown expired
 			self.episodeCooldownUntil = nil
 		end
@@ -155,18 +166,10 @@ function strain.attach(dsp)
 	dsp.TriggerStrainEpisode = (function(self)
 		-- Fire a psycho episode: escalate level, MartinezFury, reset strain
 		-- Set episode cooldown (game time) — prevents rapid stage jumping
-		-- Treatment milestone extends cooldown: following the protocol slows degradation
-		--   0% milestone → base cooldown
-		--   33% (milestone 1) → ×1.66
-		--   66% (milestone 2) → ×2.33
+		-- NOTE: treatment milestone protection is applied dynamically in CheckStrainEpisode
 		local nextStage = math.min(self.CyberPsychoWarnings + 1, 5)
 		local cooldownH = episodeCooldownHours[nextStage]
 		if cooldownH then
-			-- Treatment protection: milestone extends cooldown
-			if self.treatmentActive and (self.treatmentMilestone or 0) > 0 then
-				local factor = 1.0 + ((self.treatmentMilestone or 0) / 3.0) * 2.0
-				cooldownH = cooldownH * factor
-			end
 			pcall(function()
 				local ts = Game.GetTimeSystem()
 				local now = ts:GetGameTimeStamp()
