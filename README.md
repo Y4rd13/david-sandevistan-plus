@@ -15,11 +15,23 @@ Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every game
 
 ### Custom HUD
 
-A visual HUD overlay showing real-time Sandy status:
-- **Runtime bar** — color-coded green/yellow/red with time dilation percentage (represents body endurance, not battery)
-- **Status line** — activation count, contextual status (stage info, overuse count)
-- **Psycho bar** — visible when cyberpsychosis is active, with level and RX progress
-- **Strain bar** — Neural Strain level with BrainMelt icon, blue/yellow/red color coding, visible at all stages when strain > 0
+A minimal HUD overlay showing real-time Sandy status:
+- **Runtime bar** — color-coded with time dilation percentage (represents body endurance, not battery)
+- **Activation counter** — daily activations vs safe limit
+- **Psycho bar** — visible when cyberpsychosis is active, showing current stage
+- **Strain bar** — Neural Load level, visible when strain > 0
+- **Contextual status** — COMEDOWN timer, RECOVERING (safe area), STABILIZED (DF immunosuppressant)
+- **Auto-hides** when phone, inventory, or menus are open (UISystem integration)
+
+### Biomonitor (Animated Medtech Panel)
+
+An animated biomonitor panel (Animated Widgets Framework) showing all treatment and status data in one unified view. Toggleable via CET keybind, auto-triggers on stage change, neural load threshold, and milestone advance.
+
+- **Status section**: Tolerance, Efficacy, Neural Load, Cyberpsychosis stage, Treatment RX progress
+- **Protocol section**: Prescribed doses + tier, Visits (with countdown to next), Rest hours, Milestone progress
+- **Substance detection**: Separate cyan notification panel when immunoblocker is consumed — shows detected substance and dynamic feedback ("Insufficient for Stage V" / "Treatment dose registered — 3 remaining")
+- **Auto-fade**: Substance detection fades after 8s, main biomonitor stays until manually closed
+- **Position configurable** via MartinezPLUS settings
 
 ### Progressive Cyberpsychosis
 
@@ -115,14 +127,14 @@ Strain sources are split into two categories with different scaling:
 
 When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
 
-| Level | Threshold | Guaranteed | Experience |
-|-------|-----------|------------|------------|
-| 0 | 60 | 100 | Hard to trigger — highest thresholds, but overuse escalates to stage 1 |
-| 1 | 50 | 90 | Manageable with care |
-| 2 | 40 | 80 | Casual overuse is dangerous |
-| 3 | 30 | 70 | Almost any aggressive session triggers |
-| 4 | 20 | 60 | Constant danger |
-| 5 | 10 | 50 | Near-inevitable |
+| Level | Threshold | Guaranteed | Episode Cooldown | Experience |
+|-------|-----------|------------|-----------------|------------|
+| 0 | 100 | — | — | Hard to trigger — only dice rolls |
+| 1 | 85 | — | 48h | Manageable with care |
+| 2 | 70 | 120 | 36h | Casual overuse is dangerous |
+| 3 | 55 | 100 | 24h | Almost any aggressive session triggers |
+| 4 | 40 | 80 | 12h | Constant danger, passive strain +0.04/s |
+| 5 | 30 | 70 (forced) | 6h | Near-inevitable, passive strain +0.08/s |
 
 #### Immunoblocker (Consumable Item)
 
@@ -207,19 +219,25 @@ Recovery depends on location type:
 | Viktor's clinic | Ripper | -25 | +50% max | 60-70% | Treatment dose only |
 | Kabuki ripper | Ripper | -25 | +50% max | 60-70% | Treatment dose only |
 
-#### Doc Prescription (Graduated Recovery)
+#### Treatment Protocol (Graduated Recovery)
 
-Recovery is a process, not a button. Sleep cures -1 level max. Ripperdoc visits provide treatment doses. Higher psycho levels require more treatments — level 5 can't go below 4 without a ripper visit.
+Recovery is a process with three pillars: **medication**, **ripperdoc visits**, and **rest**. Viktor prescribes a full protocol — the biomonitor tracks progress. Treatment milestones (33%/66%) provide increasing protection against stage escalation.
 
-| Psycho Level | Required Treatments | Min Ripper Visits | Sleep Alone? |
-|---|---|---|---|
-| 1 | 1 | 0 | Yes (1 sleep) |
-| 2 | 2 | 0 | Yes (2 sleeps) |
-| 3 | 3 | 1 | No |
-| 4 | 5 | 2 | No |
-| 5 | 7 | 3 | No — can't go below 4 without ripper |
+| Stage | Doses (Base) | Min Tier | Visits | Rest | Treatment Days |
+|-------|-------------|----------|--------|------|---------------|
+| 1 | 3 | Common | 1 | 8h | ~1 day |
+| 2 | 5 | Common | 1 | 8h | ~2 days |
+| 3 | 5 | Uncommon | 2 | 12h | ~2 days |
+| 4 | 7 | Military Grade | 3 | 16h | ~3 days |
+| 5 | 10 | Military Grade | 5 | 24h | ~5 days |
 
-HUD shows `RX 2/5` next to psycho level when a prescription is active. Dark Future immunosuppressant counts as a partial treatment dose (60s accumulation = 0.5 dose).
+**Doses scale with tolerance**: tolerance stage 1 = x1.3, stage 2 = x1.6, stage 3 = x2.0 required doses.
+
+**Ripperdoc visits**: hover over the Sandevistan in any ripperdoc menu → "Stabilize Sandevistan" button. 24h game-time cooldown between visits. Cost scales with stage (2,000–20,000 eddies).
+
+**Treatment protection**: active treatment milestones dynamically extend episode cooldowns — 33% milestone = x1.66, 66% = x2.33. Following the protocol prevents stage escalation. Not following it = normal degradation speed.
+
+**Rest**: sleep hours count toward the protocol. The biomonitor shows "Rest: 8/16h".
 
 #### Non-Linear Runtime Drain
 
@@ -347,17 +365,26 @@ Cyberpunk 2077/
 │   │   ├── entEffects.lua
 │   │   ├── ncpd.lua
 │   │   ├── hud.lua
+│   │   ├── sms.lua
+│   │   ├── voice.lua
 │   │   └── gui.lua
 │   └── MartinezPLUS/
 │       └── init.lua
 ├── r6/audioware/DavidSandevistanPlus/
 │   ├── audios.yaml
 │   └── last_breath_song.ogg
-└── r6/scripts/DavidSandevistanPlus/
-    ├── DSPHUDSystem.reds
-    ├── DSPKillTracker.reds
-    ├── DSPActivityTracker.reds
-    └── DSPConsumeOverride.reds
+├── r6/scripts/DavidSandevistanPlus/
+│   ├── DSPHUDSystem.reds
+│   ├── DSPRipperdocHook.reds
+│   ├── DSPKillTracker.reds
+│   ├── DSPActivityTracker.reds
+│   ├── DSPViktorBridge.reds
+│   └── DSPConsumeOverride.reds
+└── r6/scripts/AnimatedWidgets/
+    ├── AnimatedGlobals.reds
+    ├── AnimatedWidgetsLib.reds
+    ├── AnimatedMonitor.reds
+    └── AnimatedBiomonitor.reds
 ```
 
 > **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
@@ -425,7 +452,7 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 | Health Brake Threshold | 15–80% | 50 | Health % to trigger brake |
 | Minimum Required Health | 5–50% | 15 | Absolute minimum health threshold |
 
-> **Safety ON/OFF** is automatic — stages 0-4 have Safety ON, stage 5+ has Safety OFF. Not configurable.
+> **Safety ON/OFF** is automatic and hidden from the player — stages 0-4 have Safety ON, stage 5+ Safety OFF engages automatically.
 
 ### Recharge & Recovery
 | Setting | Range | Default | Description |
@@ -533,17 +560,23 @@ Death at level 5 + Second Heart:
       ├─ Decay (~225s): VFX ramp, dilation drops, Blackwall kills
       └─ Runtime = 0 → permanent death (DAVID MARTINEZ — FLATLINED)
 
-Recovery (levels 1–5) — Graduated:
-  ├─ Sleep: -1 psycho level max + drains strain + partial treatment dose
-  │   └─ Sleep strain drain scaled by activity multiplier (1.0 to ×2.5)
-  ├─ Visit Viktor: -1 level + drains strain + treatment dose + runtime recharge
-  ├─ Immunoblocker: reduces strain accumulation + drains strain + counts as dose
+Recovery (levels 1–5) — Treatment Protocol (3 pillars):
+  ├─ Immunoblocker doses: reduces strain + counts toward prescription
+  │   └─ Substance detection biomonitor shows feedback on consumption
+  ├─ Ripperdoc visits: "Stabilize Sandevistan" button in ripper menu
+  │   ├─ 24h game-time cooldown between visits
+  │   ├─ Cost: 2k-20k eddies (scales with stage)
+  │   └─ Viktor SMS: "Come back tomorrow" when visits remain
+  ├─ Rest: sleep hours count toward protocol (8-24h by stage)
+  ├─ Treatment milestones protect against escalation:
+  │   ├─ 33% progress → episode cooldown ×1.66
+  │   └─ 66% progress → episode cooldown ×2.33
   ├─ Activities: 6 tracked (lover, sleepWithLover, shower, social, pet, apartment)
-  │   ├─ Immediate strain drain (-2 to -8) + runtime restore (lover/shower/sleepWithLover)
+  │   ├─ Immediate strain drain (-2 to -8) + runtime restore
   │   └─ Sleep multiplier: 1.0 + (activities × 0.25), max ×2.5 with all 6
-  ├─ Level 3+: requires ripper visit(s) — can't fully cure with sleep alone
-  ├─ Level 5: needs 7 treatments (3 ripper + 4 sleep) to fully clear
-  └─ HUD shows prescription progress: "RX completed/total"
+  ├─ Tolerance: repeated immunoblocker use builds resistance (×1.3/×1.6/×2.0 doses)
+  │   └─ Decays after 24h without use, flushed at ripperdoc
+  └─ Biomonitor tracks all progress: doses, visits, rest, milestone %
 ```
 
 ## Compatibility

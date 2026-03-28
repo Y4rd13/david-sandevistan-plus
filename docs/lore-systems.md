@@ -82,22 +82,35 @@ Per-faction strain values are configurable. Kill strain routes through `DSPHUDSy
 
 ### Thresholds Per Stage
 
-| Stage | Threshold | Guaranteed | Experience |
-|---|---|---|---|
-| 0 | 60 | 100 | Hard to trigger — highest thresholds, but overuse escalates to stage 1 |
-| 1 | 50 | 90 | Manageable with care |
-| 2 | 40 | 80 | Casual overuse is dangerous |
-| 3 | 30 | 70 | Almost any aggressive session triggers |
-| 4 | 20 | 60 | Constant danger |
-| 5 | 10 | 50 | Near-inevitable — Last Breath territory |
+| Stage | Threshold | Guaranteed | Episode Cooldown | Experience |
+|---|---|---|---|---|
+| 0 | 100 | — | — | Hard to trigger — only dice rolls, no guaranteed |
+| 1 | 85 | — | 48h | Manageable with care |
+| 2 | 70 | 120 (50%) | 36h | Casual overuse is dangerous |
+| 3 | 55 | 100 (50%) | 24h | Almost any aggressive session triggers |
+| 4 | 40 | 80 (50%) | 12h | Constant danger, passive strain +0.04/s |
+| 5 | 30 | 70 (forced) | 6h | Near-inevitable — Last Breath territory, passive +0.08/s |
 
 ### Design Decision: No Auto-Level-Decrease
 
-Level decreases ONLY via:
-- Sleep (prescription system: -1 level per rest)
-- Ripperdoc (prescription system: -1 level per visit)
+Level decreases ONLY via completing the full treatment protocol (all three pillars):
+- **Immunoblocker doses** — tier and quantity prescribed by stage
+- **Ripperdoc visits** — "Stabilize Sandevistan" button, 24h game-time cooldown between visits
+- **Rest** — sleep hours count toward protocol (8-24h by stage)
 
 Strain reaching 0 means "safe within current level" but doesn't reduce the level. This cleanly separates: **strain = episode risk within a level**, **psycho level = overall progression**.
+
+### Treatment Protocol
+
+| Stage | Doses (Base) | Min Tier | Visits | Rest | Days |
+|-------|-------------|----------|--------|------|------|
+| 1 | 3 | Common | 1 | 8h | ~1 |
+| 2 | 5 | Common | 1 | 8h | ~2 |
+| 3 | 5 | Uncommon | 2 | 12h | ~2 |
+| 4 | 7 | Military Grade | 3 | 16h | ~3 |
+| 5 | 10 | Military Grade | 5 | 24h | ~5 |
+
+Doses scale with tolerance (×1.0/1.3/1.6/2.0). Treatment milestones dynamically extend episode cooldowns (33% → ×1.66, 66% → ×2.33), protecting players who follow the protocol.
 
 ### Persistence
 
