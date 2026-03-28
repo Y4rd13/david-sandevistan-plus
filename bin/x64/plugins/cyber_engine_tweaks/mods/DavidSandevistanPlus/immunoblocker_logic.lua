@@ -130,8 +130,7 @@ function immunoblocker_logic.attach(dsp)
 		local itemsStart = 1.6  -- loading + expand + footer
 		local itemsEnd = itemsStart + (numItems * itemDuration)
 		-- Scanner loop: start now, stop when items finish
-		playBiomonitorSound("q305_sc_11_medic_scanner_sequence_01")
-		dsp.biomonitorScannerStopTimer = itemsEnd
+		dsp.biomonitorScannerStopTimer = nil
 		-- Per-line ticks: schedule each
 		dsp.biomonitorTickTimers = {}
 		for i = 1, numItems do
