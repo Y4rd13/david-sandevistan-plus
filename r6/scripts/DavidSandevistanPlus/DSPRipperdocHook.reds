@@ -20,7 +20,7 @@ private final func SetButtonHintsHover(item: wref<UIInventoryItem>, isVendorItem
         let tdbid: TweakDBID = ItemID.GetTDBID(item.GetID());
         if tdbid == t"Items.MartinezSandevistanPlusPlus" && item.IsEquipped() {
             let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(this.m_player.GetGame());
-            let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 1;
+            let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 10;
             if psychoStage > 0 {
                 this.m_buttonHintsController.AddButtonHint(n"unequip_item", "Stabilize Sandevistan");
                 wrappedMethod(item, isVendorItem);
@@ -38,7 +38,7 @@ protected cb func OnSlotClick(evt: ref<ItemDisplayClickEvent>) -> Bool {
         let tdbid: TweakDBID = ItemID.GetTDBID(item.GetID());
         if tdbid == t"Items.MartinezSandevistanPlusPlus" && item.IsEquipped() {
             let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(this.m_player.GetGame());
-            let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 1;
+            let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 10;
             if psychoStage > 0 {
                 let stabilizeCost: Int32 = this.DSPGetStabilizeCost(psychoStage);
                 if stabilizeCost > this.m_VendorDataManager.GetLocalPlayerCurrencyAmount() {
@@ -92,7 +92,7 @@ protected cb func OnDSPStabilizePopupClosed(data: ref<inkGameNotificationData>) 
     this.m_isInEquipPopup = false;
     if resultData.confirm {
         let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(this.m_player.GetGame());
-        let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 1;
+        let psychoStage: Int32 = questsSystem.GetFactStr("martinezsandevistan_cyberpsycho") - 10;
         let price: Int32 = this.DSPGetStabilizeCost(psychoStage);
 
         let transactionSystem: ref<TransactionSystem> = GameInstance.GetTransactionSystem(this.m_player.GetGame());

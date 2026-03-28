@@ -457,9 +457,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         } else if this.m_dfImmuno {
             status = "STABILIZED";
             statusColor = this.Color(0.18, 0.80, 0.44, 1.0);
-        } else if this.m_isRunning && this.m_psychoLevel > 0 {
-            status = "ACCELERATING";
-            statusColor = this.Color(0.95, 0.77, 0.06, 1.0);
         }
         this.m_statusText.SetMargin(inkMargin(170.0, rowY, 0.0, 0.0));
         this.m_statusText.SetText(status);
