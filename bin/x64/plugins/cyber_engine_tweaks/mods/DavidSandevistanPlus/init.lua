@@ -123,8 +123,6 @@ local function syncSettingsFromRedscript(cfg)
 	if not ok or not settings then return false end
 
 	-- Enums → float time scale
-	cfg.timeDilationNoPerk = dilationMap[settings.timeDilationNoPerk] or 0.05
-	cfg.timeDilationWithPerk = dilationMap[settings.timeDilationWithPerk] or 0.0065
 	cfg.safetyOffTimeDilation = dilationMap[settings.safetyOffDilation] or 0.025
 
 	-- Booleans
@@ -283,15 +281,11 @@ local function migrateConfigJson()
 	end
 
 	-- Keys to skip (removed settings)
-	local skip = { maxPsychoRecoveryPerSleep=true, ripperRecoveryLevels=true, tickLength=true }
+	local skip = { maxPsychoRecoveryPerSleep=true, ripperRecoveryLevels=true, tickLength=true, timeDilationNoPerk=true, timeDilationWithPerk=true }
 
 	for key, val in pairs(loaded) do
 		if not skip[key] then
-			if key == "timeDilationNoPerk" then
-				lines[#lines+1] = "timeDilationNoPerk = " .. findClosestEnum(tonumber(val) or 0.05)
-			elseif key == "timeDilationWithPerk" then
-				lines[#lines+1] = "timeDilationWithPerk = " .. findClosestEnum(tonumber(val) or 0.0065)
-			elseif key == "safetyOffTimeDilation" then
+			if key == "safetyOffTimeDilation" then
 				lines[#lines+1] = "safetyOffDilation = " .. safetyOffToEnum(tonumber(val) or 975)
 			elseif key == "healthBrakeDefault" then
 				lines[#lines+1] = "healthBrakeThreshold = " .. tostring(val)
