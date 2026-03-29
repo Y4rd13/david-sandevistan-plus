@@ -327,14 +327,16 @@ function immunoblocker_logic.attach(dsp)
 		local tolMult = { [0]=1.0, [1]=1.3, [2]=1.6, [3]=2.0 }
 		local mult = tolMult[self.toleranceStage or 0] or 1.0
 		self:AddStrain(baseStrain * mult, true)  -- raw=true
-		-- VFX
+		-- VFX: analog distortion (crisis de abstinencia) + tier-scaled tremor
+		self:StatusEffect_CheckAndApply(self.martinez.SandyStrainEffect)
 		if tier >= 3 then
-			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
 		elseif tier >= 2 then
 			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
-		else
 			self.tremor.intensity = math.max(self.tremor.intensity, 0.008)
+		else
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.006)
 		end
 		-- Message
 		local msgs = reboundMessages[tier]

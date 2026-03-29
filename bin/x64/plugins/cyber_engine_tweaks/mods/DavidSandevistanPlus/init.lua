@@ -487,6 +487,8 @@ dsp = {
 		return true
 	 end)
 	,RemoveAllPsychoVFX = (function(self)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Subtle)
+		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Subtle2)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Heavy)
@@ -501,6 +503,7 @@ dsp = {
 		self:StatusEffect_CheckAndRemove(self.martinez.ComedownEffect)
 		self:StatusEffect_CheckAndRemove(self.martinez.PsychosisCombatBuff)
 		self:StatusEffect_CheckAndRemove(self.martinez.PrePsychosisEffect)
+		self:StatusEffect_CheckAndRemove(self.martinez.SandyStrainEffect)
 		self:StopHeartbeat()
 		-- Stop cycled SFX
 		pcall(function()
@@ -525,8 +528,17 @@ dsp = {
 		-- Progressive psycho VFX by level (MartinezFury is timed/automatic, these are persistent)
 		self:RemoveAllPsychoVFX()
 		if (self.PlayerInSafeArea or self.InDaClub or (not self.VIsInControl)) then
+			-- Residual base VFX in safe areas — cyberpsychosis doesn't just turn off
+			if self.CyberPsychoWarnings >= 3 then
+				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Subtle2)
+			elseif self.CyberPsychoWarnings >= 1 then
+				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Subtle)
+			end
 			self.sps:ResetNamePlates()
-		elseif self.CyberPsychoWarnings <= 1 then
+		elseif self.CyberPsychoWarnings == 0 then
+			self.sps:ResetNamePlates()
+		elseif self.CyberPsychoWarnings == 1 then
+			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Subtle)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings == 2 then
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
@@ -539,6 +551,7 @@ dsp = {
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:ResetNamePlates()
 		elseif self.CyberPsychoWarnings >= 5 and (not self.SafetyOn) then
+			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect) -- absorbed into CyberpsychoSafetyOff
 			self:StatusEffect_CheckAndApply(self.martinez.CyberpsychoSafetyOffEffect)
 			self:StatusEffect_CheckAndApply(self.martinez.PsychoSluggishEffect)
 			self.sps:HideNamePlates()
@@ -1001,7 +1014,10 @@ dsp = {
 			self:StatusEffect_CheckAndRemove(self.martinez.SafetiesOffStatusEffect)
 			self.SafetyOn = true
 		elseif not self:IsFury() then
-			self:StatusEffect_CheckAndApply(self.martinez.SafetiesOffStatusEffect)
+			-- Stage 5+: CyberpsychoSafetyOff already provides intense VFX, skip SafetiesOff overlay
+			if self.CyberPsychoWarnings < 5 then
+				self:StatusEffect_CheckAndApply(self.martinez.SafetiesOffStatusEffect)
+			end
 			self.SafetyOn = false
 		end
 		self:TimeDilationEffects()
@@ -1171,8 +1187,13 @@ dsp = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
+			-- Analog distortion while Sandy active at psycho 3+ (implants degrading under load)
+			if self.CyberPsychoWarnings >= 3 then
+				self:StatusEffect_CheckAndApply(self.martinez.SandyStrainEffect)
+			end
 		else
 			self:TimeDilationEffects_AllOff()
+			self:StatusEffect_CheckAndRemove(self.martinez.SandyStrainEffect)
 		end
 	 end)
 	,TimeDilationEffects_Activate = (function(self,TimeDilation,Source)
@@ -1420,19 +1441,7 @@ dsp = {
 
 		-- Comedown system removed — penalties are now runtime-based (lore-accurate)
 
-		-- Micro-episode cleanup timer (auto-remove brief VFX)
-		if self.microEpisodeCleanup then
-			self.microEpisodeCleanup.timer = self.microEpisodeCleanup.timer - dt
-			if self.microEpisodeCleanup.timer <= 0 then
-				local epType = self.microEpisodeCleanup.type
-				if epType == "visual_glitch" then
-					self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Light)
-				elseif epType == "medium_glitch" then
-					self:StatusEffect_CheckAndRemove(self.martinez.PsychoWarningEffect_Medium)
-				end
-				self.microEpisodeCleanup = nil
-			end
-		end
+		-- (micro-episode VFX cleanup removed — NosebleedEffect auto-expires at 3s)
 
 		-- Micro-episode Sandy flash auto-stop
 		if self.microEpisodeSandyFlash then

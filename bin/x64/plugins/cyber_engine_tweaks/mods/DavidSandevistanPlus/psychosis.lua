@@ -759,7 +759,8 @@ function psychosis.attach(dsp)
 		-- Apply effect
 		local dur = selected.duration[1] + math.random() * (selected.duration[2] - selected.duration[1])
 		if selected.type == "visual_glitch" then
-			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect) -- brief burnout_glitch flash
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.006)
 		elseif selected.type == "tremor_burst" then
 			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
 		elseif selected.type == "nosebleed" then
@@ -775,12 +776,8 @@ function psychosis.attach(dsp)
 				self.microEpisodeSandyFlash = dur
 			end
 		elseif selected.type == "medium_glitch" then
-			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
-		end
-
-		-- Auto-remove brief effects after duration
-		if selected.type == "visual_glitch" or selected.type == "medium_glitch" then
-			self.microEpisodeCleanup = { timer = dur, type = selected.type }
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect) -- brief burnout_glitch flash
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.015) -- stronger tremor than visual_glitch
 		end
 
 		-- Chain logic: check if this episode can trigger a follow-up
@@ -826,7 +823,8 @@ function psychosis.attach(dsp)
 		-- Apply effect (same logic as FireMicroEpisode)
 		local dur = selected.duration[1] + math.random() * (selected.duration[2] - selected.duration[1])
 		if selected.type == "visual_glitch" then
-			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.006)
 		elseif selected.type == "tremor_burst" then
 			self.tremor.intensity = math.max(self.tremor.intensity, 0.012)
 		elseif selected.type == "nosebleed" then
@@ -841,10 +839,8 @@ function psychosis.attach(dsp)
 				self.microEpisodeSandyFlash = dur
 			end
 		elseif selected.type == "medium_glitch" then
-			self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
-		end
-		if selected.type == "visual_glitch" or selected.type == "medium_glitch" then
-			self.microEpisodeCleanup = { timer = dur, type = selected.type }
+			self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
+			self.tremor.intensity = math.max(self.tremor.intensity, 0.015)
 		end
 
 		-- Continue chain
@@ -1254,17 +1250,13 @@ function psychosis.attach(dsp)
 				spawnTime = now,
 				behaviorApplied = false,
 			})
-			-- First successful spawn: announce horde with NosebleedEffect
+			-- VFX on V only at horde start, not per NPC
 			if not self.hordeAnnounced then
 				self.hordeAnnounced = true
 				pcall(function()
 					self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 				end)
 			end
-			-- VFX on V's vision (brief glitch)
-			pcall(function()
-				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
-			end)
 			return entityID
 		end
 		return nil
@@ -1389,7 +1381,7 @@ function psychosis.attach(dsp)
 					end
 				end)
 				pcall(function()
-					self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+					self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 				end)
 				table.remove(self.phantomNPCs, i)
 			end
@@ -1421,7 +1413,7 @@ function psychosis.attach(dsp)
 				end
 			end)
 			pcall(function()
-				self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Light)
+				self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 			end)
 			-- Reset timer with jitter (no phantom spawned)
 			local range = hallucinationIntervals[self.CyberPsychoWarnings] or {180, 300}
@@ -1980,8 +1972,8 @@ function psychosis.attach(dsp)
 			self.autoAttackFireTime = os.clock() + 2.0
 		end
 
-		-- VFX on V
-		self:StatusEffect_CheckAndApply(self.martinez.PsychoWarningEffect_Medium)
+		-- VFX on V (brief glitch, not persistent warning)
+		self:StatusEffect_CheckAndApply(self.martinez.NosebleedEffect)
 
 		-- Post-attack laugh (only if not already laughing)
 		if not fromLaugh then

@@ -63,7 +63,6 @@ martinez.SafetiesOffStatusEffect_SM  = 'BaseStatusEffect.MartinezSandevistan_NoS
 martinez.SafetiesOffStatusEffect_SFX1= 'BaseStatusEffect.MartinezSandevistan_NoSafety_SFX1'
 martinez.SafetiesOffStatusEffect_VFX1= 'BaseStatusEffect.MartinezSandevistan_NoSafety_VFX1'
 martinez.SafetiesOffStatusEffect_VFX2= 'BaseStatusEffect.MartinezSandevistan_NoSafety_VFX2'
-martinez.SafetiesOffStatusEffect_VFX3= 'BaseStatusEffect.MartinezSandevistan_NoSafety_VFX3'
 
 martinez.BleedingStatusEffect        = 'BaseStatusEffect.MartinezSandevistan_Bleeding'
 martinez.BleedingStatusEffect_LP     = 'BaseStatusEffect.MartinezSandevistan_Bleeding_LP'
@@ -76,25 +75,23 @@ martinez.CyberpsychoStatusEffect_SM  = 'BaseStatusEffect.MartinezSandevistan_Cyb
 martinez.CyberpsychoStatusEffect_FX1 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX1'
 martinez.CyberpsychoStatusEffect_FX2 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX2'
 martinez.CyberpsychoStatusEffect_FX3 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX3'
-martinez.CyberpsychoStatusEffect_FX4 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX4'
-martinez.CyberpsychoStatusEffect_FX5 = 'BaseStatusEffect.MartinezSandevistan_Cyberpsycho_FX5'
 
 martinez.CyberpsychoSafetyOffEffect      = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff'
 martinez.CyberpsychoSafetyOffEffect_FX1  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX1'
 martinez.CyberpsychoSafetyOffEffect_FX2  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX2'
 martinez.CyberpsychoSafetyOffEffect_FX3  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX3'
-martinez.CyberpsychoSafetyOffEffect_FX4  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX4'
-martinez.CyberpsychoSafetyOffEffect_FX5  = 'BaseStatusEffect.MartinezSandevistan_CyberpsychoSafetyOff_FX5'
 
+martinez.PsychoWarningEffect_Subtle      = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Subtle'
+martinez.PsychoWarningEffect_Subtle_FX1  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Subtle_FX1'
+martinez.PsychoWarningEffect_Subtle2     = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Subtle2'
+martinez.PsychoWarningEffect_Subtle2_FX1 = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Subtle2_FX1'
 martinez.PsychoWarningEffect_Light       = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light'
 martinez.PsychoWarningEffect_Light_FX1   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Light_FX1'
 martinez.PsychoWarningEffect_Medium      = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium'
 martinez.PsychoWarningEffect_Medium_FX1  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX1'
-martinez.PsychoWarningEffect_Medium_FX2  = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Medium_FX2'
 martinez.PsychoWarningEffect_Heavy       = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy'
 martinez.PsychoWarningEffect_Heavy_FX1   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX1'
 martinez.PsychoWarningEffect_Heavy_FX2   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX2'
-martinez.PsychoWarningEffect_Heavy_FX3   = 'BaseStatusEffect.MartinezSandevistan_PsychoWarning_Heavy_FX3'
 
 martinez.PsychoSluggishEffect            = 'BaseStatusEffect.MartinezSandevistan_PsychoSluggish'
 martinez.PsychoSluggishEffect_LP         = 'BaseStatusEffect.MartinezSandevistan_PsychoSluggish_LP'
@@ -124,6 +121,9 @@ martinez.PsychosisCombatBuff_SMG         = 'BaseStatusEffect.MartinezSandevistan
 martinez.PsychosisCombatBuff_SM1         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM1'
 martinez.PsychosisCombatBuff_SM2         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM2'
 martinez.PsychosisCombatBuff_SM3         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM3'
+
+martinez.SandyStrainEffect               = 'BaseStatusEffect.MartinezSandevistan_SandyStrain'
+martinez.SandyStrainEffect_FX1           = 'BaseStatusEffect.MartinezSandevistan_SandyStrain_FX1'
 
 martinez.ComedownEffect                 = 'BaseStatusEffect.MartinezSandevistan_Comedown'
 martinez.ComedownEffect_LP              = 'BaseStatusEffect.MartinezSandevistan_Comedown_LP'
@@ -590,7 +590,7 @@ function martinez.CreateSandevistan(self)
 	self:CreateStatusEffect(self.SafetiesOffStatusEffect,{
 		 '' --AIData
 		,{self.SafetiesOffStatusEffect_SFX1} --SFX
-		,{self.SafetiesOffStatusEffect_VFX1,self.SafetiesOffStatusEffect_VFX2,self.SafetiesOffStatusEffect_VFX3} -- VFX
+		,{self.SafetiesOffStatusEffect_VFX1,self.SafetiesOffStatusEffect_VFX2} -- VFX
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -616,11 +616,9 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.SafetiesOffStatusEffect_SFX1,VFX_SuperHacked)
 	self:CloneRecord(self.SafetiesOffStatusEffect_VFX1,VFX_SuperHacked)
 	self:CloneRecord(self.SafetiesOffStatusEffect_VFX2,VFX_SuperHacked)
-	self:CloneRecord(self.SafetiesOffStatusEffect_VFX3,VFX_SuperHacked)
 	TweakDB:SetFlat(self.SafetiesOffStatusEffect_SFX1..'.name', 'quickhack_shortcircuit') -- quickhack electrocute sound
 	TweakDB:SetFlat(self.SafetiesOffStatusEffect_VFX1..'.name', self.martinez_fx_onscreen_sick_start) -- blackwall fuzzy squares at the start up
-	TweakDB:SetFlat(self.SafetiesOffStatusEffect_VFX2..'.name', self.martinez_fx_onscreen_frame) -- red buzzing at the edges to replace electrocute effect
-	TweakDB:SetFlat(self.SafetiesOffStatusEffect_VFX3..'.name', 'status_drugged_heavy') -- Ultra Vivid with RGB split around the edges
+	TweakDB:SetFlat(self.SafetiesOffStatusEffect_VFX2..'.name', self.martinez_fx_onscreen_frame) -- red buzzing at the edges
 	
 	self:CreateStatusEffect(self.BleedingStatusEffect,{
 		 '' --AIData
@@ -650,12 +648,12 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.BleedingStatusEffect_VFX1,VFX_SuperHacked)
 	self:CloneRecord(self.BleedingStatusEffect_VFX2,VFX_SuperHacked)
 	TweakDB:SetFlat(self.BleedingStatusEffect_VFX1..'.name', martinez.martinez_fx_onscreen_sick_2023)
-	TweakDB:SetFlat(self.BleedingStatusEffect_VFX2..'.name', 'hacking_glitch_low')-- hacking_glitch_low
+	TweakDB:SetFlat(self.BleedingStatusEffect_VFX2..'.name', 'burnout_glitch') -- brief white static flash
 
 	self:CreateStatusEffect(self.CyberpsychoStatusEffect,{
 		 '' --AIData
 		,{} --SFX
-		,{self.CyberpsychoStatusEffect_FX1,self.CyberpsychoStatusEffect_FX2,self.CyberpsychoStatusEffect_FX3,self.CyberpsychoStatusEffect_FX4,self.CyberpsychoStatusEffect_FX5}
+		,{self.CyberpsychoStatusEffect_FX1,self.CyberpsychoStatusEffect_FX2,self.CyberpsychoStatusEffect_FX3}
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -680,32 +678,19 @@ function martinez.CreateSandevistan(self)
 	self:CreateLogicPackage(self.CyberpsychoStatusEffect_LP, { '', {}, {}, {}, '' , false, {}, {self.CyberpsychoStatusEffect_SM} })
 	self:CreateConstantStatModifier(self.CyberpsychoStatusEffect_SM, { 'Multiplier', 'BaseStats.HasSandevistan', 0.0 })
 
-	self:CloneRecord(self.CyberpsychoStatusEffect_FX1,VFX_SuperHacked) -- no idea why creating a new record doesn't work
-	self:CloneRecord(self.CyberpsychoStatusEffect_FX2,VFX_SuperHacked) -- but cloning an existing one does work
-	self:CloneRecord(self.CyberpsychoStatusEffect_FX3,VFX_SuperHacked) -- so that's what we'll do!
-	self:CloneRecord(self.CyberpsychoStatusEffect_FX4,VFX_SuperHacked)
-	self:CloneRecord(self.CyberpsychoStatusEffect_FX5,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoStatusEffect_FX1,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoStatusEffect_FX2,VFX_SuperHacked)
+	self:CloneRecord(self.CyberpsychoStatusEffect_FX3,VFX_SuperHacked)
 
-	-- blackout;  afterimage_glitch
-	-- dark; blue; fisheye; braindance_sound_vision_mode
-	-- Netwatch Agent Hack: hacking_glitch_low
-	-- spooky blackwall!  q305_cerberus_blackwall_glitch_low
-	--                    q305_cerberus_blackwall_glitch_medium
-	--                    q305_cerberus_blackwall_glitch_heavy
-	-- Magic Mushrooms:  status_drugged_heavy
-	-- Relic transition: burnout_glitch
-
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX1..'.name', 'hacking_glitch_low')
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX2..'.name', 'braindance_sound_vision_mode')
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX3..'.name', 'status_drugged_medium') -- Can't use Heavy here it will conflict with Safeties Off
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_medium')
-	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX5..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
+	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX1..'.name', 'braindance_sound_vision_mode')
+	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX2..'.name', 'q305_cerberus_blackwall_glitch_medium')
+	TweakDB:SetFlat(self.CyberpsychoStatusEffect_FX3..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
 
 	-- CyberpsychoSafetyOffEffect: same VFX as CyberpsychoStatusEffect but Sandy still works, no Kiroshi OFF
 	self:CreateStatusEffect(self.CyberpsychoSafetyOffEffect,{
 		 '' --AIData
 		,{} --SFX
-		,{self.CyberpsychoSafetyOffEffect_FX1,self.CyberpsychoSafetyOffEffect_FX2,self.CyberpsychoSafetyOffEffect_FX3,self.CyberpsychoSafetyOffEffect_FX4,self.CyberpsychoSafetyOffEffect_FX5}
+		,{self.CyberpsychoSafetyOffEffect_FX1,self.CyberpsychoSafetyOffEffect_FX2,self.CyberpsychoSafetyOffEffect_FX3}
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -730,15 +715,69 @@ function martinez.CreateSandevistan(self)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX1,VFX_SuperHacked)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX2,VFX_SuperHacked)
 	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX3,VFX_SuperHacked)
-	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX4,VFX_SuperHacked)
-	self:CloneRecord(self.CyberpsychoSafetyOffEffect_FX5,VFX_SuperHacked)
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX1..'.name', 'hacking_glitch_low')
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX2..'.name', 'braindance_sound_vision_mode')
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX3..'.name', 'status_drugged_medium')
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX4..'.name', 'q305_cerberus_blackwall_glitch_medium')
-	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX5..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX1..'.name', 'braindance_sound_vision_mode')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX2..'.name', 'q305_cerberus_blackwall_glitch_medium')
+	TweakDB:SetFlat(self.CyberpsychoSafetyOffEffect_FX3..'.name', self.martinez_fx_onscreen_frame) -- vertical red distortion
 
-	-- PsychoWarningEffect_Light: subtle persistent VFX at psycho level 3
+	-- PsychoWarningEffect_Subtle: barely-noticeable VFX at psycho level 1 ("something flickers...")
+	self:CreateStatusEffect(self.PsychoWarningEffect_Subtle,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoWarningEffect_Subtle_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.PsychoWarningEffect_Subtle_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoWarningEffect_Subtle_FX1..'.name', 'q305_cerberus_blackwall_glitch_low')
+
+	-- PsychoWarningEffect_Subtle2: safe area residual VFX at psycho level 3-4 (blackwall medium)
+	self:CreateStatusEffect(self.PsychoWarningEffect_Subtle2,{
+		 '' --AIData
+		,{} --SFX
+		,{self.PsychoWarningEffect_Subtle2_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.PsychoWarningEffect_Subtle2_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.PsychoWarningEffect_Subtle2_FX1..'.name', 'q305_cerberus_blackwall_glitch_medium')
+
+	-- PsychoWarningEffect_Light: subtle persistent VFX at psycho level 2
 	self:CreateStatusEffect(self.PsychoWarningEffect_Light,{
 		 '' --AIData
 		,{} --SFX
@@ -771,7 +810,7 @@ function martinez.CreateSandevistan(self)
 	self:CreateStatusEffect(self.PsychoWarningEffect_Medium,{
 		 '' --AIData
 		,{} --SFX
-		,{self.PsychoWarningEffect_Medium_FX1,self.PsychoWarningEffect_Medium_FX2} --VFX
+		,{self.PsychoWarningEffect_Medium_FX1} --VFX
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -794,15 +833,13 @@ function martinez.CreateSandevistan(self)
 		,CyberpsychoIcon --uiData
 	})
 	self:CloneRecord(self.PsychoWarningEffect_Medium_FX1,VFX_SuperHacked)
-	self:CloneRecord(self.PsychoWarningEffect_Medium_FX2,VFX_SuperHacked)
-	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX1..'.name', 'hacking_glitch_low')
-	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX2..'.name', 'status_drugged_medium')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Medium_FX1..'.name', 'status_drugged_heavy')
 
 	-- PsychoWarningEffect_Heavy: heavy persistent VFX at psycho level 4
 	self:CreateStatusEffect(self.PsychoWarningEffect_Heavy,{
 		 '' --AIData
 		,{} --SFX
-		,{self.PsychoWarningEffect_Heavy_FX1,self.PsychoWarningEffect_Heavy_FX2,self.PsychoWarningEffect_Heavy_FX3} --VFX
+		,{self.PsychoWarningEffect_Heavy_FX1,self.PsychoWarningEffect_Heavy_FX2} --VFX
 		,'' --additionalParam
 		,{} --debugTags
 		,nil --duration
@@ -826,10 +863,8 @@ function martinez.CreateSandevistan(self)
 	})
 	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX1,VFX_SuperHacked)
 	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX2,VFX_SuperHacked)
-	self:CloneRecord(self.PsychoWarningEffect_Heavy_FX3,VFX_SuperHacked)
-	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX1..'.name', 'hacking_glitch_low')
-	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX2..'.name', 'status_drugged_medium')
-	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX3..'.name', 'q305_cerberus_blackwall_glitch_medium')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX1..'.name', 'status_drugged_heavy')
+	TweakDB:SetFlat(self.PsychoWarningEffect_Heavy_FX2..'.name', 'q305_cerberus_blackwall_glitch_medium')
 
 	-- PsychoSluggishEffect: movement penalty at psycho level 4+ (David struggled to walk — Ep 7-9)
 	self:CreateStatusEffect(self.PsychoSluggishEffect,{
@@ -986,8 +1021,37 @@ function martinez.CreateSandevistan(self)
 	self:CreateConstantStatModifier(self.ComedownEffect_SM3, { 'Multiplier', 'BaseStats.Armor', 0.5 })
 	self:CloneRecord(self.ComedownEffect_FX1,VFX_SuperHacked)
 	self:CloneRecord(self.ComedownEffect_FX2,VFX_SuperHacked)
-	TweakDB:SetFlat(self.ComedownEffect_FX1..'.name', 'burnout_glitch')
-	TweakDB:SetFlat(self.ComedownEffect_FX2..'.name', 'hacking_glitch_low')
+	TweakDB:SetFlat(self.ComedownEffect_FX1..'.name', self.martinez_fx_onscreen_sick_pulse) -- soft analog distortion (post-Sandy exhaustion)
+	TweakDB:SetFlat(self.ComedownEffect_FX2..'.name', 'burnout_glitch')
+
+	-- SandyStrainEffect: analog distortion while Sandy active at psycho 3+ (implants degrading under load)
+	self:CreateStatusEffect(self.SandyStrainEffect,{
+		 '' --AIData
+		,{} --SFX
+		,{self.SandyStrainEffect_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,nil --duration
+		,false --dynamicDuration
+		,{'Debuff','Cyberpsychosis'} --gameplayTags
+		,{} --immunityStats
+		,false --isAffectedByTimeDilationNPC
+		,false --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,CyberpsychoIcon --uiData
+	})
+	self:CloneRecord(self.SandyStrainEffect_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.SandyStrainEffect_FX1..'.name', self.martinez_fx_onscreen_sick_2023)
 
 	-- StaminaBoost: ×1.5 stamina regen while Sandy active + runtime >30%
 	self:CreateConstantStatModifier(self.StaminaBoost_SM1, { 'Multiplier', 'BaseStats.StaminaRegenRate', 1.5 })
