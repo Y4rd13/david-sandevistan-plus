@@ -1,7 +1,5 @@
 local sms = {}
 
-local VIKTOR_HASH = 77701
-
 -- Vendor zones: proximity-triggered Viktor SMS (fires once per zone per save)
 -- V enters radius → Viktor sends a tip about local immunoblocker availability
 local vendorZones = {

@@ -1368,7 +1368,6 @@ dsp = {
 				local DamagePerTick = self.DamagePerTick
 				local RequiredHealth = self.RequiredHealth
 				
-				local ToDo_DamageHealthPercent = 0
 				local VsHealthNow = self.sps:getHealth(true)
 				local VsOvershieldNow = self.sps:getAdrenaline(true)/2
 				if self.cfg.enableHealthDrain then
@@ -1387,14 +1386,12 @@ dsp = {
 						theDamage = math.max(VsHealthNow - healthFloor, 0)
 					end
 					self.sps:damage(theDamage)
-					ToDo_DamageHealthPercent = theDamage
 
 					if VsOvershieldDeduction < healthFloor and not self.SafetyOn then -- if safety is off use every ounce of V's health pool.
 						theDamage = (VsOvershieldDeduction-healthFloor)*-1
 						if theDamage >= VsOvershieldNow then theDamage = VsOvershieldNow-2 end
 						self.sps:UseAdrenaline(theDamage)
-						ToDo_DamageHealthPercent = theDamage
-					end
+						end
 				end
 				
 				self:SandevistanCharge()
@@ -1435,7 +1432,6 @@ dsp = {
 						self:OutOfRuntime(true)
 					end
 				end
-				--print('Running: '..tostring(self.runTime)..' Damage='..tostring(self.DamagePerTick)..'/'..tostring(self.RequiredHealth)..' - '..tostring(VsHealthPercent))
 			end
 		end
 
