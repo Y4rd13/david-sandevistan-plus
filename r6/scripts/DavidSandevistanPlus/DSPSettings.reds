@@ -154,51 +154,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
 
-    // ==================== Category 6: Recovery & Treatment ====================
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Recovery & Treatment")
-    @runtimeProperty("ModSettings.category.order", "6")
-    @runtimeProperty("ModSettings.displayName", "Enable Prescription System")
-    @runtimeProperty("ModSettings.description", "Treatment protocol: recovery requires immunoblocker doses, ripperdoc visits, and rest — prescribed by Viktor. Disabling makes recovery instant.")
-    public let enablePrescription: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Recovery & Treatment")
-    @runtimeProperty("ModSettings.category.order", "6")
-    @runtimeProperty("ModSettings.displayName", "Enable Runtime Degradation")
-    @runtimeProperty("ModSettings.description", "Each Sandy session permanently reduces max runtime (1% per 60s). Sleep recovers a percentage, ripperdoc can fully restore.")
-    public let enableRuntimeDegradation: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Recovery & Treatment")
-    @runtimeProperty("ModSettings.category.order", "6")
-    @runtimeProperty("ModSettings.displayName", "Sleep Recovery %")
-    @runtimeProperty("ModSettings.description", "Percentage of degraded max runtime recovered per sleep. At 0.75, if 100s of runtime was lost to degradation, sleep restores 75s. Full restoration requires a ripperdoc visit (if Ripper Full Restore is enabled). Degradation rate: 1% of max runtime per 60s of Sandy use, capped at 50% total loss.")
-    @runtimeProperty("ModSettings.step", "0.05")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "1.0")
-    @runtimeProperty("ModSettings.dependency", "enableRuntimeDegradation")
-    public let sleepRecoveryPercent: Float = 0.75;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Recovery & Treatment")
-    @runtimeProperty("ModSettings.category.order", "6")
-    @runtimeProperty("ModSettings.displayName", "Ripper Full Restore")
-    @runtimeProperty("ModSettings.description", "Ripperdoc visit restores 100% max runtime. If disabled, only sleep recovery works.")
-    @runtimeProperty("ModSettings.dependency", "enableRuntimeDegradation")
-    public let ripperFullRestore: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Recovery & Treatment")
-    @runtimeProperty("ModSettings.category.order", "6")
-    @runtimeProperty("ModSettings.displayName", "Tolerance Decay Hours")
-    @runtimeProperty("ModSettings.description", "Game-time hours without immunoblocker use before tolerance starts decaying. Tolerance builds probabilistically per dose: Common 70% chance, Uncommon 50%, Rare 30%. Each tolerance stage reduces immunoblocker effective tier by 1. Ripperdoc visits flush tolerance faster (-4.0 per visit).")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "6")
-    @runtimeProperty("ModSettings.max", "72")
-    public let toleranceDecayHours: Int32 = 24;
-
     // ==================== Category 7: Economy & Interface ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")

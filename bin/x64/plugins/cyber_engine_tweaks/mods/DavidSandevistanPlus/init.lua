@@ -125,9 +125,6 @@ local function syncSettingsFromRedscript(cfg)
 	-- Booleans
 	cfg.requireEdgeRunnerPerk = settings.requireEdgeRunnerPerk
 	cfg.enableSessionFatigue = settings.enableSessionFatigue
-	cfg.enableRuntimeDegradation = settings.enableRuntimeDegradation
-	cfg.enablePrescription = settings.enablePrescription
-	cfg.ripperFullRestore = settings.ripperFullRestore
 
 	-- Integers
 	cfg.sandyDuration = settings.sandyDuration
@@ -141,7 +138,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.drainAccelStartSec = settings.drainAccelStartSec
 	cfg.biomonitorPosX = settings.biomonitorPosX
 	cfg.biomonitorPosY = settings.biomonitorPosY
-	cfg.toleranceDecayHours = settings.toleranceDecayHours
 	cfg.enableDebugLogs = settings.enableDebugLogs
 
 	-- Floats
@@ -152,7 +148,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
-	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
 
 	dlog('[DSP] Settings synced from Mod Settings')
 	return true
