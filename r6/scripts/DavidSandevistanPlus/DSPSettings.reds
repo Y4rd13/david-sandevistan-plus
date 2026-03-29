@@ -107,30 +107,11 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Runtime & Drain")
     @runtimeProperty("ModSettings.category.order", "2")
-    @runtimeProperty("ModSettings.displayName", "Enable Non-Linear Drain")
-    @runtimeProperty("ModSettings.description", "Runtime drain accelerates the longer Sandy stays active. After the start threshold (configurable below), drain increases exponentially. The acceleration curve exponent is hardcoded at 1.5.")
-    public let enableNonLinearDrain: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Runtime & Drain")
-    @runtimeProperty("ModSettings.category.order", "2")
-    @runtimeProperty("ModSettings.displayName", "Drain Exponent")
-    @runtimeProperty("ModSettings.description", "Acceleration curve exponent. Higher = drain ramps more aggressively. Formula: 1.0 + (overTime ^ exponent).")
-    @runtimeProperty("ModSettings.step", "0.1")
-    @runtimeProperty("ModSettings.min", "1.0")
-    @runtimeProperty("ModSettings.max", "3.0")
-    @runtimeProperty("ModSettings.dependency", "enableNonLinearDrain")
-    public let drainExponent: Float = 1.5;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Runtime & Drain")
-    @runtimeProperty("ModSettings.category.order", "2")
     @runtimeProperty("ModSettings.displayName", "Drain Accel Start (sec)")
-    @runtimeProperty("ModSettings.description", "Seconds of continuous Sandy use before drain acceleration kicks in. Below this threshold, drain is 1x. Above it, drain follows an exponential curve (exponent 1.5) that gets progressively faster.")
+    @runtimeProperty("ModSettings.description", "Seconds of continuous Sandy use before drain acceleration kicks in. Below this, drain is 1x. Above it, drain ramps up exponentially (exponent 1.5). Shorter = more pressure to act fast.")
     @runtimeProperty("ModSettings.step", "1")
     @runtimeProperty("ModSettings.min", "10")
     @runtimeProperty("ModSettings.max", "180")
-    @runtimeProperty("ModSettings.dependency", "enableNonLinearDrain")
     public let drainAccelStartSec: Int32 = 60;
 
     // ==================== Category 3: Combat Stats ====================

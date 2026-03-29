@@ -131,7 +131,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.enableHealthDrain = settings.enableHealthDrain
 	cfg.enableHealthBrake = settings.enableHealthBrake
 	cfg.enableSafetyOffKill = settings.enableSafetyOffKill
-	cfg.enableNonLinearDrain = settings.enableNonLinearDrain
 	cfg.enableSessionFatigue = settings.enableSessionFatigue
 	cfg.enableRuntimeDegradation = settings.enableRuntimeDegradation
 	cfg.enablePrescription = settings.enablePrescription
@@ -187,7 +186,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
 	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
 	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
-	cfg.drainExponent = settings.drainExponent
 
 	-- Reconstruct immunoblocker drain array from split fields
 	cfg.strainDrainImmunoblocker = {
@@ -308,8 +306,6 @@ dsp = {
 		biomonitorPosY = 600,
 
 		-- Non-Linear Runtime Drain
-		enableNonLinearDrain = true,     -- drain accelerates the longer Sandy is active
-		drainExponent = 1.5,             -- acceleration curve exponent
 		drainAccelStartSec = 60,         -- seconds before acceleration kicks in
 
 		-- Session Fatigue
@@ -1335,11 +1331,11 @@ dsp = {
 			-- Non-linear drain: accelerates the longer Sandy is active
 			if self.runTime > 0 then
 				local drainRate = 1.0
-				if self.cfg.enableNonLinearDrain and not self.lastBreath then
+				if not self.lastBreath then
 					local activeSeconds = (self.sandyStartRuntime or self.runTime) - self.runTime
 					if activeSeconds > self.cfg.drainAccelStartSec then
 						local overTime = (activeSeconds - self.cfg.drainAccelStartSec) / 60
-						drainRate = 1.0 + (overTime ^ self.cfg.drainExponent)
+						drainRate = 1.0 + (overTime ^ 1.5)  -- exponential curve, hardcoded
 					end
 				end
 				self.runTime = self.runTime - dt * drainRate
