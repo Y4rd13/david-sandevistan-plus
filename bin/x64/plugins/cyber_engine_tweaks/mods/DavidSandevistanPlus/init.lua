@@ -186,8 +186,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.strainRecoveryMultiplier = settings.strainRecoveryMultiplier
 	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
 	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
-	cfg.sessionFatiguePenalty = settings.sessionFatiguePenalty
-	cfg.maxSessionFatiguePenalty = settings.maxSessionFatiguePenalty
 	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
 	cfg.drainExponent = settings.drainExponent
 
@@ -234,85 +232,6 @@ function dlog(msg)
 	if dsp and dsp.cfg and dsp.cfg.enableDebugLogs then print(msg) end
 end
 
-local function migrateConfigJson()
-	local file = io.open("config.json", "r")
-	if not file then return end
-	local ok, loaded = pcall(json.decode, file:read("*a"))
-	file:close()
-	if not ok or type(loaded) ~= "table" then return end
-
-	-- Check if user.ini already has [DSPSettings] section — don't overwrite
-	local userIniPath = "../../../red4ext/plugins/mod_settings/user.ini"
-	local iniFile = io.open(userIniPath, "r")
-	local iniContent = ""
-	if iniFile then
-		iniContent = iniFile:read("*a") or ""
-		iniFile:close()
-	end
-	if iniContent:find("%[DSPSettings%]") then
-		-- Already migrated or user configured manually — just archive old config
-		os.rename("config.json", "config.json.migrated")
-		print('[DSP] config.json archived (user.ini already has DSPSettings)')
-		return
-	end
-
-	-- Build INI section from old config
-	local lines = { "\n[DSPSettings]" }
-
-	-- Dilation enum mapping: float → enum name
-	local dilationToEnum = {
-		[0.15] = "Pct85", [0.10] = "Pct90", [0.075] = "Pct92_5", [0.05] = "Pct95",
-		[0.025] = "Pct97_5", [0.01] = "Pct99", [0.0075] = "Pct99_25",
-		[0.0065] = "Pct99_35", [0.005] = "Pct99_5"
-	}
-	local function findClosestEnum(val)
-		local best, bestDiff = "Pct95", 999
-		for fv, name in pairs(dilationToEnum) do
-			local diff = math.abs(fv - val)
-			if diff < bestDiff then best, bestDiff = name, diff end
-		end
-		return best
-	end
-
-	-- safetyOffTimeDilation: int 975 → enum
-	local function safetyOffToEnum(val)
-		local scale = (1000 - val) / 1000
-		return findClosestEnum(scale)
-	end
-
-	-- Keys to skip (removed settings)
-	local skip = { maxPsychoRecoveryPerSleep=true, ripperRecoveryLevels=true, tickLength=true, timeDilationNoPerk=true, timeDilationWithPerk=true }
-
-	for key, val in pairs(loaded) do
-		if not skip[key] then
-			if key == "safetyOffTimeDilation" then
-				lines[#lines+1] = "safetyOffDilation = " .. safetyOffToEnum(tonumber(val) or 975)
-			elseif key == "healthBrakeDefault" then
-				lines[#lines+1] = "healthBrakeThreshold = " .. tostring(val)
-			elseif key == "strainDrainImmunoblocker" and type(val) == "table" then
-				lines[#lines+1] = "strainDrainImmunoblockerCommon = " .. tostring(val[1] or 0.08)
-				lines[#lines+1] = "strainDrainImmunoblockerUncommon = " .. tostring(val[2] or 0.18)
-				lines[#lines+1] = "strainDrainImmunoblockerRare = " .. tostring(val[3] or 0.35)
-			elseif type(val) == "boolean" then
-				lines[#lines+1] = key .. " = " .. tostring(val)
-			elseif type(val) == "number" then
-				lines[#lines+1] = key .. " = " .. tostring(val)
-			end
-		end
-	end
-
-	-- Append to user.ini
-	local outFile = io.open(userIniPath, "a")
-	if outFile then
-		outFile:write(table.concat(lines, "\n") .. "\n")
-		outFile:close()
-		print('[DSP] Config migrated to user.ini (' .. (#lines - 1) .. ' settings)')
-	end
-
-	-- Archive old config
-	os.rename("config.json", "config.json.migrated")
-	print('[DSP] config.json renamed to config.json.migrated')
-end
 
 dsp = {
 	 version = '2.25.3'
@@ -395,8 +314,6 @@ dsp = {
 
 		-- Session Fatigue
 		enableSessionFatigue = true,     -- each activation in a session is less effective
-		sessionFatiguePenalty = 0.02,    -- dilation loss per overuse activation (2%)
-		maxSessionFatiguePenalty = 0.10, -- cap at 10% penalty
 
 		-- Max Runtime Degradation
 		enableRuntimeDegradation = true, -- each Sandy session costs max runtime
@@ -1259,7 +1176,7 @@ dsp = {
 			local effectiveSafe = self:getEffectiveSafeActivations()
 			local excessUses = math.max(0, (self.sessionActivations or 0) - effectiveSafe)
 			if excessUses > 0 then
-				local penalty = math.min(excessUses * self.cfg.sessionFatiguePenalty, self.cfg.maxSessionFatiguePenalty)
+				local penalty = math.min(excessUses * 0.02, 0.10)  -- 2% per overuse, capped at 10%
 				timeScale = timeScale + penalty
 				if penalty > 0 then
 					StatusText = StatusText.." (Fatigued)"
@@ -1846,7 +1763,6 @@ dsp = {
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		syncSettingsFromRedscript(self.cfg)
-		migrateConfigJson()
 		self:UpdateImmunoblockerPrices()
 		applyTweakDBFromSettings(self.cfg)
 		self:UpdateViksLoot()

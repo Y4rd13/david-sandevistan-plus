@@ -32,28 +32,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.description", "Each activation beyond the daily safe limit makes time dilation slightly weaker. Simulates neural fatigue from overuse.")
     public let enableSessionFatigue: Bool = true;
 
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Time Dilation")
-    @runtimeProperty("ModSettings.category.order", "1")
-    @runtimeProperty("ModSettings.displayName", "Fatigue Penalty per Overuse")
-    @runtimeProperty("ModSettings.description", "Dilation effectiveness lost per overuse activation. At 0.02, the 5th overuse loses 10% power. Resets on sleep.")
-    @runtimeProperty("ModSettings.step", "0.01")
-    @runtimeProperty("ModSettings.min", "0.01")
-    @runtimeProperty("ModSettings.max", "0.10")
-    @runtimeProperty("ModSettings.dependency", "enableSessionFatigue")
-    public let sessionFatiguePenalty: Float = 0.02;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Time Dilation")
-    @runtimeProperty("ModSettings.category.order", "1")
-    @runtimeProperty("ModSettings.displayName", "Max Fatigue Penalty")
-    @runtimeProperty("ModSettings.description", "Maximum dilation loss from session fatigue. At 0.10, V never loses more than 10% effectiveness regardless of overuse count.")
-    @runtimeProperty("ModSettings.step", "0.01")
-    @runtimeProperty("ModSettings.min", "0.05")
-    @runtimeProperty("ModSettings.max", "0.30")
-    @runtimeProperty("ModSettings.dependency", "enableSessionFatigue")
-    public let maxSessionFatiguePenalty: Float = 0.10;
-
     // ==================== Category 2: Runtime & Drain ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
