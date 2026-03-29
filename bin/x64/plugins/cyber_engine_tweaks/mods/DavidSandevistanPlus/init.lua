@@ -122,15 +122,9 @@ local function syncSettingsFromRedscript(cfg)
 	end)
 	if not ok or not settings then return false end
 
-	-- Enums → float time scale
-	cfg.safetyOffTimeDilation = dilationMap[settings.safetyOffDilation] or 0.025
-
 	-- Booleans
 	cfg.enableCyberpsychosis = settings.enableCyberpsychosis
 	cfg.requireEdgeRunnerPerk = settings.requireEdgeRunnerPerk
-	cfg.enableHealthDrain = settings.enableHealthDrain
-	cfg.enableHealthBrake = settings.enableHealthBrake
-	cfg.enableSafetyOffKill = settings.enableSafetyOffKill
 	cfg.enableSessionFatigue = settings.enableSessionFatigue
 	cfg.enableRuntimeDegradation = settings.enableRuntimeDegradation
 	cfg.enablePrescription = settings.enablePrescription
@@ -148,20 +142,12 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.critChance = settings.critChance
 	cfg.critDamage = settings.critDamage
 	cfg.drainAccelStartSec = settings.drainAccelStartSec
-	cfg.safetyOffDrainMultiplier = settings.safetyOffDrainMultiplier
-	cfg.safetyOffKillThreshold = settings.safetyOffKillThreshold
-	cfg.requiredHealthMin = settings.requiredHealthMin
 	cfg.biomonitorPosX = settings.biomonitorPosX
 	cfg.biomonitorPosY = settings.biomonitorPosY
 	cfg.toleranceDecayHours = settings.toleranceDecayHours
 	cfg.enableDebugLogs = settings.enableDebugLogs
 
-	-- Renamed field: redscript healthBrakeThreshold → internal healthBrakeDefault
-	cfg.healthBrakeDefault = settings.healthBrakeThreshold
-
 	-- Floats
-	cfg.damageMin = settings.damageMin
-	cfg.damageMax = settings.damageMax
 	cfg.rechargeDuration = settings.rechargeDuration
 	cfg.cooldownBase = settings.cooldownBase
 	cfg.enterCost = settings.enterCost

@@ -2,18 +2,6 @@
 // All settings declared via @runtimeProperty for the Mod Settings framework.
 // CET Lua reads these values via GetScriptableSystemsContainer():Get('DSPSettings').
 
-enum DSPDilationLevel {
-    Pct85 = 0,
-    Pct90 = 1,
-    Pct92_5 = 2,
-    Pct95 = 3,
-    Pct97_5 = 4,
-    Pct99 = 5,
-    Pct99_25 = 6,
-    Pct99_35 = 7,
-    Pct99_5 = 8
-}
-
 public class DSPSettings extends ScriptableSystem {
 
     // ==================== Category 1: Time Dilation ====================
@@ -165,109 +153,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.min", "0.0")
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
-
-    // ==================== Category 4: Health & Safety ====================
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Enable Health Drain")
-    @runtimeProperty("ModSettings.description", "Sandy drains V's health per tick. Damage interpolates linearly between min (at full runtime) and max (at zero runtime). At psycho stage 5, a health floor of 15% is enforced. During Last Breath, special health floors apply (25% immunity, 20% decay).")
-    public let enableHealthDrain: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Min Damage per Tick (%)")
-    @runtimeProperty("ModSettings.description", "Health % drained per tick at full runtime (just activated). The floor of the damage curve.")
-    @runtimeProperty("ModSettings.step", "0.5")
-    @runtimeProperty("ModSettings.min", "0.0")
-    @runtimeProperty("ModSettings.max", "10.0")
-    @runtimeProperty("ModSettings.dependency", "enableHealthDrain")
-    public let damageMin: Float = 1.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Max Damage per Tick (%)")
-    @runtimeProperty("ModSettings.description", "Health % drained per tick at zero runtime (fully depleted). The ceiling of the damage curve.")
-    @runtimeProperty("ModSettings.step", "0.5")
-    @runtimeProperty("ModSettings.min", "0.0")
-    @runtimeProperty("ModSettings.max", "50.0")
-    @runtimeProperty("ModSettings.dependency", "enableHealthDrain")
-    public let damageMax: Float = 15.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Enable Health Brake")
-    @runtimeProperty("ModSettings.description", "Auto-stop Sandy when V's health drops below threshold. A safety net against accidental self-destruction.")
-    public let enableHealthBrake: Bool = false;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Health Brake Threshold (%)")
-    @runtimeProperty("ModSettings.description", "Health % where the brake activates and Sandy auto-deactivates.")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "15")
-    @runtimeProperty("ModSettings.max", "80")
-    @runtimeProperty("ModSettings.dependency", "enableHealthBrake")
-    public let healthBrakeThreshold: Int32 = 50;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Minimum Required Health (%)")
-    @runtimeProperty("ModSettings.description", "Absolute minimum health % before Sandy refuses to activate. Independent of health brake.")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "5")
-    @runtimeProperty("ModSettings.max", "50")
-    public let requiredHealthMin: Int32 = 15;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Safety OFF Drain Multiplier")
-    @runtimeProperty("ModSettings.description", "Runtime drain multiplier when Safety OFF. At 4x, each tick drains 4 extra seconds of runtime (total 5x normal drain). Safety OFF also adds 0.15 strain/sec (hardcoded, raw — bypasses stage multiplier). Safety is forced OFF at psycho stage 4+.")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "1")
-    @runtimeProperty("ModSettings.max", "10")
-    public let safetyOffDrainMultiplier: Int32 = 4;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Safety OFF Time Dilation")
-    @runtimeProperty("ModSettings.description", "Time dilation when Safety OFF is engaged. This value acts as a CAP — if the stage-based dilation curve is already slower than this, Safety OFF makes it faster. If the curve is already faster, no change. Safety is forced OFF at psycho stage 4+.")
-    @runtimeProperty("ModSettings.displayValues.Pct85", "85% — World at 15% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct90", "90% — World at 10% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct92_5", "92.5% — World at 7.5% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct95", "95% — World at 5% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct97_5", "97.5% — World at 2.5% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct99", "99% — World at 1% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct99_25", "99.25% — World at 0.75% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct99_35", "99.35% — World at 0.65% speed")
-    @runtimeProperty("ModSettings.displayValues.Pct99_5", "99.5% — World at 0.5% speed")
-    public let safetyOffDilation: DSPDilationLevel = DSPDilationLevel.Pct97_5;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Enable Safety OFF Kill")
-    @runtimeProperty("ModSettings.description", "At psycho stage 5 with Safety OFF, V can die if health drops below threshold. Disable to remove permadeath risk.")
-    public let enableSafetyOffKill: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Health & Safety")
-    @runtimeProperty("ModSettings.category.order", "4")
-    @runtimeProperty("ModSettings.displayName", "Safety OFF Kill Threshold (%)")
-    @runtimeProperty("ModSettings.description", "Health % where Safety OFF triggers V's death at psycho stage 5. At 2%, V dies when health is nearly depleted.")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "1")
-    @runtimeProperty("ModSettings.max", "10")
-    @runtimeProperty("ModSettings.dependency", "enableSafetyOffKill")
-    public let safetyOffKillThreshold: Int32 = 2;
 
     // ==================== Category 5: Cyberpsychosis ====================
 
