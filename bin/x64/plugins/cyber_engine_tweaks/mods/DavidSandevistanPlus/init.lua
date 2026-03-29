@@ -140,6 +140,17 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.biomonitorPosY = settings.biomonitorPosY
 	cfg.enableDebugLogs = settings.enableDebugLogs
 
+	-- Cyberpsychosis (Advanced)
+	cfg.dailySafeActivations = settings.dailySafeActivations
+	cfg.strainBuildupMultiplier = settings.strainBuildupMultiplier
+	cfg.strainRecoveryMultiplier = settings.strainRecoveryMultiplier
+	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
+	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
+
+	-- Recovery (Advanced)
+	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
+	cfg.toleranceDecayHours = settings.toleranceDecayHours
+
 	-- Floats
 	cfg.rechargeDuration = settings.rechargeDuration
 	cfg.cooldownBase = settings.cooldownBase

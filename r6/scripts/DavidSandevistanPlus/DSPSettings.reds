@@ -154,11 +154,106 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
 
-    // ==================== Category 7: Economy & Interface ====================
+    // ==================== Category 4: Cyberpsychosis ====================
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Advanced Settings")
+    @runtimeProperty("ModSettings.description", "Show advanced cyberpsychosis tuning options. These control strain buildup/recovery speed and episode timing. Default values are balanced for the intended experience.")
+    public let cyberpsychosisAdvancedSettings: Bool = false;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Safe Activations per Day")
+    @runtimeProperty("ModSettings.description", "Base activations per day before strain penalties. Scaled by psycho stage: stage 0 = 1x, stage 1 = 1.7x, stage 2 = 2.3x, stage 3 = 3x, stage 4 = 4x, stage 5 = unlimited. Beyond the limit, each extra activation adds +5 base strain.")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "1")
+    @runtimeProperty("ModSettings.max", "20")
+    @runtimeProperty("ModSettings.dependency", "cyberpsychosisAdvancedSettings")
+    public let dailySafeActivations: Int32 = 3;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Strain Buildup Speed")
+    @runtimeProperty("ModSettings.description", "Global multiplier for ALL strain sources. Base values (hardcoded): +5 per activation, +3 per overuse, +2/min active, +2-8 per kill (gang to civilian). Stage multiplier further scales: stages 0-1 = 0.5x, stage 2 = 0.75x, stages 3+ = 1.0x. Passive strain at stages 4-5: +0.04/+0.08 per sec. Immunoblockers reduce by 80% (full) or 50% (partial).")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    @runtimeProperty("ModSettings.dependency", "cyberpsychosisAdvancedSettings")
+    public let strainBuildupMultiplier: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Strain Recovery Speed")
+    @runtimeProperty("ModSettings.description", "Global multiplier for ALL strain recovery. Base drain rates (hardcoded): sleep = 40 per session, ripper = 25 per visit, safe area = 0.05/s, immunoblocker = 0.08/0.18/0.35 per sec (Common/Uncommon/Rare). Natural decay at stages 0-2: -0.03/-0.02/-0.01 per sec. Doubled while immunoblocker active.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    @runtimeProperty("ModSettings.dependency", "cyberpsychosisAdvancedSettings")
+    public let strainRecoveryMultiplier: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Episode Cooldown Multiplier")
+    @runtimeProperty("ModSettings.description", "Multiplier for minimum game-time between psychosis stage escalations. Base cooldowns (hardcoded): stage 1 = 48h, stage 2 = 36h, stage 3 = 24h, stage 4 = 12h, stage 5 = 6h. Active treatment milestones dynamically extend these cooldowns further.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    @runtimeProperty("ModSettings.dependency", "cyberpsychosisAdvancedSettings")
+    public let episodeCooldownMultiplier: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
+    @runtimeProperty("ModSettings.category.order", "4")
+    @runtimeProperty("ModSettings.displayName", "Micro-Episode Frequency")
+    @runtimeProperty("ModSettings.description", "Frequency multiplier for micro-episode intervals. At 0.5, intervals are 2x longer (half as often). Base intervals (hardcoded): stage 1 = 5-10min, stage 2 = 2-5min, stage 3 = 30s-2min, stage 4 = 15s-1min, stage 5 = 5-15sec. Episodes can chain (max 3) with stage-scaled probability.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    @runtimeProperty("ModSettings.dependency", "cyberpsychosisAdvancedSettings")
+    public let microEpisodeFrequency: Float = 1.0;
+
+    // ==================== Category 5: Recovery ====================
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Recovery")
+    @runtimeProperty("ModSettings.category.order", "5")
+    @runtimeProperty("ModSettings.displayName", "Advanced Settings")
+    @runtimeProperty("ModSettings.description", "Show advanced recovery tuning options. These control how quickly V recovers from Sandy use and immunoblocker tolerance. Default values are balanced for the intended experience.")
+    public let recoveryAdvancedSettings: Bool = false;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Recovery")
+    @runtimeProperty("ModSettings.category.order", "5")
+    @runtimeProperty("ModSettings.displayName", "Sleep Recovery %")
+    @runtimeProperty("ModSettings.description", "Percentage of degraded max runtime recovered per sleep. At 0.75, if 100s of runtime was lost to degradation, sleep restores 75s. Full restoration requires a ripperdoc visit. Degradation rate: 1% of max runtime per 60s of Sandy use, capped at 50% total loss.")
+    @runtimeProperty("ModSettings.step", "0.05")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "1.0")
+    @runtimeProperty("ModSettings.dependency", "recoveryAdvancedSettings")
+    public let sleepRecoveryPercent: Float = 0.75;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Recovery")
+    @runtimeProperty("ModSettings.category.order", "5")
+    @runtimeProperty("ModSettings.displayName", "Tolerance Decay Hours")
+    @runtimeProperty("ModSettings.description", "Game-time hours without immunoblocker use before tolerance starts decaying. Tolerance builds probabilistically per dose: Common 70% chance, Uncommon 50%, Rare 30%. Each tolerance stage reduces immunoblocker effective tier by 1. Ripperdoc visits flush tolerance faster (-4.0 per visit).")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "6")
+    @runtimeProperty("ModSettings.max", "72")
+    @runtimeProperty("ModSettings.dependency", "recoveryAdvancedSettings")
+    public let toleranceDecayHours: Int32 = 24;
+
+    // ==================== Category 6: Economy & Interface ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Immunoblocker Price: Common")
     @runtimeProperty("ModSettings.description", "Price in eddies for Common immunoblocker at Viktor's shop. Duration: 3min.")
     @runtimeProperty("ModSettings.step", "500")
@@ -168,7 +263,7 @@ public class DSPSettings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Immunoblocker Price: Uncommon")
     @runtimeProperty("ModSettings.description", "Price in eddies for Uncommon immunoblocker at Viktor's shop. Duration: 6min.")
     @runtimeProperty("ModSettings.step", "1000")
@@ -178,7 +273,7 @@ public class DSPSettings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Immunoblocker Price: Rare")
     @runtimeProperty("ModSettings.description", "Price in eddies for Military-Grade immunoblocker at Viktor's shop. Duration: 10min.")
     @runtimeProperty("ModSettings.step", "5000")
@@ -188,14 +283,14 @@ public class DSPSettings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Enable Debug Logs")
     @runtimeProperty("ModSettings.description", "Print detailed debug messages to the CET console. Useful for troubleshooting. Disable for a clean console.")
     public let enableDebugLogs: Bool = false;
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Biomonitor Position X")
     @runtimeProperty("ModSettings.description", "Horizontal position on 3840x2160 canvas. Auto-scales to your resolution.")
     @runtimeProperty("ModSettings.step", "10")
@@ -205,7 +300,7 @@ public class DSPSettings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Economy & Interface")
-    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Biomonitor Position Y")
     @runtimeProperty("ModSettings.description", "Vertical position on 3840x2160 canvas. Auto-scales to your resolution.")
     @runtimeProperty("ModSettings.step", "10")
