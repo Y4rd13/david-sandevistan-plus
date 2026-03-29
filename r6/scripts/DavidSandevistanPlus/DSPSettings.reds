@@ -154,78 +154,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
 
-    // ==================== Category 5: Cyberpsychosis ====================
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Enable Cyberpsychosis")
-    @runtimeProperty("ModSettings.description", "Master toggle for the entire cyberpsychosis system. Disabling removes all strain, episodes, micro-episodes, treatment, and psycho VFX.")
-    public let enableCyberpsychosis: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Safe Activations per Day")
-    @runtimeProperty("ModSettings.description", "Base activations per day before strain penalties. Scaled by psycho stage: stage 0 = 1x, stage 1 = 1.7x, stage 2 = 2.3x, stage 3 = 3x, stage 4 = 4x, stage 5 = unlimited. Beyond the limit, each extra activation adds +5 base strain (scaled by stage multiplier).")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "1")
-    @runtimeProperty("ModSettings.max", "20")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
-    public let dailySafeActivations: Int32 = 3;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Strain Buildup Speed")
-    @runtimeProperty("ModSettings.description", "Global multiplier for ALL strain sources. Base values (hardcoded): +5 per activation, +3 per overuse, +2/min active, +2-8 per kill (gang→civilian). Stage multiplier further scales: stages 0-1 = 0.5x, stage 2 = 0.75x, stages 3+ = 1.0x. Passive strain at stages 4-5: +0.04/+0.08 per sec. Immunoblockers reduce by 80% (full) or 50% (partial).")
-    @runtimeProperty("ModSettings.step", "0.05")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "3.0")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
-    public let strainBuildupMultiplier: Float = 1.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Strain Recovery Speed")
-    @runtimeProperty("ModSettings.description", "Global multiplier for ALL strain recovery. Base drain rates (hardcoded): sleep = 40 per session, ripper = 25 per visit, safe area = 0.05/s, immunoblocker = 0.08/0.18/0.35 per sec (Common/Uncommon/Rare). Natural decay at stages 0-2: -0.03/-0.02/-0.01 per sec. Doubled while immunoblocker active.")
-    @runtimeProperty("ModSettings.step", "0.05")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "3.0")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
-    public let strainRecoveryMultiplier: Float = 1.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Episode Cooldown Multiplier")
-    @runtimeProperty("ModSettings.description", "Multiplier for minimum game-time between psychosis stage escalations. Base cooldowns (hardcoded): stage 1 = 48h, stage 2 = 36h, stage 3 = 24h, stage 4 = 12h, stage 5 = 6h. Active treatment milestones dynamically extend these cooldowns further.")
-    @runtimeProperty("ModSettings.step", "0.05")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "3.0")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
-    public let episodeCooldownMultiplier: Float = 1.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Enable Micro-Episodes")
-    @runtimeProperty("ModSettings.description", "Random involuntary symptoms (glitches, tremors, nosebleeds, laughs) between major episodes. Frequency scales with psycho stage.")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
-    public let enableMicroEpisodes: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Cyberpsychosis")
-    @runtimeProperty("ModSettings.category.order", "5")
-    @runtimeProperty("ModSettings.displayName", "Micro-Episode Frequency")
-    @runtimeProperty("ModSettings.description", "Frequency multiplier for micro-episode intervals. At 0.5, intervals are 2x longer (half as often). Base intervals (hardcoded): stage 1 = 5-10min, stage 2 = 2-5min, stage 3 = 30s-2min, stage 4 = 15s-1min, stage 5 = 5-15sec. Episodes can chain (max 3) with stage-scaled probability.")
-    @runtimeProperty("ModSettings.step", "0.05")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "3.0")
-    @runtimeProperty("ModSettings.dependency", "enableMicroEpisodes")
-    public let microEpisodeFrequency: Float = 1.0;
-
     // ==================== Category 6: Recovery & Treatment ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
@@ -233,7 +161,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Enable Prescription System")
     @runtimeProperty("ModSettings.description", "Treatment protocol: recovery requires immunoblocker doses, ripperdoc visits, and rest — prescribed by Viktor. Disabling makes recovery instant.")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
     public let enablePrescription: Bool = true;
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
@@ -270,7 +197,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.step", "1")
     @runtimeProperty("ModSettings.min", "6")
     @runtimeProperty("ModSettings.max", "72")
-    @runtimeProperty("ModSettings.dependency", "enableCyberpsychosis")
     public let toleranceDecayHours: Int32 = 24;
 
     // ==================== Category 7: Economy & Interface ====================

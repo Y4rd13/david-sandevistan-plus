@@ -123,19 +123,16 @@ local function syncSettingsFromRedscript(cfg)
 	if not ok or not settings then return false end
 
 	-- Booleans
-	cfg.enableCyberpsychosis = settings.enableCyberpsychosis
 	cfg.requireEdgeRunnerPerk = settings.requireEdgeRunnerPerk
 	cfg.enableSessionFatigue = settings.enableSessionFatigue
 	cfg.enableRuntimeDegradation = settings.enableRuntimeDegradation
 	cfg.enablePrescription = settings.enablePrescription
-	cfg.enableMicroEpisodes = settings.enableMicroEpisodes
 	cfg.ripperFullRestore = settings.ripperFullRestore
 
 	-- Integers
 	cfg.sandyDuration = settings.sandyDuration
 	cfg.fullRechargeHours = settings.fullRechargeHours
 	cfg.maxRechargePerSleep = settings.maxRechargePerSleep
-	cfg.dailySafeActivations = settings.dailySafeActivations
 	cfg.immunoblockerPriceCommon = settings.immunoblockerPriceCommon
 	cfg.immunoblockerPriceUncommon = settings.immunoblockerPriceUncommon
 	cfg.immunoblockerPriceRare = settings.immunoblockerPriceRare
@@ -155,10 +152,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
-	cfg.strainBuildupMultiplier = settings.strainBuildupMultiplier
-	cfg.strainRecoveryMultiplier = settings.strainRecoveryMultiplier
-	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
-	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
 	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
 
 	dlog('[DSP] Settings synced from Mod Settings')
