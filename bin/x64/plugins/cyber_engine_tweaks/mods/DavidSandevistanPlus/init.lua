@@ -142,15 +142,6 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.fullRechargeHours = settings.fullRechargeHours
 	cfg.maxRechargePerSleep = settings.maxRechargePerSleep
 	cfg.dailySafeActivations = settings.dailySafeActivations
-	cfg.strainPerActivation = settings.strainPerActivation
-	cfg.strainPerOveruseBonus = settings.strainPerOveruseBonus
-	cfg.strainPerMinuteActive = settings.strainPerMinuteActive
-	cfg.strainPerKillGang = settings.strainPerKillGang
-	cfg.strainPerKillCorpo = settings.strainPerKillCorpo
-	cfg.strainPerKillNCPD = settings.strainPerKillNCPD
-	cfg.strainPerKillCivilian = settings.strainPerKillCivilian
-	cfg.strainDrainSleep = settings.strainDrainSleep
-	cfg.strainDrainRipper = settings.strainDrainRipper
 	cfg.immunoblockerPriceCommon = settings.immunoblockerPriceCommon
 	cfg.immunoblockerPriceUncommon = settings.immunoblockerPriceUncommon
 	cfg.immunoblockerPriceRare = settings.immunoblockerPriceRare
@@ -178,21 +169,11 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
-	cfg.strainPerSecSafetyOff = settings.strainPerSecSafetyOff
-	cfg.strainDrainSafeArea = settings.strainDrainSafeArea
-	cfg.strainDrainDFImmuno = settings.strainDrainDFImmuno
 	cfg.strainBuildupMultiplier = settings.strainBuildupMultiplier
 	cfg.strainRecoveryMultiplier = settings.strainRecoveryMultiplier
 	cfg.episodeCooldownMultiplier = settings.episodeCooldownMultiplier
 	cfg.microEpisodeFrequency = settings.microEpisodeFrequency
 	cfg.sleepRecoveryPercent = settings.sleepRecoveryPercent
-
-	-- Reconstruct immunoblocker drain array from split fields
-	cfg.strainDrainImmunoblocker = {
-		settings.strainDrainImmunoblockerCommon,
-		settings.strainDrainImmunoblockerUncommon,
-		settings.strainDrainImmunoblockerRare
-	}
 
 	dlog('[DSP] Settings synced from Mod Settings')
 	return true
