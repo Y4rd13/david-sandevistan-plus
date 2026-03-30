@@ -262,6 +262,21 @@ martinez.martinez_fx_onscreen_sick_pulse         = 'martinez_fx_onscreen_sick_pu
 martinez.martinez_fx_onscreen_sick_2023          = 'martinez_fx_onscreen_sick_2023'
 martinez.martinez_fx_MAXTAC                      = 'martinez_fx_MAXTAC'
 
+-- Sandy LUT effects (user-selectable color grading during time dilation)
+martinez.sandyLutEffects = {
+	{ name = 'dsp_sandy_lut_green01', path = 'base\\fx\\player\\dsp_sandy_lut_green01.effect', label = 'Green I' },
+	{ name = 'dsp_sandy_lut_green02', path = 'base\\fx\\player\\dsp_sandy_lut_green02.effect', label = 'Green II' },
+	{ name = 'dsp_sandy_lut_green03', path = 'base\\fx\\player\\dsp_sandy_lut_green03.effect', label = 'Green III' },
+	{ name = 'dsp_sandy_lut_neon',    path = 'base\\fx\\player\\dsp_sandy_lut_neon.effect',    label = 'Neon' },
+}
+
+-- Sandy supplementary VFX (flash, outlines, radial blur — applied with custom LUTs)
+martinez.sandySupplementaryEffects = {
+	{ name = 'dsp_sandy_flash',       path = 'base\\fx\\player\\dsp_sandy_flash.effect' },
+	{ name = 'dsp_sandy_outlines',    path = 'base\\fx\\player\\dsp_sandy_outlines.effect' },
+	{ name = 'dsp_sandy_radial_blur', path = 'base\\fx\\player\\dsp_sandy_radial_blur.effect' },
+}
+
 martinez.martinez_npc_optical_blur               = 'martinez_npc_optical_blur'
 
 martinez.TimeDilations = {

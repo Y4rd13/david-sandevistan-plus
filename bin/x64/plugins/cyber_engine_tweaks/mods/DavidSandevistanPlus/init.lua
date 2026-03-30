@@ -159,6 +159,8 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
+	-- Enum DSPSandyLut: EnumInt returns ULL, tonumber() converts to Lua number
+	pcall(function() cfg.sandyLutIndex = tonumber(EnumInt(settings.sandyLut)) or 0 end)
 
 	dlog('[DSP] Settings synced from Mod Settings')
 	return true
@@ -1183,16 +1185,84 @@ dsp = {
 		local Dilation = self:findDilationIndex(timeScale)
 		return Dilation, StatusText
 	 end)
+	,SyncSandyVfxMode = (function(self)
+		-- Disabled for now — vanilla VFX coexists with custom LUT overlay
+		-- TODO: re-enable once custom LUT is confirmed working
+	 end)
+	,RegisterSandyVfx = (function(self)
+		if self.sandyVfxRegistered then return end
+		local player = self.cachedPlayer or Game.GetPlayer()
+		if not player or not IsDefined(player) then return end
+		local ok, fxComp = pcall(function()
+			return player:FindComponentByName("fx_player")
+		end)
+		if not ok or not fxComp then
+			print('[DSP] RegisterSandyVfx: fx_player component not found')
+			return
+		end
+		local effects = fxComp.effectDescs
+		local allEffects = {}
+		for _, lut in ipairs(self.martinez.sandyLutEffects) do
+			allEffects[#allEffects + 1] = { name = lut.name, path = lut.path }
+		end
+		for _, sup in ipairs(self.martinez.sandySupplementaryEffects) do
+			allEffects[#allEffects + 1] = { name = sup.name, path = sup.path }
+		end
+		for _, eff in ipairs(allEffects) do
+			local effectName = CName.new(eff.name)
+			local found = false
+			for _, desc in pairs(effects) do
+				if desc.effectName == effectName then found = true break end
+			end
+			if not found then
+				local desc = entEffectDesc.new()
+				desc.effect = eff.path
+				desc.effectName = effectName
+				table.insert(effects, desc)
+			end
+		end
+		fxComp.effectDescs = effects
+		self.sandyVfxRegistered = true
+		print('[DSP] Registered Sandy VFX effects on fx_player ('..#allEffects..' effects)')
+	 end)
+	,ApplySandyLut = (function(self)
+		if self.sandyLutActive then return end
+		local idx = self.cfg.sandyLutIndex or 0
+		if idx == 0 or idx == 5 then return end
+		self:RegisterSandyVfx()
+		local lut = self.martinez.sandyLutEffects[idx]
+		if not lut then return end
+		local player = self.cachedPlayer or Game.GetPlayer()
+		if not player or not IsDefined(player) then return end
+		GameObjectEffectHelper.StartEffectEvent(player, CName.new(lut.name), true)
+		self.sandyLutActive = lut.name
+	 end)
+	,StopSandyLut = (function(self)
+		if not self.sandyLutActive then return end
+		local player = self.cachedPlayer or Game.GetPlayer()
+		if not player or not IsDefined(player) then return end
+		-- Stop all LUT effects
+		for _, lut in ipairs(self.martinez.sandyLutEffects) do
+			GameObjectEffectHelper.BreakEffectLoopEvent(player, CName.new(lut.name))
+		end
+		-- Stop supplementary effects
+		for _, sup in ipairs(self.martinez.sandySupplementaryEffects) do
+			GameObjectEffectHelper.BreakEffectLoopEvent(player, CName.new(sup.name))
+		end
+		self.sandyLutActive = nil
+	 end)
 	,TimeDilationEffects = (function(self)
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
+			self:ApplySandyLut()
 			-- Analog distortion while Sandy active at psycho 3+ (implants degrading under load)
 			if self.CyberPsychoWarnings >= 3 then
 				self:StatusEffect_CheckAndApply(self.martinez.SandyStrainEffect)
 			end
 		else
 			self:TimeDilationEffects_AllOff()
+			self:StopSandyLut()
 			self:StatusEffect_CheckAndRemove(self.martinez.SandyStrainEffect)
 		end
 	 end)
@@ -1487,6 +1557,7 @@ dsp = {
 						self.FullRechargeHours = self.cfg.fullRechargeHours
 						self.MaxRechargePerSleep = self.cfg.maxRechargePerSleep
 						Game.GetQuestSystem():SetFactValue(CName.new('dsp_settings_changed'), 0)
+						self:SyncSandyVfxMode()
 						dlog('[DSP] Settings reloaded from Mod Settings')
 					end
 				end)
@@ -1730,6 +1801,7 @@ dsp = {
 	,LoadGamePart1 = (function(self)
 		print('[DSP] LoadGamePart1: loading config and updating Viks loot')
 		syncSettingsFromRedscript(self.cfg)
+		self:SyncSandyVfxMode()
 		self:UpdateImmunoblockerPrices()
 		applyTweakDBFromSettings(self.cfg)
 		self:UpdateViksLoot()
@@ -2660,14 +2732,22 @@ registerForEvent('onInit', function()
 		local isWearing = dsp:IsWearingSandevistan()
 		dlog('[DSP] SandevistanEvents.OnEnter: IsWearing='..tostring(isWearing)..' PlayerAttached='..tostring(dsp.PlayerAttached)..' LoadGameRun='..tostring(dsp.LoadGameRun))
 		if isWearing then
+			dsp:ApplySandyLut()
 			dsp:Start()
 			return false
 		end
     end)
-	
+
 	Observe('SandevistanEvents', 'OnExit', function(self, event)
 		if dsp:IsWearingSandevistan() then
+			dsp:StopSandyLut()
 			dsp:End()
+		end
+    end)
+
+	Observe('SandevistanEvents', 'OnForcedExit', function(self, event)
+		if dsp:IsWearingSandevistan() then
+			dsp:StopSandyLut()
 		end
     end)
 	
@@ -2682,7 +2762,7 @@ registerForEvent('onInit', function()
 	ObserveAfter('PlayerPuppet', 'OnGameAttached', function(this)
 		if this:IsReplacer() then return end
 		if Game.GetSystemRequestsHandler():IsPreGame() then return end
-		
+
 		dsp.isRunning = false
 		dsp:LoadGame(1)
 	end)
@@ -3076,11 +3156,12 @@ registerInput("DebugPsychoUp", 'DEBUG: Psycho Level +1', function(isKeyDown)
 	if dsp.CyberPsychoWarnings < 5 then
 		dsp.CyberPsychoWarnings = dsp.CyberPsychoWarnings + 1
 	end
+	dsp:SyncSafetyWithStage()
 	dsp:DisableSandevistan("debug")
 	dsp:SaveGame("debug")
 	local names = { "I", "II", "III", "IV", "V" }
 	dsp.bbs:SendMessage("DEBUG: PSYCHOSIS "..tostring(names[dsp.CyberPsychoWarnings] or dsp.CyberPsychoWarnings), 2.0)
-	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings).." strain="..tostring(dsp.neuralStrain))
+	print("[DSP DEBUG] CyberPsychoWarnings="..tostring(dsp.CyberPsychoWarnings).." strain="..tostring(dsp.neuralStrain).." SafetyOn="..tostring(dsp.SafetyOn))
 end)
 
 registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
@@ -3093,6 +3174,7 @@ registerInput("DebugPsychoDown", 'DEBUG: Psycho Level -1', function(isKeyDown)
 		dsp:StopHeartbeat()
 		dsp.nextLaughTime = nil
 	end
+	dsp:SyncSafetyWithStage()
 	dsp:DisableSandevistan("debug")
 	dsp:SaveGame("debug")
 	local names = { [0] = "CLEAR", "I", "II", "III", "IV", "V" }

@@ -2,6 +2,15 @@
 // All settings declared via @runtimeProperty for the Mod Settings framework.
 // CET Lua reads these values via GetScriptableSystemsContainer():Get('DSPSettings').
 
+enum DSPSandyLut {
+    Vanilla = 0,
+    GreenI = 1,
+    GreenII = 2,
+    GreenIII = 3,
+    Neon = 4,
+    Clean = 5
+}
+
 public class DSPSettings extends ScriptableSystem {
 
     // ==================== Category 1: Time Dilation ====================
@@ -307,6 +316,13 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.min", "0")
     @runtimeProperty("ModSettings.max", "2000")
     public let biomonitorPosY: Int32 = 600;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Economy & Interface")
+    @runtimeProperty("ModSettings.category.order", "6")
+    @runtimeProperty("ModSettings.displayName", "Sandevistan Color Grading")
+    @runtimeProperty("ModSettings.description", "Color grading during Sandevistan. Vanilla = game default. Green I = anime. Green II = warm. Green III = cyberpunk. Neon = cyan/magenta. Clean = no VFX.")
+    public let sandyLut: DSPSandyLut = DSPSandyLut.GreenI;
 
     // ==================== Lifecycle ====================
 
