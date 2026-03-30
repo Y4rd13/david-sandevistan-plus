@@ -6,6 +6,7 @@ Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
   entityTemplatePath: base\characters\entities\service\service_medical_ma.ent
   appearanceName: service__medical_ma_nurse_ma_07
+  holocallInitializerPath: base\workspots\quest\main_quests\part1\q110\q110_13_alt_intro\q110__stand_netrunner_chair_keyboard__stand_around__01.workspot
   displayName: DavidSandevistanPlus-ArroyoDealer
   forcedTBHZOffset: 6
   bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
