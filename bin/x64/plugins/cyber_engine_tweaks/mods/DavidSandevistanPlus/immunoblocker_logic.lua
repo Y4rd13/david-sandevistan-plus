@@ -135,17 +135,15 @@ function immunoblocker_logic.attach(dsp)
 	end
 
 	-- Schedule biomonitor SFX sequence (per-line ticks)
-	-- Timing: loading 0.8s + expand 0.6s + footer 0.2s = 1.6s before items
-	-- Each item: 0.4s typewriter + 0.4s value delay = ~0.8s per item in the framework
+	-- Timing: loading 0.4s + expand 0.3s + footer 0.1s = 0.8s before items
+	-- Each item: 0.2s typewriter + 0.2s value delay = ~0.4s per item in the framework
 	local function scheduleBiomonitorSFX(numItems)
-		local itemsStart = 1.6   -- loading + expand + footer
-		-- First 2 items: 0.4s (title + substance — text only, no value counter)
-		-- Remaining items: 0.8s (typewriter + value counter)
+		local itemsStart = 0.8   -- loading + expand + footer
 		dsp.biomonitorTickTimers = {}
 		local t = itemsStart
 		for i = 1, numItems do
 			table.insert(dsp.biomonitorTickTimers, t)
-			t = t + (i <= 2 and 0.4 or 0.8)
+			t = t + (i <= 2 and 0.2 or 0.4)
 		end
 	end
 

@@ -321,8 +321,9 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.category", "Economy & Interface")
     @runtimeProperty("ModSettings.category.order", "6")
     @runtimeProperty("ModSettings.displayName", "Sandevistan Color Grading")
-    @runtimeProperty("ModSettings.description", "Color grading during Sandevistan. Vanilla = game default. Green I = anime. Green II = warm. Green III = cyberpunk. Neon = cyan/magenta. Clean = no VFX.")
+    @runtimeProperty("ModSettings.description", "Color grading during Sandevistan. Requires game restart to apply.")
     public let sandyLut: DSPSandyLut = DSPSandyLut.GreenI;
+
 
     // ==================== Lifecycle ====================
 

@@ -1255,14 +1255,12 @@ dsp = {
 		if self.isRunning then
 			local Dilation, StatusText = self:TimeDilationCalculator()
 			self:TimeDilationEffects_Activate(Dilation,StatusText)
-			self:ApplySandyLut()
 			-- Analog distortion while Sandy active at psycho 3+ (implants degrading under load)
 			if self.CyberPsychoWarnings >= 3 then
 				self:StatusEffect_CheckAndApply(self.martinez.SandyStrainEffect)
 			end
 		else
 			self:TimeDilationEffects_AllOff()
-			self:StopSandyLut()
 			self:StatusEffect_CheckAndRemove(self.martinez.SandyStrainEffect)
 		end
 	 end)
@@ -3238,13 +3236,12 @@ registerInput("DebugEndHorde", 'DEBUG: End Horde', function(isKeyDown)
 	print("[DSP DEBUG] Horde ended manually")
 end)
 
+-- Biomonitor toggle (key configured in CET bindings)
 registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 	if not isKeyDown then return end
-	-- Toggle: if open, close. If closed, open.
 	if dsp.biomonitorOpen then
 		dsp.biomonitorOpen = false
 		dsp.biomonitorTickTimers = nil
-		-- Close sound
 		pcall(function()
 			local V = Game.GetPlayer()
 			if V and IsDefined(V) then

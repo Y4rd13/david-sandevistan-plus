@@ -1008,9 +1008,9 @@ public class DSPHUDSystem extends ScriptableSystem {
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
         controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 0.8;
-        controller.m_expandAnimDuration = 0.6;
-        controller.m_listItemAnimDuration = 0.4;
+        controller.m_loadingAnimDuration = 0.4;
+        controller.m_expandAnimDuration = 0.3;
+        controller.m_listItemAnimDuration = 0.2;
         controller.m_fadeOutDelay = 9999.0;
         controller.m_fadeOutDuration = 0.5;
 
