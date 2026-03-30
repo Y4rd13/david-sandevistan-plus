@@ -4,7 +4,10 @@
 # Stock: Common 5-10, Uncommon 2-5, Rare 1-2
 Character.dsp_immuno_v19:
   $base: Character.vendorsxl_base
-  appearanceName: citizen__punk_ma_punk_ma_02
+  entityTemplatePath: base\characters\entities\service\service_medical_ma.ent
+  appearanceName: service__medical_ma_nurse_ma_07
+  displayName: DavidSandevistanPlus-ArroyoDealer
+  forcedTBHZOffset: 6
   bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
   vendorID: Vendors.DspArroyoDealer
 
