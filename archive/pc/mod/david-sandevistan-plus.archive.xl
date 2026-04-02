@@ -10,12 +10,17 @@ quest:
   phases:
     - path: davidsandevistanplus\quest\dsp_immunoblocker_inject.questphase
       parent: dsp_scope.quest
+    - path: davidsandevistanplus\quest\dsp_vendor_scenes.questphase
+      parent: base\quest\cyberpunk2077.quest
+    - path: davidsandevistanplus\quest\dsp_vendor_scenes.questphase
+      parent: ep1\quest\ep1_standalone.quest
 
 streaming:
   blocks:
     - dsp_immunoblocker\all.streamingblock
     - dsp_ripdoc_arroyo\all.streamingblock
     - dsp_kabuki\all.streamingblock
+    - dsp_npcs\all.streamingblock
   sectors:
     - path: base\worlds\03_night_city\_compiled\default\interior_-34_-40_0_0.streamingsector
       expectedNodes: 394
