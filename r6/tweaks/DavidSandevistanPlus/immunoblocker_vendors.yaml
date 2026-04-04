@@ -260,6 +260,106 @@ Character.DspKabukiKid:
 
 
 # ============================================================
+# Character record — Arroyo medic (adult, based on NCEE's dd_woodhaven)
+# ============================================================
+
+Character.DspArroyoDealer:
+  $type: gamedataCharacter_Record
+  abilities:
+    - Ability.CanCrouch
+    - Ability.CanSprint
+  affiliation: Factions.Civilian
+  alertedSensesPreset: Alerted
+  appearanceName: service__medical_ma_nurse_ma_03
+  archetypeName: humanoid
+  attachmentSlots:
+    - AttachmentSlots.WeaponRight
+    - AttachmentSlots.WeaponLeft
+    - AttachmentSlots.GrenadeRight
+    - AttachmentSlots.GrenadeLeft
+    - AttachmentSlots.Head
+    - AttachmentSlots.Eyes
+    - AttachmentSlots.Chest
+    - AttachmentSlots.RightArm
+    - AttachmentSlots.LeftArm
+    - AttachmentSlots.RightHand
+    - AttachmentSlots.LeftHand
+    - AttachmentSlots.Legs
+    - AttachmentSlots.PersonalLink
+    - AttachmentSlots.Consumable
+    - AttachmentSlots.Feet
+    - AttachmentSlots.TppHead
+    - AttachmentSlots.Torso
+    - AttachmentSlots.Outfit
+    - AttachmentSlots.UnderwearTop
+    - AttachmentSlots.UnderwearBottom
+    - AttachmentSlots.ItemSlotSniperRifle
+    - AttachmentSlots.ItemSlotSMG
+    - AttachmentSlots.ItemSlotTechRifle
+    - AttachmentSlots.ItemSlotHandgunLeftJackie
+    - AttachmentSlots.ItemSlotHandgunRightJackie
+    - AttachmentSlots.ItemSlotKatana
+    - AttachmentSlots.ItemSlotGenericMelee
+    - AttachmentSlots.ItemSlotHammer
+    - AttachmentSlots.ItemSlotKnifeRight
+    - AttachmentSlots.ItemSlotKnifeLeft
+    - AttachmentSlots.ItemSlotGenericRanged
+    - AttachmentSlots.ItemSlotHandgunRight
+    - AttachmentSlots.ItemSlotHandgunLeft
+  audioMeleeMaterial: Flesh
+  baseAttitudeGroup: friendly
+  bossHealthBarThresholds: []
+  canHaveGenericTalk: True
+  characterType: NPCType.Human
+  combatSensesPreset: Combat
+  communitySquad: Squad_Basic
+  contentAssignment: DeviceContentAssignment.Autoscaling
+  cpoCharacterBuild: ''
+  crowdMemberSettings: Crowds.DefaultCrowdPackage
+  defaultCrosshair: Crosshairs.NoWeapon
+  despawnChildCommunityWhenPlayerInVehicle: True
+  devNotes: ''
+  disableDefeatedState: False
+  displayName: DavidSandevistanPlus-ArroyoDealer
+  dropsAmmoOnDeathChance: 1
+  dropsControlledLoot: True
+  dropsMoneyOnDeath: False
+  dropsWeaponOnDeath: False
+  enableSensesOnStart: True
+  entityTemplatePath: base\characters\entities\service\service__medical_ma.ent
+  forceCanHaveGenericTalk: False
+  forcedTBHZOffset: 0
+  hasDirectionalStarts: True
+  hideUIDetection: False
+  hideUIElements: False
+  holocallInitializerPath: ''
+  ignoreDetectionForAudioCue: False
+  isBumpable: False
+  isChild: False
+  isCrowd: False
+  isLightCrowd: False
+  lootBagEntity: baseDropBag
+  lootDrop: LootTables.Empty
+  lootInjectionParams: LootInjection.DefaultLootInjectionSettings
+  minigameInstance: minigame_v2.DefaultMinigame
+  objectActions:
+    - GenericInteraction.Talk
+  priority: SpawnableObjectPriority.Regular
+  rarity: NPCRarity.Normal
+  reactionPreset: ReactionPresets.NoReaction
+  relaxedSensesPreset: Relaxed
+  savable: True
+  scannerModulePreset: ScanningNPCPresets.ScannerPreset_NPCFull
+  sensePreset: Senses.Relaxed
+  skipDisplayArchetype: False
+  staticCommunityAppearancesDistributionEnabled: False
+  threatTrackingPreset: TargetTracking.DefaultPreset
+  uiNameplate: UINameplate.QuestSettings
+  useForcedTBHZOffset: True
+  vendorID: Vendors.DspArroyoDealer
+  weaponSlot: AttachmentSlots.WeaponRight
+
+# ============================================================
 # Vendor quantity modifiers
 # ============================================================
 

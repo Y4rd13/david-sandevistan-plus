@@ -1,11 +1,3 @@
 # David Sandevistan Plus — Immunoblocker Street Vendors (VendorsXL)
-
-# Arroyo punk dealer — main supplier near ripperdoc (all 3 tiers)
-# Stock: Common 5-10, Uncommon 2-5, Rare 1-2
-Character.dsp_immuno_v19:
-  $base: Character.vendorsxl_base
-  entityTemplatePath: base\characters\entities\service\service__medical_ma.ent
-  appearanceName: service__medical_ma_nurse_ma_03
-  holocallInitializerPath: base\dependencies\workspots\common\ground\dep__master_male__stand_ground__wait_nervous__01.workspot
-  bossHealthBarThresholds: [-1075.0454, -1278.2947, 11.4569, 0, 0, -0.89333531, 0.44939072]
-  vendorID: Vendors.DspArroyoDealer
+# NOTE: Migrating vendors to Community + quest scene approach.
+# This file will be removed once all vendors are migrated.

@@ -14,6 +14,10 @@ quest:
       parent: base\quest\cyberpunk2077.quest
     - path: davidsandevistanplus\quest\dsp_vendor_scenes.questphase
       parent: ep1\quest\ep1_standalone.quest
+    - path: davidsandevistanplus\quest\dsp_arroyo_vendor_scenes.questphase
+      parent: base\quest\cyberpunk2077.quest
+    - path: davidsandevistanplus\quest\dsp_arroyo_vendor_scenes.questphase
+      parent: ep1\quest\ep1_standalone.quest
 
 streaming:
   blocks:
