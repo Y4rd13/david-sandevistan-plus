@@ -252,6 +252,7 @@ Character.DspKabukiKid:
   threatTrackingPreset: TargetTracking.DefaultPreset
   uiNameplate: UINameplate.CrowdSettings
   useForcedTBHZOffset: True
+  forcedTBHZOffset: 6
   vendorID: Vendors.DspKabukiKid
   visualTags:
     - Lowlife
@@ -356,6 +357,7 @@ Character.DspArroyoDealer:
   threatTrackingPreset: TargetTracking.DefaultPreset
   uiNameplate: UINameplate.QuestSettings
   useForcedTBHZOffset: True
+  forcedTBHZOffset: 6
   vendorID: Vendors.DspArroyoDealer
   weaponSlot: AttachmentSlots.WeaponRight
 

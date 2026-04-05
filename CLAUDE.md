@@ -48,3 +48,32 @@ Two components: **DavidSandevistanPlus** (game logic) + **MartinezPLUS** (Native
 - **nativeSettings** — CET mod for settings UI ("MODS" tab)
 - **nativeSettings_side_menu_add_on** — Side panel in MODS tab (requires Codeware + ArchiveXL)
 - **Codeware**, **ArchiveXL**, **TweakXL** — Core modding frameworks (RED4ext plugins)
+
+## Vendor NPC System (Community + Quest Scene)
+
+Vendor NPCs use 3 layers — ALL must stay in sync:
+1. **Streaming sector** (World Builder) — Community + AISpot + Static Marker, `AlwaysLoaded`
+2. **Character record** (TweakXL YAML) — full `gamedataCharacter_Record` with `vendorID`
+3. **Quest scene + questphase** — creates Talk button via `scnChoiceNode`
+4. **Journal** (optional) — POI mappin on map, activated by questphase `questJournalEntry_NodeType`
+
+### NodeRef Sync Rule (CRITICAL)
+When World Builder NodeRefs change, update ALL files that reference them:
+- Scenes: `communityParams.reference` + `vendorPanel objectRef.reference`
+- Journal: `staticNodeRef` + `dynamicEntityRef.reference`
+- NodeRefs MUST use `$/mod/` prefix format (flat names silently fail)
+
+### Workflow
+1. Edit in **repo** first, then copy to game directory
+2. After World Builder re-export: verify ALL NodeRefs match across scenes/journal
+3. Convert JSON → CR2W via WolvenKit CLI: `mcp__wolvenkit__convert_from_json`
+4. Pack via WolvenKit UI (CLI `build` includes garbage files)
+5. Copy `.archive` + `.xl` to game directory
+
+### Key Files
+- Scenes: `wolven/.../davidsandevistanplus/quest/scenes/*.scene`
+- Questphases: `wolven/.../davidsandevistanplus/quest/*.questphase`
+- Journal: `wolven/.../davidsandevistanplus/journal/dsp_vendors.journal`
+- Character records: `r6/tweaks/DavidSandevistanPlus/immunoblocker_vendors.yaml`
+- Sectors: `wolven/.../dsp_npcs/sectors/*.streamingsector`
+- Archive XL: `archive/pc/mod/david-sandevistan-plus.archive.xl`

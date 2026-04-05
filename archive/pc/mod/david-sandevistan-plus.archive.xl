@@ -80,6 +80,9 @@ streaming:
           position: { x: -1071.9514160156, y: -1279.5112304688, z: 11.456887245178 }
           orientation: { i: 0, j: 0, k: -0.30070582032204, r: 0.95371693372726 }
 
+journal:
+  - davidsandevistanplus\journal\dsp_vendors.journal
+
 localization:
   onscreens:
     en-us: davidsandevistanplus\localization\en-us.json
