@@ -4,11 +4,7 @@
 // Layout is dynamically positioned — hidden rows collapse so there are no gaps.
 
 import Codeware.UI.VirtualResolutionWatcher
-import Audioware.AudioSettingsExt
-import Audioware.Tween
-import Audioware.LinearTween
 import AnimatedMonitor.AnimatedMonitorController
-import AnimatedBiomonitor.AnimatedBiomonitorController
 
 public class DSPHUDSystem extends ScriptableSystem {
 
@@ -19,19 +15,6 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_pulseTimer: Float;
     private let m_fullScreenSlot: ref<inkCompoundWidget>;
     private let m_widgetSlot: ref<inkCompoundWidget>;
-    private let m_biomonitorWidget: wref<inkWidget>;
-    private let m_cyberwareWidget: wref<inkWidget>;
-    private let m_biomonitorPosX: Float;
-    private let m_biomonitorPosY: Float;
-
-    // Biomonitor stored data (set via small setters before ShowBiomonitor)
-    private let m_bioRestCompleted: Int32;
-    private let m_bioRestRequired: Int32;
-    private let m_bioVisitsCompleted: Int32;
-    private let m_bioVisitsRequired: Int32;
-    private let m_bioDoses: Int32;
-    private let m_bioMilestonePct: Int32;
-
     // Menu blocking: hide HUD when menus/phone/inventory are open
     private let m_menuBlocked: Bool;
 
@@ -97,8 +80,6 @@ public class DSPHUDSystem extends ScriptableSystem {
     private func OnAttach() -> Void {
         this.m_initialized = false;
         this.m_pulseTimer = 0.0;
-        this.m_biomonitorPosX = 80.0;
-        this.m_biomonitorPosY = 600.0;
         this.m_pendingKillStrain = 0;
     }
 
@@ -210,20 +191,7 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_immunoblockerActive = immunoblockerActive;
     }
 
-    // Called from CET with position from config
-    public func SetBiomonitorPosition(posX: Int32, posY: Int32) -> Void {
-        this.m_biomonitorPosX = Cast<Float>(posX);
-        this.m_biomonitorPosY = Cast<Float>(posY);
-    }
-
-    public func SetBiomonitorProtocolData(restCompleted: Int32, restRequired: Int32, visitsCompleted: Int32, visitsRequired: Int32, doses: Int32, milestonePct: Int32) -> Void {
-        this.m_bioRestCompleted = restCompleted;
-        this.m_bioRestRequired = restRequired;
-        this.m_bioVisitsCompleted = visitsCompleted;
-        this.m_bioVisitsRequired = visitsRequired;
-        this.m_bioDoses = doses;
-        this.m_bioMilestonePct = milestonePct;
-    }
+    // Biomonitor → DSPBiomonitorSystem.reds | Audio → DSPAudioBridge.reds
 
     // ---------------------------------------------------------------
     // RefreshHUD — dynamic vertical layout, hidden rows collapse
@@ -447,154 +415,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         this.m_statusText.SetTintColor(statusColor);
     }
 
-    // ---------------------------------------------------------------
-    // Audio — Last Breath song via Audioware
-    // ---------------------------------------------------------------
-
-    private let m_songPlaying: Bool;
-
-    public func PlayLastBreathSong() -> Void {
-        if this.m_songPlaying { return; }
-        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
-        if !IsDefined(audioExt) { return; }
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        // Stop any existing instance to prevent overlapping playback
-        audioExt.Stop(n"dsp_last_breath_song", player.GetEntityID(), n"", LinearTween.Immediate(0.0));
-        let settings = new AudioSettingsExt();
-        settings.affectedByTimeDilation = false;
-        settings.fadeIn = LinearTween.Immediate(2.0);
-        audioExt.Play(n"dsp_last_breath_song", player.GetEntityID(), n"", scnDialogLineType.Regular, settings);
-        this.m_songPlaying = true;
-    }
-
-    public func StopLastBreathSong() -> Void {
-        this.m_songPlaying = false;
-        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
-        if !IsDefined(audioExt) { return; }
-        let fadeOut = LinearTween.Immediate(3.0);
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        audioExt.Stop(n"dsp_last_breath_song", player.GetEntityID(), n"", fadeOut);
-    }
-
-    // ---------------------------------------------------------------
-    // Voice lines — play/stop via Audioware
-    // ---------------------------------------------------------------
-
-    private let m_currentVoiceLine: CName;
-
-    public func PlayVoiceLine(eventName: CName) -> Void {
-        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
-        if !IsDefined(audioExt) { return; }
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        // Stop any currently playing voice line to prevent overlap
-        if IsNameValid(this.m_currentVoiceLine) {
-            audioExt.Stop(this.m_currentVoiceLine, player.GetEntityID(), n"", LinearTween.Immediate(0.1));
-        }
-        let settings = new AudioSettingsExt();
-        settings.affectedByTimeDilation = false;
-        audioExt.Play(eventName, player.GetEntityID(), n"", scnDialogLineType.Regular, settings);
-        this.m_currentVoiceLine = eventName;
-    }
-
-    public func StopVoiceLine() -> Void {
-        let audioExt = GameInstance.GetAudioSystemExt(this.GetGameInstance());
-        if !IsDefined(audioExt) { return; }
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        if IsNameValid(this.m_currentVoiceLine) {
-            audioExt.Stop(this.m_currentVoiceLine, player.GetEntityID(), n"", LinearTween.Immediate(0.1));
-            this.m_currentVoiceLine = n"";
-        }
-    }
-
-    // ---------------------------------------------------------------
-    // Cycled SFX — looping SFX via DelayCallbacks (like Wannabe Edgerunner)
-    // ---------------------------------------------------------------
-
-    private let m_cycledSfxDelayId: DelayID;
-    private let m_cycledSfxActive: Bool;
-
-    public func StartCycledVfx(vfxName: CName, interval: Float) -> Void {
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        // Play immediately
-        GameObjectEffectHelper.StartEffectEvent(player, vfxName, false);
-        // Schedule next play
-        this.m_cycledSfxActive = true;
-        let callback = new DSPCycledSfxCallback();
-        callback.system = this;
-        callback.sfxName = vfxName;
-        callback.interval = interval;
-        this.m_cycledSfxDelayId = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, interval, true);
-    }
-
-    public func StopCycledVfx(vfxName: CName) -> Void {
-        if !this.m_cycledSfxActive { return; }
-        this.m_cycledSfxActive = false;
-        GameInstance.GetDelaySystem(this.GetGameInstance()).CancelDelay(this.m_cycledSfxDelayId);
-        let player = GetPlayer(this.GetGameInstance());
-        if IsDefined(player) {
-            GameObjectEffectHelper.StopEffectEvent(player, vfxName);
-        }
-    }
-
-    public func OnCycledSfxCallback(sfxName: CName, interval: Float) -> Void {
-        if !this.m_cycledSfxActive { return; }
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-        GameObjectEffectHelper.StartEffectEvent(player, sfxName, false);
-        // Schedule next
-        let callback = new DSPCycledSfxCallback();
-        callback.system = this;
-        callback.sfxName = sfxName;
-        callback.interval = interval;
-        this.m_cycledSfxDelayId = GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, interval, true);
-    }
-
-    // ---------------------------------------------------------------
-    // Subtitles — native game subtitle display
-    // ---------------------------------------------------------------
-
-    private let m_subtitleCounter: Int32;
-
-    public func ShowSubtitle(text: String, speakerName: String, duration: Float) -> Void {
-        let player = GetPlayer(this.GetGameInstance());
-        if !IsDefined(player) { return; }
-
-        // Hide previous subtitle if active
-        if this.m_subtitleCounter > 0 {
-            this.HideSubtitle();
-        }
-
-        this.m_subtitleCounter += 1;
-
-        let line: scnDialogLineData;
-        line.id = CreateCRUID(Cast<Uint64>(this.m_subtitleCounter));
-        line.text = text;
-        line.speaker = player;
-        line.speakerName = speakerName;
-        line.type = scnDialogLineType.Regular;
-        line.duration = duration;
-        line.isPersistent = false;
-
-        let board: ref<IBlackboard> = GameInstance.GetBlackboardSystem(this.GetGameInstance()).Get(GetAllBlackboardDefs().UIGameData);
-        board.SetVariant(GetAllBlackboardDefs().UIGameData.ShowDialogLine, ToVariant([line]), true);
-
-        // Auto-hide after duration
-        let callback = new DSPHideSubtitleCallback();
-        callback.system = this;
-        GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(callback, duration, false);
-    }
-
-    public func HideSubtitle() -> Void {
-        if this.m_subtitleCounter <= 0 { return; }
-        let board: ref<IBlackboard> = GameInstance.GetBlackboardSystem(this.GetGameInstance()).Get(GetAllBlackboardDefs().UIGameData);
-        board.SetVariant(GetAllBlackboardDefs().UIGameData.HideDialogLine, ToVariant([CreateCRUID(Cast<Uint64>(this.m_subtitleCounter))]), true);
-    }
-
     public func SetVisible(visible: Bool) -> Void {
         if this.m_initialized && IsDefined(this.m_widgetSlot) {
             this.m_widgetSlot.SetVisible(visible);
@@ -611,8 +431,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         }
         this.m_fullScreenSlot = null;
         this.m_widgetSlot = null;
-        this.m_biomonitorWidget = null;
-        this.m_cyberwareWidget = null;
         this.m_runtimeIcon = null;
         this.m_runtimeBarBG = null;
         this.m_runtimeBarFill = null;
@@ -886,224 +704,6 @@ public class DSPHUDSystem extends ScriptableSystem {
         return IntToString(totalSecs) + "s";
     }
 
-    // ---------------------------------------------------------------
-    // Biomonitor — animated Medtech panel via Animated Widgets Framework
-    // ---------------------------------------------------------------
-
-    // Unified biomonitor — shows all status + protocol data in one panel
-    // Params: status data (tier, tolerance, efficacy, strain, psycho stage, rx progress)
-    // Protocol data stored via SetBiomonitorProtocolData() setter before calling this
-    public func ShowBiomonitor(tier: Int32, toleranceStage: Int32, efficacyPct: Int32, strainPct: Int32, psychoStage: Int32, rxCompleted: Int32, rxTotal: Int32) -> Void {
-        if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
-
-        this.ForceRemoveBiomonitor();
-
-        // Tier name
-        let tierName: String;
-        if tier == 3 { tierName = "MILITARY GRADE"; }
-        else if tier == 2 { tierName = "UNCOMMON"; }
-        else if tier == 1 { tierName = "COMMON"; }
-        else { tierName = "NONE"; }
-
-        // Tolerance name
-        let tolName: String;
-        if toleranceStage == 0 { tolName = "None"; }
-        else if toleranceStage == 1 { tolName = "Mild"; }
-        else if toleranceStage == 2 { tolName = "Moderate"; }
-        else { tolName = "Severe"; }
-
-        // Psycho stage name
-        let psychoName: String;
-        if psychoStage <= 0 { psychoName = "Clear"; }
-        else if psychoStage == 1 { psychoName = "Stage I"; }
-        else if psychoStage == 2 { psychoName = "Stage II"; }
-        else if psychoStage == 3 { psychoName = "Stage III"; }
-        else if psychoStage == 4 { psychoName = "Stage IV"; }
-        else { psychoName = "Stage V"; }
-
-        // RX text
-        let rxText: String;
-        if rxTotal > 0 {
-            let pct: Int32 = (rxCompleted * 100) / rxTotal;
-            rxText = "RX " + IntToString(rxCompleted) + "/" + IntToString(rxTotal) + " — " + IntToString(pct) + "%";
-        } else {
-            rxText = "No active protocol";
-        }
-
-        // Rest text (from stored data)
-        let restText: String;
-        if this.m_bioRestRequired > 0 {
-            restText = IntToString(this.m_bioRestCompleted) + "/" + IntToString(this.m_bioRestRequired) + "h";
-        } else {
-            restText = "—";
-        }
-
-        // Visits text + cooldown indicator
-        let visitsText: String;
-        if this.m_bioVisitsRequired > 0 {
-            visitsText = IntToString(this.m_bioVisitsCompleted) + "/" + IntToString(this.m_bioVisitsRequired);
-            // Check visit cooldown from quest fact
-            let questsSystem: ref<QuestsSystem> = GameInstance.GetQuestsSystem(GetGameInstance());
-            let visitCooldownUntil: Int32 = questsSystem.GetFactStr("dsp_visit_cooldown_until");
-            if visitCooldownUntil > 0 {
-                let now: Float = GameInstance.GetTimeSystem(GetGameInstance()).GetGameTimeStamp();
-                let remaining: Float = Cast<Float>(visitCooldownUntil) - now;
-                if remaining > 0.0 {
-                    let hoursLeft: Int32 = Cast<Int32>(remaining / 3600.0) + 1;
-                    visitsText = visitsText + " (next in " + IntToString(hoursLeft) + "h)";
-                };
-            };
-        } else {
-            visitsText = "—";
-        }
-
-        // Prescribed text
-        let prescribedText: String;
-        if this.m_bioDoses > 0 {
-            prescribedText = IntToString(this.m_bioDoses) + " doses " + tierName;
-        } else {
-            prescribedText = "—";
-        }
-
-        // Milestone text
-        let milestoneText: String;
-        if this.m_bioMilestonePct <= 0 { milestoneText = "Not started"; }
-        else if this.m_bioMilestonePct < 33 { milestoneText = "In progress"; }
-        else if this.m_bioMilestonePct < 66 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Stabilizing"; }
-        else if this.m_bioMilestonePct < 100 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Improving"; }
-        else { milestoneText = "Complete"; }
-
-        let bioCanvas: ref<inkCanvas> = new inkCanvas();
-        bioCanvas.SetName(n"DSPBiomonitor");
-        bioCanvas.SetAnchor(inkEAnchor.TopLeft);
-        bioCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        bioCanvas.SetSize(new Vector2(950.0, 600.0));
-        bioCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY, 0.0, 0.0));
-        bioCanvas.Reparent(this.m_fullScreenSlot);
-        this.m_biomonitorWidget = bioCanvas;
-
-        let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
-        bioCanvas.AttachController(controller);
-
-        controller.m_footerText1 = s"Client: V";
-        controller.m_footerText2 = s"Viktor Vektor Medical";
-        controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 0.4;
-        controller.m_expandAnimDuration = 0.3;
-        controller.m_listItemAnimDuration = 0.2;
-        controller.m_fadeOutDelay = 9999.0;
-        controller.m_fadeOutDuration = 0.5;
-
-        // Items rendered bottom-to-top — reverse order
-        // Protocol section
-        ArrayPush(controller.m_items, new MonitorListItem("Milestone:", -1.00, milestoneText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Rest:", -1.00, restText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Visits:", -1.00, visitsText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", -1.00, prescribedText, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
-        // Status section
-        ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", -1.00, IntToString(strainPct) + "%", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", -1.00, IntToString(efficacyPct) + "%", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("BIOMONITOR STATUS", -1.00, "", ""));
-
-        controller.StartAnimation();
-    }
-
-    private func RemoveBiomonitorWidget() -> Void {
-        if IsDefined(this.m_biomonitorWidget) && IsDefined(this.m_fullScreenSlot) {
-            // Slide/collapse animation before removal
-            let slideOut: ref<inkAnimDef> = new inkAnimDef();
-            let sizeInterp: ref<inkAnimSize> = new inkAnimSize();
-            sizeInterp.SetDuration(0.3);
-            sizeInterp.SetStartSize(new Vector2(950.0, 500.0));
-            sizeInterp.SetEndSize(new Vector2(0.0, 0.0));
-            sizeInterp.SetType(inkanimInterpolationType.Linear);
-            sizeInterp.SetMode(inkanimInterpolationMode.EasyOut);
-            slideOut.AddInterpolator(sizeInterp);
-            let fadeInterp: ref<inkAnimTransparency> = new inkAnimTransparency();
-            fadeInterp.SetDuration(0.3);
-            fadeInterp.SetStartTransparency(1.0);
-            fadeInterp.SetEndTransparency(0.0);
-            fadeInterp.SetType(inkanimInterpolationType.Linear);
-            fadeInterp.SetMode(inkanimInterpolationMode.EasyOut);
-            slideOut.AddInterpolator(fadeInterp);
-            (this.m_biomonitorWidget as inkCompoundWidget).PlayAnimation(slideOut);
-
-            // Schedule actual removal after animation
-            let cb: ref<DSPBiomonitorRemoveCallback> = new DSPBiomonitorRemoveCallback();
-            cb.system = this;
-            GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(cb, 0.35, false);
-        }
-    }
-
-    public func ForceRemoveBiomonitor() -> Void {
-        if IsDefined(this.m_biomonitorWidget) && IsDefined(this.m_fullScreenSlot) {
-            this.m_fullScreenSlot.RemoveChild(this.m_biomonitorWidget);
-            this.m_biomonitorWidget = null;
-        }
-    }
-
-    // ---------------------------------------------------------------
-    // Second panel — Cyberware/Sandy status (cyan theme)
-    // ---------------------------------------------------------------
-
-    // Substance detection biomonitor — small notification when immunoblocker is consumed
-    // Shows detected substance + dynamic feedback message (replaces Viktor SMS for dosage feedback)
-    public func ShowSubstanceDetection(tierName: String, feedbackMsg: String) -> Void {
-        if !this.m_initialized || !IsDefined(this.m_fullScreenSlot) { return; }
-
-        // Remove existing
-        if IsDefined(this.m_cyberwareWidget) {
-            this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
-            this.m_cyberwareWidget = null;
-        }
-
-        let cwCanvas: ref<inkCanvas> = new inkCanvas();
-        cwCanvas.SetName(n"DSPSubstanceDetection");
-        cwCanvas.SetAnchor(inkEAnchor.TopLeft);
-        cwCanvas.SetAnchorPoint(new Vector2(0.0, 0.0));
-        cwCanvas.SetSize(new Vector2(700.0, 300.0));
-        cwCanvas.SetMargin(new inkMargin(this.m_biomonitorPosX, this.m_biomonitorPosY + 520.0, 0.0, 0.0));
-        cwCanvas.Reparent(this.m_fullScreenSlot);
-        this.m_cyberwareWidget = cwCanvas;
-
-        let controller: ref<AnimatedBiomonitorController> = new AnimatedBiomonitorController();
-        cwCanvas.AttachController(controller);
-
-        // Cyan/teal theme
-        controller.m_textColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
-        controller.m_logoColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
-        controller.m_loadingBarColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
-        controller.m_headerColor = new HDRColor(0.1583, 1.3033, 1.4142, 1.0);
-        controller.m_backgroundColor = new HDRColor(0.0902, 0.1725, 0.1804, 1.0);
-        controller.m_borderColor = new HDRColor(0.3686, 0.9647, 1.0, 1.0);
-
-        controller.m_footerText1 = s"";
-        controller.m_footerText2 = s"Substance Analysis";
-        controller.m_textSize = 26;
-        controller.m_loadingAnimDuration = 0.4;
-        controller.m_expandAnimDuration = 0.4;
-        controller.m_listItemAnimDuration = 0.3;
-        controller.m_fadeOutDelay = 8.0;
-        controller.m_fadeOutDuration = 0.5;
-
-        // Items rendered bottom-to-top — reverse order
-        ArrayPush(controller.m_items, new MonitorListItem(feedbackMsg, -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Immunoblocker " + tierName, -1.00, "", ""));
-        ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
-
-        controller.StartAnimation();
-    }
-
-    public func RemoveCyberwareWidget() -> Void {
-        if IsDefined(this.m_cyberwareWidget) && IsDefined(this.m_fullScreenSlot) {
-            this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
-            this.m_cyberwareWidget = null;
-        }
-    }
-
     // Menu blocking: hide/show HUD when menus open/close
     public func OnMenuStateChanged(menuOpen: Bool) -> Void {
         this.m_menuBlocked = menuOpen;
@@ -1138,40 +738,5 @@ public final func ResetGameContext() -> Void {
     let dspSystem: ref<DSPHUDSystem> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"DSPHUDSystem") as DSPHUDSystem;
     if IsDefined(dspSystem) {
         dspSystem.OnMenuStateChanged(false);
-    }
-}
-
-// Callback to auto-hide subtitle after duration
-public class DSPHideSubtitleCallback extends DelayCallback {
-    public let system: wref<DSPHUDSystem>;
-
-    public func Call() -> Void {
-        if IsDefined(this.system) {
-            this.system.HideSubtitle();
-        }
-    }
-}
-
-// Callback to re-play SFX in a loop (like Wannabe Edgerunner's cycled SFX)
-public class DSPCycledSfxCallback extends DelayCallback {
-    public let system: wref<DSPHUDSystem>;
-    public let sfxName: CName;
-    public let interval: Float;
-
-    public func Call() -> Void {
-        if IsDefined(this.system) {
-            this.system.OnCycledSfxCallback(this.sfxName, this.interval);
-        }
-    }
-}
-
-// Callback to remove biomonitor widget after slide-out animation
-public class DSPBiomonitorRemoveCallback extends DelayCallback {
-    public let system: wref<DSPHUDSystem>;
-
-    public func Call() -> Void {
-        if IsDefined(this.system) {
-            this.system.ForceRemoveBiomonitor();
-        }
     }
 }
