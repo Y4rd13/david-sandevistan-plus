@@ -1601,26 +1601,16 @@ dsp = {
 						else
 							self.strainActiveAccum = 0
 						end
-						-- Kill strain from redscript bridge (packed: gang + corpo*256 + ncpd*65536 + civilian*16777216)
-						local killData = 0
+						-- Kill strain from redscript bridge (pre-computed in DSPKillTracker)
+						local killStrain = 0
 						pcall(function()
-							killData = self.hud.system:GetAndClearKillData()
+							killStrain = self.hud.system:GetAndClearKillStrain()
 						end)
-						if killData > 0 then
-							local gang = killData % 256
-							local corpo = math.floor(killData / 256) % 256
-							local ncpd = math.floor(killData / 65536) % 256
-							local civilian = math.floor(killData / 16777216) % 256
-							local killStrain = gang * self.cfg.strainPerKillGang
-								+ corpo * self.cfg.strainPerKillCorpo
-								+ ncpd * self.cfg.strainPerKillNCPD
-								+ civilian * self.cfg.strainPerKillCivilian
-							if killStrain > 0 then
-								self:AddStrain(killStrain, true)  -- raw: psychological impact, not tolerance
-								-- Kill during Sandy: 40% chance immediate phantom trigger
-								if self.isRunning and self.CyberPsychoWarnings >= 3 and math.random() < 0.40 then
-									self.nextHallucinationTime = os.clock() + 2.0 + math.random() * 3.0
-								end
+						if killStrain > 0 then
+							self:AddStrain(killStrain, true)  -- raw: psychological impact, not tolerance
+							-- Kill during Sandy: 40% chance immediate phantom trigger
+							if self.isRunning and self.CyberPsychoWarnings >= 3 and math.random() < 0.40 then
+								self.nextHallucinationTime = os.clock() + 2.0 + math.random() * 3.0
 							end
 						end
 						-- Low runtime strain: body is exhausted (raw: physical stress, not tolerance)
@@ -2757,17 +2747,8 @@ registerForEvent('onInit', function()
 		dsp.TimeSkip:End()
 	end)
 	
-	ObserveAfter('PlayerPuppet', 'OnGameAttached', function(this)
-		if this:IsReplacer() then return end
-		if Game.GetSystemRequestsHandler():IsPreGame() then return end
-
-		dsp.isRunning = false
-		dsp:LoadGame(1)
-	end)
-
-	ObserveAfter('PlayerPuppet', 'OnDetach', function(this)
-		dsp.PlayerAttached = false
-	end)
+	-- OnGameAttached / OnDetach migrated to @wrapMethod (DSPPlayerEvents.reds)
+	-- Polled via quest facts dsp_player_attached / dsp_player_detached in onUpdate
 	
 	ObserveAfter('PlayerPuppet', 'OnEnterSafeZone', function(this)
 		dsp.sps:InControl()
@@ -2968,77 +2949,10 @@ registerForEvent('onInit', function()
 	end)
 
 	-- ============================================================
-	-- IMMUNOBLOCKER OBSERVERS (registered here because TweakDBID
-	-- is not available at module load time — CET API not yet loaded)
+	-- IMMUNOBLOCKER: migrated to @wrapMethod (DSPPlayerEvents.reds)
+	-- Polled via quest facts dsp_immuno_applied / dsp_immuno_removed in onUpdate
 	-- ============================================================
-
-	-- PRIMARY: Immediate detection via OnStatusEffectApplied
-	pcall(function()
-		local immunoEffectIDs = {
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common),
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon),
-			TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare)
-		}
-		ObserveAfter('PlayerPuppet', 'OnStatusEffectApplied', function(this, evt)
-			if not dsp then return end
-			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
-			if not ok or not recordID then return end
-			for tier, id in ipairs(immunoEffectIDs) do
-				if recordID == id then
-					dsp:TriggerImmunoblockerAnim()
-					-- Track dose for treatment protocol (tier: 1=Common, 2=Uncommon, 3=Rare)
-					dsp:CheckTreatmentDose(tier)
-					-- Tolerance buildup on consumption
-					dsp:AddToleranceOnConsumption(tier)
-					-- Show status feedback to player
-					dsp:ShowSubstanceDetection(tier)
-					-- Sync qty so real-time tick won't double-fire for this consumption
-					pcall(function()
-						local V = Game.GetPlayer()
-						if not IsDefined(V) then return end
-						local TS = Game.GetTransactionSystem()
-						local total = 0
-						local itemNames = {
-							dsp.martinez.ImmunoblockerItem_Common,
-							dsp.martinez.ImmunoblockerItem_Uncommon,
-							dsp.martinez.ImmunoblockerItem_Rare
-						}
-						for _, itemName in ipairs(itemNames) do
-							total = total + TS:GetItemQuantity(V, ItemID.FromTDBID(TweakDBID.new(itemName)))
-						end
-						dsp.immunoLastQty = total
-					end)
-					-- Signal for rebound system: this was a refresh, not a natural expiration
-					dsp.immunoblockerRefreshed = true
-					return
-				end
-			end
-		end)
-		print('[DSP] Immunoblocker OnStatusEffectApplied observer registered (onInit)')
-	end)
-
-	-- REBOUND: Detect when immunoblocker effect expires naturally (not replaced)
-	pcall(function()
-		local immunoTierByEffect = {}
-		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Common))] = 1
-		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Uncommon))] = 2
-		immunoTierByEffect[tostring(TweakDBID.new(dsp.martinez.ImmunoblockerEffect_Rare))] = 3
-
-		ObserveAfter('PlayerPuppet', 'OnStatusEffectRemoved', function(this, evt)
-			if not dsp then return end
-			local ok, recordID = pcall(function() return evt.staticData:GetID() end)
-			if not ok or not recordID then return end
-			local tier = immunoTierByEffect[tostring(recordID)]
-			if not tier then return end
-			-- Check if this was a refresh (replaced by new immunoblocker) or natural expiration
-			if dsp.immunoblockerRefreshed then
-				dsp.immunoblockerRefreshed = false  -- consume the flag
-				return  -- no rebound on refresh
-			end
-			pcall(function() dsp:ApplyImmunoblockerRebound(tier) end)
-		end)
-		print('[DSP] Immunoblocker OnStatusEffectRemoved observer registered (onInit)')
-	end)
+	print('[DSP] Immunoblocker observers handled by DSPPlayerEvents.reds (@wrapMethod)')
 end)
 
 registerForEvent('onUpdate', function(dt)
@@ -3053,6 +2967,57 @@ registerForEvent('onUpdate', function(dt)
             dsp:LoadGame()
         end
     end
+    -- Poll quest facts from @wrapMethod hooks (DSPPlayerEvents.reds)
+    pcall(function()
+        local QS = Game.GetQuestsSystem()
+        if not QS then return end
+        -- Player attach (from OnGameAttached @wrapMethod)
+        if QS:GetFactStr("dsp_player_attached") > 0 then
+            QS:SetFactStr("dsp_player_attached", 0)
+            dsp.isRunning = false
+            dsp:LoadGame(1)
+        end
+        -- Player detach (from OnDetach @wrapMethod)
+        if QS:GetFactStr("dsp_player_detached") > 0 then
+            QS:SetFactStr("dsp_player_detached", 0)
+            dsp.PlayerAttached = false
+        end
+        -- Immunoblocker applied (from OnStatusEffectApplied @wrapMethod)
+        local appliedTier = QS:GetFactStr("dsp_immuno_applied")
+        if appliedTier > 0 then
+            QS:SetFactStr("dsp_immuno_applied", 0)
+            dsp:TriggerImmunoblockerAnim()
+            dsp:CheckTreatmentDose(appliedTier)
+            dsp:AddToleranceOnConsumption(appliedTier)
+            dsp:ShowSubstanceDetection(appliedTier)
+            pcall(function()
+                local V = Game.GetPlayer()
+                if not IsDefined(V) then return end
+                local TS = Game.GetTransactionSystem()
+                local total = 0
+                local itemNames = {
+                    dsp.martinez.ImmunoblockerItem_Common,
+                    dsp.martinez.ImmunoblockerItem_Uncommon,
+                    dsp.martinez.ImmunoblockerItem_Rare
+                }
+                for _, itemName in ipairs(itemNames) do
+                    total = total + TS:GetItemQuantity(V, ItemID.FromTDBID(TweakDBID.new(itemName)))
+                end
+                dsp.immunoLastQty = total
+            end)
+            dsp.immunoblockerRefreshed = true
+        end
+        -- Immunoblocker removed (from OnStatusEffectRemoved @wrapMethod)
+        local removedTier = QS:GetFactStr("dsp_immuno_removed")
+        if removedTier > 0 then
+            QS:SetFactStr("dsp_immuno_removed", 0)
+            if dsp.immunoblockerRefreshed then
+                dsp.immunoblockerRefreshed = false
+            else
+                pcall(function() dsp:ApplyImmunoblockerRebound(removedTier) end)
+            end
+        end
+    end)
     dsp:RealTimeImmunoblockerTick()
     dsp:Running(dt)
     dsp:UpdateTremor(dt)
@@ -3251,15 +3216,15 @@ registerInput("ShowBiomonitor", 'Toggle Biomonitor', function(isKeyDown)
 			end
 		end)
 		pcall(function()
-			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then
-				hudSystem:RemoveBiomonitorWidget()
-				hudSystem:RemoveCyberwareWidget()
+			local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
+			if bioSystem then
+				bioSystem:RemoveBiomonitorWidget()
+				bioSystem:RemoveCyberwareWidget()
 			end
 		end)
 	else
 		dsp.biomonitorOpen = true
-		dsp:ShowBiomonitor()
+		dsp:ShowBiomonitor(true)  -- manual open: no auto-close
 	end
 end)
 

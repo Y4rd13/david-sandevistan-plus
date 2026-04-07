@@ -1,14 +1,17 @@
--- hud.lua — CET-to-redscript bridge for DSPHUDSystem
--- All widget creation and rendering is handled by DSPHUDSystem.reds.
--- This file stores data via small setter methods, then calls RefreshHUD().
+-- hud.lua — CET-to-redscript bridge for DSP systems
+-- DSPHUDSystem: HUD rendering + kill strain
+-- DSPAudioBridge: audio, voice, SFX, subtitles
+-- DSPBiomonitorSystem: biomonitor, substance detection
 
 local hud = {}
 
 hud.DSP = nil
-hud.system = nil  -- ref to DSPHUDSystem ScriptableSystem
+hud.system = nil    -- ref to DSPHUDSystem
+hud.audio = nil     -- ref to DSPAudioBridge
+hud.biomonitor = nil -- ref to DSPBiomonitorSystem
 
 ----------------------------------------------------------------
--- Init: acquire the redscript system and build the widget tree
+-- Init: acquire the 3 redscript systems
 ----------------------------------------------------------------
 
 hud.Init = (function(self, DSP, doDebug)
@@ -18,9 +21,11 @@ hud.Init = (function(self, DSP, doDebug)
 	local ok, err = pcall(function()
 		local container = Game.GetScriptableSystemsContainer()
 		self.system = container:Get(CName.new('DSPHUDSystem'))
+		self.audio = container:Get(CName.new('DSPAudioBridge'))
+		self.biomonitor = container:Get(CName.new('DSPBiomonitorSystem'))
 	end)
 	if not ok then
-		print('[DSP-HUD] Failed to get DSPHUDSystem: '..tostring(err))
+		print('[DSP-HUD] Failed to get systems: '..tostring(err))
 		self.system = nil
 		return
 	end
@@ -30,10 +35,16 @@ hud.Init = (function(self, DSP, doDebug)
 	end
 	print('[DSP-HUD] Init: system acquired, calling InitHUD()')
 	pcall(function() self.system:InitHUD() end)
+	-- Init biomonitor overlay
+	pcall(function()
+		if self.biomonitor then
+			self.biomonitor:InitOverlay()
+		end
+	end)
 	-- Set biomonitor position from config
 	pcall(function()
-		if self.DSP and self.DSP.cfg then
-			self.system:SetBiomonitorPosition(self.DSP.cfg.biomonitorPosX or 80, self.DSP.cfg.biomonitorPosY or 600)
+		if self.DSP and self.DSP.cfg and self.biomonitor then
+			self.biomonitor:SetBiomonitorPosition(self.DSP.cfg.biomonitorPosX or 80, self.DSP.cfg.biomonitorPosY or 600)
 		end
 	end)
 end)
@@ -95,66 +106,66 @@ hud.Update = (function(self, data)
 end)
 
 ----------------------------------------------------------------
--- Audio — Last Breath song via Audioware (redscript bridge)
+-- Audio — via DSPAudioBridge
 ----------------------------------------------------------------
 
 hud.PlaySong = (function(self)
-	if self.system then
-		pcall(function() self.system:PlayLastBreathSong() end)
+	if self.audio then
+		pcall(function() self.audio:PlayLastBreathSong() end)
 	end
 end)
 
 hud.StopSong = (function(self)
-	if self.system then
-		pcall(function() self.system:StopLastBreathSong() end)
+	if self.audio then
+		pcall(function() self.audio:StopLastBreathSong() end)
 	end
 end)
 
 ----------------------------------------------------------------
--- Voice lines — play/stop via Audioware (redscript bridge)
+-- Voice lines — via DSPAudioBridge
 ----------------------------------------------------------------
 
 hud.PlayVoiceLine = (function(self, eventName)
-	if self.system then
-		pcall(function() self.system:PlayVoiceLine(CName.new(eventName)) end)
+	if self.audio then
+		pcall(function() self.audio:PlayVoiceLine(CName.new(eventName)) end)
 	end
 end)
 
 hud.StopVoiceLine = (function(self)
-	if self.system then
-		pcall(function() self.system:StopVoiceLine() end)
+	if self.audio then
+		pcall(function() self.audio:StopVoiceLine() end)
 	end
 end)
 
 ----------------------------------------------------------------
--- Cycled SFX — looping SFX via redscript DelayCallbacks
+-- Cycled SFX — via DSPAudioBridge
 ----------------------------------------------------------------
 
 hud.StartCycledVfx = (function(self, vfxName, interval)
-	if self.system then
-		pcall(function() self.system:StartCycledVfx(CName.new(vfxName), interval or 4.0) end)
+	if self.audio then
+		pcall(function() self.audio:StartCycledVfx(CName.new(vfxName), interval or 4.0) end)
 	end
 end)
 
 hud.StopCycledVfx = (function(self, vfxName)
-	if self.system then
-		pcall(function() self.system:StopCycledVfx(CName.new(vfxName)) end)
+	if self.audio then
+		pcall(function() self.audio:StopCycledVfx(CName.new(vfxName)) end)
 	end
 end)
 
 ----------------------------------------------------------------
--- Subtitles — native game subtitle display (redscript bridge)
+-- Subtitles — via DSPAudioBridge
 ----------------------------------------------------------------
 
 hud.ShowSubtitle = (function(self, text, speakerName, duration)
-	if self.system then
-		pcall(function() self.system:ShowSubtitle(text, speakerName or "V", duration or 3.0) end)
+	if self.audio then
+		pcall(function() self.audio:ShowSubtitle(text, speakerName or "V", duration or 3.0) end)
 	end
 end)
 
 hud.HideSubtitle = (function(self)
-	if self.system then
-		pcall(function() self.system:HideSubtitle() end)
+	if self.audio then
+		pcall(function() self.audio:HideSubtitle() end)
 	end
 end)
 

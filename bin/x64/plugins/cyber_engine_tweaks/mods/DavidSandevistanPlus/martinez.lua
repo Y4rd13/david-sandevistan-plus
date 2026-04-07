@@ -5,7 +5,7 @@ local martinez = {
 	,debug = false
 }
 
-local immunoblocker = require('./immunoblocker.lua')
+-- immunoblocker item/effect creation migrated to TweakXL YAML (immunoblocker_effects.yaml)
 
 martinez.UIIcon    = 'UIIcon.MartinezSandevistanPlusPlus'       -- inline0
 martinez.Equip1    = martinez.RecordName..'_Equip1_Various'     -- inline0
@@ -1460,15 +1460,18 @@ function martinez.SearchInventory(self, RecordList, RecordName)
 end
 
 function martinez.CreateImmunoblockerItems(self)
-	immunoblocker.createItems(self)
+	-- No-op: migrated to TweakXL YAML (immunoblocker_effects.yaml)
+	self:print('CreateImmunoblockerItems: handled by TweakXL YAML')
 end
 
 function martinez.CreateAutoInjector(self)
-	immunoblocker.createAutoInjector(self)
+	-- No-op: migrated to TweakXL YAML (immunoblocker_effects.yaml)
+	self:print('CreateAutoInjector: handled by TweakXL YAML')
 end
 
 function martinez.AddAutoInjectorToViktor(self)
-	immunoblocker.addAutoInjectorToViktor(self)
+	-- No-op: migrated to TweakXL YAML (immunoblocker_effects.yaml)
+	self:print('AddAutoInjectorToViktor: handled by TweakXL YAML')
 end
 
 function martinez.AddImmunoblockersToVendors(self)

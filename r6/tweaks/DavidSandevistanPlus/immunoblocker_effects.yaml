@@ -1,0 +1,251 @@
+# Immunoblocker Status Effects & Auto-Injector (Cyberware)
+# Migrated from immunoblocker.lua — declarative TweakXL definitions
+
+# ============================================================
+# Stat Modifiers (per-tier combat buffs while immunoblocker active)
+# ============================================================
+
+# Common: basic neural stabilizer — recovery only
+MartinezImmunoblocker.SM_StaminaRegen_Common:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.StaminaRegenRate
+  value: 1.15
+
+MartinezImmunoblocker.SM_HealthRegen_Common:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.HealthOutOfCombatRegenRate
+  value: 1.1
+
+# Uncommon: stronger dose — recovery + pain threshold (armor)
+MartinezImmunoblocker.SM_StaminaRegen_Uncommon:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.StaminaRegenRate
+  value: 1.2
+
+MartinezImmunoblocker.SM_HealthRegen_Uncommon:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.HealthOutOfCombatRegenRate
+  value: 1.15
+
+MartinezImmunoblocker.SM_Armor_Uncommon:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Armor
+  value: 10.0
+
+# Rare: military-grade — full combat operative formula
+MartinezImmunoblocker.SM_StaminaRegen_Rare:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.StaminaRegenRate
+  value: 1.25
+
+MartinezImmunoblocker.SM_HealthRegen_Rare:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Multiplier
+  statType: BaseStats.HealthOutOfCombatRegenRate
+  value: 1.2
+
+MartinezImmunoblocker.SM_Armor_Rare:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Armor
+  value: 20.0
+
+MartinezImmunoblocker.SM_CritChance_Rare:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.CritChance
+  value: 5.0
+
+MartinezImmunoblocker.SM_CritDamage_Rare:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.CritDamage
+  value: 10.0
+
+# ============================================================
+# Logic Packages (stat buff bundles applied while effect active)
+# ============================================================
+
+MartinezImmunoblocker.LP_Common:
+  $type: gamedataGameplayLogicPackage_Record
+  stats:
+    - MartinezImmunoblocker.SM_StaminaRegen_Common
+    - MartinezImmunoblocker.SM_HealthRegen_Common
+
+MartinezImmunoblocker.LP_Uncommon:
+  $type: gamedataGameplayLogicPackage_Record
+  stats:
+    - MartinezImmunoblocker.SM_StaminaRegen_Uncommon
+    - MartinezImmunoblocker.SM_HealthRegen_Uncommon
+    - MartinezImmunoblocker.SM_Armor_Uncommon
+
+MartinezImmunoblocker.LP_Rare:
+  $type: gamedataGameplayLogicPackage_Record
+  stats:
+    - MartinezImmunoblocker.SM_StaminaRegen_Rare
+    - MartinezImmunoblocker.SM_HealthRegen_Rare
+    - MartinezImmunoblocker.SM_Armor_Rare
+    - MartinezImmunoblocker.SM_CritChance_Rare
+    - MartinezImmunoblocker.SM_CritDamage_Rare
+
+# ============================================================
+# Status Effects — Immunoblocker tiers (timed buffs)
+# ============================================================
+
+BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common:
+  $type: gamedataStatusEffect_Record
+  duration:
+    $type: gamedataStatModifierGroup_Record
+    statModifiers:
+      - $type: gamedataConstantStatModifier_Record
+        modifierType: Additive
+        statType: BaseStats.MaxDuration
+        value: 180.0
+  VFX:
+    - $type: gamedataStatusEffectFX_Record
+      name: reflex_buster
+      shouldReapply: false
+  gameplayTags:
+    - Buff
+    - Immunoblocker
+    - InhalerBuff
+  maxStacks: RTDB.StatusEffect_inline0
+  packages:
+    - MartinezImmunoblocker.LP_Common
+  statusEffectType: BaseStatusEffectTypes.Misc
+  stopActiveSfxOnDeactivate: true
+  uiData: BaseStatusEffect.SandevistanCooldown.uiData
+
+BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon:
+  $type: gamedataStatusEffect_Record
+  duration:
+    $type: gamedataStatModifierGroup_Record
+    statModifiers:
+      - $type: gamedataConstantStatModifier_Record
+        modifierType: Additive
+        statType: BaseStats.MaxDuration
+        value: 360.0
+  VFX:
+    - $type: gamedataStatusEffectFX_Record
+      name: reflex_buster
+      shouldReapply: false
+  gameplayTags:
+    - Buff
+    - Immunoblocker
+    - InhalerBuff
+  maxStacks: RTDB.StatusEffect_inline0
+  packages:
+    - MartinezImmunoblocker.LP_Uncommon
+  statusEffectType: BaseStatusEffectTypes.Misc
+  stopActiveSfxOnDeactivate: true
+  uiData: BaseStatusEffect.SandevistanCooldown.uiData
+
+BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare:
+  $type: gamedataStatusEffect_Record
+  duration:
+    $type: gamedataStatModifierGroup_Record
+    statModifiers:
+      - $type: gamedataConstantStatModifier_Record
+        modifierType: Additive
+        statType: BaseStats.MaxDuration
+        value: 600.0
+  VFX:
+    - $type: gamedataStatusEffectFX_Record
+      name: reflex_buster
+      shouldReapply: false
+  gameplayTags:
+    - Buff
+    - Immunoblocker
+    - InhalerBuff
+  maxStacks: RTDB.StatusEffect_inline0
+  packages:
+    - MartinezImmunoblocker.LP_Rare
+  statusEffectType: BaseStatusEffectTypes.Misc
+  stopActiveSfxOnDeactivate: true
+  uiData: BaseStatusEffect.SandevistanCooldown.uiData
+
+# ============================================================
+# Auto-Injector Cyberware (NervousSystem slot)
+# ============================================================
+
+UIIcon.AutoInjector_Icon:
+  $type: gamedataUIIcon_Record
+  atlasResourcePath: davidsandevistanplus\autoinjector.inkatlas
+  atlasPartName: AutoInjector_Icon
+
+Items.MartinezAutoInjector_Price:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.Price
+  value: 15000.0
+
+Items.MartinezAutoInjector_UIData:
+  $type: gamedataGameplayLogicPackageUIData_Record
+  localizedDescription: l"DavidSandevistanPlus-AutoInjector-Desc"
+  iconPath: ability_silenced
+
+Items.MartinezAutoInjector_UIPackage:
+  $type: gamedataGameplayLogicPackage_Record
+  UIData: Items.MartinezAutoInjector_UIData
+
+Items.MartinezAutoInjector:
+  $type: gamedataItem_Record
+  blueprint: Items.GenericShardableCyberwareBlueprint
+  canDrop: false
+  crosshair: Crosshairs.None
+  cyberwareType: NervousSystem
+  displayName: l"DavidSandevistanPlus-AutoInjector"
+  localizedDescription: l"DavidSandevistanPlus-AutoInjector-Desc"
+  entityName: cyberware_dummy
+  equipArea: EquipmentArea.NervousSystemCW
+  friendlyName: Martinez Protocol
+  icon: UIIcon.AutoInjector_Icon
+  iconPath: AutoInjector_Icon
+  isCoreCW: false
+  itemCategory: ItemCategory.Cyberware
+  itemType: ItemType.Cyberware
+  mass: 1.0
+  minigameInstance: minigame_v2.DefaultItemMinigame
+  placementSlots:
+    - CyberwareSlots.NervousSystem
+  quality: Quality.Legendary
+  buyPrice:
+    - Items.MartinezAutoInjector_Price
+  sellPrice:
+    - Price.BaseCyberwarePrice
+    - Price.ItemQualityMultiplier
+    - Price.CyberwareMultiplier
+    - Price.CyberwareSellMultiplier
+  slotPartList:
+    - Items.GenericRootSlotItem
+  slotPartListPreset:
+    - Items.GenericItemRootPreset
+  tags:
+    - Cyberware
+    - HideInBackpackUI
+  usesVariants: true
+  variants:
+    - Variants.Humanity12Cost
+  upgradeCostMult: 1.0
+  OnEquip:
+    - Items.MartinezAutoInjector_UIPackage
+  animFeatureName: ItemData
+  animName: ui_garment_pose
+
+# Viktor vendor stock: auto-injector available at his cyberware shop
+Vendors.wat_lch_ripperdoc_01_MartinezAutoInjector:
+  $type: gamedataVendorItem_Record
+  item: Items.MartinezAutoInjector
+  quantity:
+    - Vendors.Always_Present
+  generationPrereqs: []
+
+Vendors.wat_lch_ripperdoc_01:
+  itemStock:
+    - !append Vendors.wat_lch_ripperdoc_01_MartinezAutoInjector

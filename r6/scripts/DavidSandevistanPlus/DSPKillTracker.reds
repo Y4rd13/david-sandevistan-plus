@@ -43,10 +43,20 @@ protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, is
         }
     }
 
-    // Route through DSPHUDSystem singleton
+    // Compute strain cost by faction: civilian > ncpd > corpo > gang
+    let strainCost: Int32;
+    switch factionId {
+        case 0: strainCost = 2; break;  // gang
+        case 1: strainCost = 3; break;  // corpo
+        case 2: strainCost = 5; break;  // ncpd
+        case 3: strainCost = 8; break;  // civilian
+        default: strainCost = 2; break;
+    }
+
+    // Accumulate in DSPHUDSystem for CET polling
     let gi: GameInstance = player.GetGame();
     let dspHUD: ref<DSPHUDSystem> = DSPHUDSystem.GetInstance(gi);
     if IsDefined(dspHUD) {
-        dspHUD.AddKillByFaction(factionId);
+        dspHUD.AddKillStrain(strainCost);
     }
 }

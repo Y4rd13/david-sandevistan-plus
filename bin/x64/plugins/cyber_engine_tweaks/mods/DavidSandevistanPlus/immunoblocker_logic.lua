@@ -135,20 +135,20 @@ function immunoblocker_logic.attach(dsp)
 	end
 
 	-- Schedule biomonitor SFX sequence (per-line ticks)
-	-- Timing: loading 0.4s + expand 0.3s + footer 0.1s = 0.8s before items
-	-- Each item: 0.2s typewriter + 0.2s value delay = ~0.4s per item in the framework
+	-- Timing: loading 0.2s + expand 0.15s + footer ~0.05s = ~0.4s before items
+	-- Each item: 0.08s anim + ~0.08s gap = ~0.16s per item
 	local function scheduleBiomonitorSFX(numItems)
-		local itemsStart = 0.8   -- loading + expand + footer
+		local itemsStart = 0.4   -- loading + expand + footer
 		dsp.biomonitorTickTimers = {}
 		local t = itemsStart
 		for i = 1, numItems do
 			table.insert(dsp.biomonitorTickTimers, t)
-			t = t + (i <= 2 and 0.2 or 0.4)
+			t = t + 0.16
 		end
 	end
 
 	-- Unified biomonitor — shows all status + protocol data in one panel
-	dsp.ShowBiomonitor = (function(self)
+	dsp.ShowBiomonitor = (function(self, manualOpen)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
 		local threshold = self:GetStrainThreshold()
@@ -183,9 +183,9 @@ function immunoblocker_logic.attach(dsp)
 		scheduleBiomonitorSFX(10)  -- 10 data lines
 		self.biomonitorOpen = true
 		pcall(function()
-			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then
-				hudSystem:SetBiomonitorProtocolData(
+			local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
+			if bioSystem then
+				bioSystem:SetBiomonitorProtocolData(
 					math.floor(completedRest),
 					math.floor(requiredRest),
 					visitsCompleted,
@@ -193,14 +193,15 @@ function immunoblocker_logic.attach(dsp)
 					rxTotal,
 					milestonePct
 				)
-				hudSystem:ShowBiomonitor(
+				bioSystem:ShowBiomonitor(
 					displayTier,
 					self.toleranceStage or 0,
 					effPct,
 					strainPct,
 					self.CyberPsychoWarnings or 0,
 					rxCompleted,
-					rxTotal
+					rxTotal,
+					manualOpen and true or false
 				)
 			end
 		end)
@@ -241,9 +242,9 @@ function immunoblocker_logic.attach(dsp)
 		playBiomonitorSound("ui_hacking_access_panel")
 		scheduleBiomonitorSFX(3)
 		pcall(function()
-			local hudSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPHUDSystem'))
-			if hudSystem then
-				hudSystem:ShowSubstanceDetection(tierName, feedbackMsg)
+			local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
+			if bioSystem then
+				bioSystem:ShowSubstanceDetection(tierName, feedbackMsg)
 			end
 		end)
 	 end)
