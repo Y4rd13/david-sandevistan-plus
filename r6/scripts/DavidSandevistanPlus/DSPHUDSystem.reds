@@ -94,6 +94,10 @@ public class DSPHUDSystem extends ScriptableSystem {
         return GameInstance.GetScriptableSystemsContainer(gi).Get(n"DSPHUDSystem") as DSPHUDSystem;
     }
 
+    public func GetFullScreenSlot() -> ref<inkCompoundWidget> {
+        return this.m_fullScreenSlot;
+    }
+
     // ---------------------------------------------------------------
     // Kill strain bridge (called by DSPKillTracker.reds)
     // ---------------------------------------------------------------

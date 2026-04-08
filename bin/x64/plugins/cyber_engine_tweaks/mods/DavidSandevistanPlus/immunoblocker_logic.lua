@@ -135,10 +135,10 @@ function immunoblocker_logic.attach(dsp)
 	end
 
 	-- Schedule biomonitor SFX sequence (per-line ticks)
-	-- Timing: loading 0.2s + expand 0.15s + footer ~0.05s = ~0.4s before items
+	-- Timing: loading 0.5s + expand 0.3s + footer ~0.1s = ~0.9s before items
 	-- Each item: 0.08s anim + ~0.08s gap = ~0.16s per item
 	local function scheduleBiomonitorSFX(numItems)
-		local itemsStart = 0.4   -- loading + expand + footer
+		local itemsStart = 0.9   -- loading + expand + footer
 		dsp.biomonitorTickTimers = {}
 		local t = itemsStart
 		for i = 1, numItems do

@@ -2,7 +2,6 @@
 // Extracted from DSPHUDSystem. Creates its own fullscreen overlay slot.
 // CET Lua calls via immunoblocker_logic.lua + init.lua.
 
-import Codeware.UI.VirtualResolutionWatcher
 import AnimatedBiomonitor.AnimatedBiomonitorController
 
 public class DSPBiomonitorSystem extends ScriptableSystem {
@@ -13,7 +12,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
     private let m_cyberwareWidget: wref<inkWidget>;
     private let m_biomonitorPosX: Float;
     private let m_biomonitorPosY: Float;
-    private let m_virtualResolutionWatcher: ref<VirtualResolutionWatcher>;
 
     // Protocol data (set by CET before ShowBiomonitor)
     private let m_bioRestCompleted: Int32;
@@ -32,25 +30,13 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         this.m_biomonitorPosX = 80.0;
         this.m_biomonitorPosY = 600.0;
 
-        let inkSystem: ref<inkSystem> = GameInstance.GetInkSystem();
-        let inkHUD: ref<inkCompoundWidget> = inkSystem.GetLayer(n"inkHUDLayer").GetVirtualWindow();
-        if !IsDefined(inkHUD) { return; }
+        // Reuse DSPHUDSystem's fullscreen slot so biomonitor position matches HUD coordinate space
+        let hudSystem: ref<DSPHUDSystem> = DSPHUDSystem.GetInstance(GetGameInstance());
+        if !IsDefined(hudSystem) { return; }
+        let hudSlot: ref<inkCompoundWidget> = hudSystem.GetFullScreenSlot();
+        if !IsDefined(hudSlot) { return; }
 
-        let root: ref<inkCompoundWidget> = inkHUD.GetWidgetByPathName(n"Root") as inkCompoundWidget;
-        if !IsDefined(root) { return; }
-
-        let slot: ref<inkCanvas> = new inkCanvas();
-        slot.SetName(n"DSPBiomonitorSlot");
-        slot.SetAnchor(inkEAnchor.Fill);
-        slot.SetSize(new Vector2(3840.0, 2160.0));
-        slot.Reparent(root);
-
-        this.m_fullScreenSlot = slot;
-
-        this.m_virtualResolutionWatcher = new VirtualResolutionWatcher();
-        this.m_virtualResolutionWatcher.Initialize(GetGameInstance());
-        this.m_virtualResolutionWatcher.ScaleWidget(slot);
-
+        this.m_fullScreenSlot = hudSlot;
         this.m_initialized = true;
     }
 
@@ -162,14 +148,10 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         controller.m_footerText1 = s"Client: V";
         controller.m_footerText2 = s"Viktor Vektor Medical";
         controller.m_textSize = 28;
-        controller.m_loadingAnimDuration = 0.2;
-        controller.m_expandAnimDuration = 0.15;
+        controller.m_loadingAnimDuration = 0.5;
+        controller.m_expandAnimDuration = 0.3;
         controller.m_listItemAnimDuration = 0.08;
-        if manualOpen {
-            controller.m_fadeOutDelay = 9999.0;
-        } else {
-            controller.m_fadeOutDelay = 10.0;
-        }
+        controller.m_fadeOutDelay = 9999.0;
         controller.m_fadeOutDuration = 0.5;
 
         ArrayPush(controller.m_items, new MonitorListItem("Milestone:", -1.00, milestoneText, ""));
@@ -184,6 +166,13 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("BIOMONITOR STATUS", -1.00, "", ""));
 
         controller.StartAnimation();
+
+        // Auto-close: schedule slide/collapse animation after 5s (same as manual close)
+        if !manualOpen {
+            let autoCloseCb: ref<DSPBioAutoCloseCallback> = new DSPBioAutoCloseCallback();
+            autoCloseCb.system = this;
+            GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(autoCloseCb, 5.0, false);
+        }
     }
 
     public func RemoveBiomonitorWidget() -> Void {
@@ -252,10 +241,10 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         controller.m_footerText1 = s"";
         controller.m_footerText2 = s"Substance Analysis";
         controller.m_textSize = 26;
-        controller.m_loadingAnimDuration = 0.4;
-        controller.m_expandAnimDuration = 0.4;
-        controller.m_listItemAnimDuration = 0.3;
-        controller.m_fadeOutDelay = 8.0;
+        controller.m_loadingAnimDuration = 0.5;
+        controller.m_expandAnimDuration = 0.3;
+        controller.m_listItemAnimDuration = 0.08;
+        controller.m_fadeOutDelay = 9999.0;
         controller.m_fadeOutDuration = 0.5;
 
         ArrayPush(controller.m_items, new MonitorListItem(feedbackMsg, -1.00, "", ""));
@@ -263,9 +252,41 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
 
         controller.StartAnimation();
+
+        // Auto-close substance detection after 5s with slide animation
+        let autoCloseCb: ref<DSPCyberwareAutoCloseCallback> = new DSPCyberwareAutoCloseCallback();
+        autoCloseCb.system = this;
+        GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(autoCloseCb, 5.0, false);
     }
 
     public func RemoveCyberwareWidget() -> Void {
+        if IsDefined(this.m_cyberwareWidget) && IsDefined(this.m_fullScreenSlot) {
+            // Slide/collapse animation (same as biomonitor close)
+            let slideOut: ref<inkAnimDef> = new inkAnimDef();
+            let sizeInterp: ref<inkAnimSize> = new inkAnimSize();
+            sizeInterp.SetDuration(0.3);
+            sizeInterp.SetStartSize(new Vector2(700.0, 300.0));
+            sizeInterp.SetEndSize(new Vector2(0.0, 0.0));
+            sizeInterp.SetType(inkanimInterpolationType.Linear);
+            sizeInterp.SetMode(inkanimInterpolationMode.EasyOut);
+            slideOut.AddInterpolator(sizeInterp);
+            let fadeInterp: ref<inkAnimTransparency> = new inkAnimTransparency();
+            fadeInterp.SetDuration(0.3);
+            fadeInterp.SetStartTransparency(1.0);
+            fadeInterp.SetEndTransparency(0.0);
+            fadeInterp.SetType(inkanimInterpolationType.Linear);
+            fadeInterp.SetMode(inkanimInterpolationMode.EasyOut);
+            slideOut.AddInterpolator(fadeInterp);
+            (this.m_cyberwareWidget as inkCompoundWidget).PlayAnimation(slideOut);
+
+            // Schedule actual removal after animation
+            let cb: ref<DSPCyberwareRemoveCallback> = new DSPCyberwareRemoveCallback();
+            cb.system = this;
+            GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(cb, 0.35, false);
+        }
+    }
+
+    public func ForceRemoveCyberwareWidget() -> Void {
         if IsDefined(this.m_cyberwareWidget) && IsDefined(this.m_fullScreenSlot) {
             this.m_fullScreenSlot.RemoveChild(this.m_cyberwareWidget);
             this.m_cyberwareWidget = null;
@@ -280,6 +301,39 @@ public class DSPBioRemoveCallback extends DelayCallback {
     public func Call() -> Void {
         if IsDefined(this.system) {
             this.system.ForceRemoveBiomonitor();
+        }
+    }
+}
+
+// Callback for auto-close: triggers the slide/collapse animation after delay
+public class DSPBioAutoCloseCallback extends DelayCallback {
+    public let system: wref<DSPBiomonitorSystem>;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.RemoveBiomonitorWidget();
+        }
+    }
+}
+
+// Callback to remove cyberware widget after slide-out animation
+public class DSPCyberwareRemoveCallback extends DelayCallback {
+    public let system: wref<DSPBiomonitorSystem>;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.ForceRemoveCyberwareWidget();
+        }
+    }
+}
+
+// Callback for substance detection auto-close
+public class DSPCyberwareAutoCloseCallback extends DelayCallback {
+    public let system: wref<DSPBiomonitorSystem>;
+
+    public func Call() -> Void {
+        if IsDefined(this.system) {
+            this.system.RemoveCyberwareWidget();
         }
     }
 }
