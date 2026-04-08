@@ -712,18 +712,24 @@ All parameters with their cfg key names:
 | `strain.lua` | Neural Strain accumulation/drain: `AddStrain(amount, raw)` (stage multiplier for tolerance strain, raw bypass for kills/runtime/Safety OFF), `GetStrainThreshold()`, `GetStrainGuaranteed()`, `CheckStrainEpisode()` dice roll, `TriggerStrainEpisode()` |
 | `psychosis.lua` | Cyberpsychosis episode handling: `FireMicroEpisode()`, `FrightenNPCs()` (combat buffs, weapon draw, cycled SFX, auto-attack), `TryAutoAttack()` (AIWeapon.Fire), `CheckLowRuntimeAutoAttack()`, hallucinations, psycho level transitions |
 | `death.lua` | Death and Last Breath: `KillV()`, `KillV_Execute()`, `UpdateLastBreath()` (song-synced timeline with combat buffs + cycled SFX at decay start), `TickingTimeBomb()`, `BlackwallKill()`, `BlackwallCivilianCorruption()` (30/40/60% by chorus) |
-| `immunoblocker.lua` | Immunoblocker TweakDB records: consumable items (3 tiers), vendor integration, custom icons |
-| `immunoblocker_logic.lua` | Immunoblocker runtime logic: `IsImmunoblockerActive()`, `GetImmunoblockerEffectiveness()`, strain blocking/draining |
-| `gameListeners.lua` | CET event listeners: `onInit`, `onUpdate`, `onDraw`, game state observers (sleep, ripperdoc, scene changes) |
-| `entEffects.lua` | Entity effects: combat VFX (Ticking Time Bomb AoE, Blackwall Kill AoE) |
-| `ncpd.lua` | NCPD bounty system interaction |
-| `hud.lua` | CET→redscript bridge: 4 setters + `RefreshHUD()` |
+| `immunoblocker_logic.lua` | Immunoblocker runtime logic: `IsImmunoblockerActive()`, `GetImmunoblockerEffectiveness()`, tolerance, biomonitor display |
+| `gameListeners.lua` | CET event listener utility: `Observe`/`ObserveAfter`/`Override` registration |
+| `entEffects.lua` | Entity effects: custom VFX injection on PlayerPuppet/NPCPuppet |
+| `ncpd.lua` | NCPD/Prevention system wrapper (wanted level management) |
+| `hud.lua` | CET→redscript bridge: routes to 3 systems (DSPHUDSystem, DSPAudioBridge, DSPBiomonitorSystem) |
 | `gui.lua` | CET ImGui debug window |
-| `DSPHUDSystem.reds` | Redscript HUD: fullscreen ink canvas, runtime/psycho/strain bars, widget tree |
-| `DSPKillTracker.reds` | Redscript kill hook: `@wrapMethod(ScriptedPuppet) RewardKiller()` → faction-based strain costs |
-| `DSPActivityTracker.reds` | Redscript activity detection: wraps `dialogWidgetGameController` to intercept dialog LocKeys, matches to 6 activity types via `DSPActivityChecker`, reports via `dsp_activity_detected` quest fact |
-| `DSPConsumeOverride.reds` | Redscript consume action wrapper: suppresses vanilla HealthBooster animation for Immunoblocker items |
-| `MartinezPLUS/init.lua` | Native Settings UI: 50 settings across 14 subcategories, config persistence |
+| `DSPHUDSystem.reds` | Redscript HUD: fullscreen ink canvas, runtime/psycho/strain bars, kill strain accumulator, menu state |
+| `DSPAudioBridge.reds` | Redscript audio: Last Breath song, voice lines, cycled SFX, subtitles (Audioware) |
+| `DSPBiomonitorSystem.reds` | Redscript biomonitor: animated panel, substance detection, auto-close (AnimatedBiomonitor) |
+| `DSPPlayerEvents.reds` | Redscript @wrapMethod: player attach/detach, immunoblocker apply/remove → quest facts |
+| `DSPKillTracker.reds` | Redscript kill hook: `@wrapMethod(ScriptedPuppet) RewardKiller()` → strain computed by faction |
+| `DSPActivityTracker.reds` | Redscript activity detection: dialog LocKey → activity type via quest fact |
+| `DSPConsumeOverride.reds` | Redscript consume bypass: intercepts immunoblocker use, suppresses vanilla animation |
+| `DSPRipperdocHook.reds` | Redscript ripperdoc: stabilize button + cooldown on cyberware UI |
+| `DSPViktorBridge.reds` | Redscript SMS bridge to PhoneExtension |
+| `DSPViktorPhone.reds` | Redscript Viktor phone contact integration |
+| `immunoblocker_effects.yaml` | TweakXL: immunoblocker status effects, stat modifiers, auto-injector item |
+| `immunoblocker_vendors.yaml` | TweakXL: vendor NPCs, items, characters, quantities |
 
 ## Verification Checklist
 

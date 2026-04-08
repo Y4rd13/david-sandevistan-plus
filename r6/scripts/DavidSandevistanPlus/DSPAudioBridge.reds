@@ -3,7 +3,6 @@
 // CET Lua calls these via hud.lua bridge.
 
 import Audioware.AudioSettingsExt
-import Audioware.Tween
 import Audioware.LinearTween
 
 public class DSPAudioBridge extends ScriptableSystem {

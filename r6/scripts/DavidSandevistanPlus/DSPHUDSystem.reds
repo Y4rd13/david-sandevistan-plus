@@ -4,7 +4,6 @@
 // Layout is dynamically positioned — hidden rows collapse so there are no gaps.
 
 import Codeware.UI.VirtualResolutionWatcher
-import AnimatedMonitor.AnimatedMonitorController
 
 public class DSPHUDSystem extends ScriptableSystem {
 
@@ -15,9 +14,6 @@ public class DSPHUDSystem extends ScriptableSystem {
     private let m_pulseTimer: Float;
     private let m_fullScreenSlot: ref<inkCompoundWidget>;
     private let m_widgetSlot: ref<inkCompoundWidget>;
-    // Menu blocking: hide HUD when menus/phone/inventory are open
-    private let m_menuBlocked: Bool;
-
     // Runtime row
     private let m_runtimeIcon: ref<inkImage>;
     private let m_runtimeBarBG: ref<inkRectangle>;
@@ -710,7 +706,6 @@ public class DSPHUDSystem extends ScriptableSystem {
 
     // Menu blocking: hide/show HUD when menus open/close
     public func OnMenuStateChanged(menuOpen: Bool) -> Void {
-        this.m_menuBlocked = menuOpen;
         if IsDefined(this.m_fullScreenSlot) {
             this.m_fullScreenSlot.SetVisible(!menuOpen);
         }
