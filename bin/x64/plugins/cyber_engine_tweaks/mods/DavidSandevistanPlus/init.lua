@@ -1577,8 +1577,9 @@ dsp = {
 
 				-- Neural Strain tick (1/sec) — runs at all stages including 0
 				if self.cfg.enableCyberpsychosis and self.CyberPsychoWarnings >= 0 and not self.lastBreath then
-					local immunoblocker = self:IsImmunoblockerActive()
-					local immunoEff = immunoblocker and self:GetImmunoblockerEffectiveness() or 'none'
+					local immunoTier = self:GetImmunoblockerTier()
+					local immunoblocker = (immunoTier > 0)
+					local immunoEff = immunoblocker and self:GetImmunoblockerEffectivenessForTier(immunoTier) or 'none'
 					local dfImmuno = self:StatusEffect_CheckOnly('DarkFutureStatusEffect.Immunosuppressant')
 
 					-- Strain accumulation sources (blocked by effective/partial immunoblocker)

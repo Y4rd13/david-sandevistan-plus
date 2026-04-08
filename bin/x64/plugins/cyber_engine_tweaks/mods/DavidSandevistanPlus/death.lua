@@ -161,8 +161,8 @@ function death.attach(dsp)
 					local ts = Game.GetTimeSystem()
 					ts:SetIgnoreTimeDilationOnLocalPlayerZero(true)
 					ts:SetTimeDilation("sandevistan", timeScale)
+					self.sps:SandevistanCharge(100)
 				end)
-				pcall(function() self.sps:SandevistanCharge(100) end)
 			end
 
 			-- Transition to decay after peaceTime
@@ -210,8 +210,8 @@ function death.attach(dsp)
 				local ts = Game.GetTimeSystem()
 				ts:SetIgnoreTimeDilationOnLocalPlayerZero(true)
 				ts:SetTimeDilation("sandevistan", timeScale)
+				self.sps:SandevistanCharge(100)
 			end)
-			pcall(function() self.sps:SandevistanCharge(100) end)
 
 			-- ========================================
 			-- IMMUNITY: 0-31s (Song: Verse 1)

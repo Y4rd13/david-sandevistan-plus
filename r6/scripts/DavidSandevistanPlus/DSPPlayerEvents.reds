@@ -1,6 +1,13 @@
 // DSPPlayerEvents — migrated from CET ObserveAfter to @wrapMethod
 // Signals CET via quest facts for: player attach/detach, immunoblocker apply/remove
 
+public static func DSPGetImmunoTier(effectID: TweakDBID) -> Int32 {
+    if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common" { return 1; }
+    if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon" { return 2; }
+    if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare" { return 3; }
+    return 0;
+}
+
 @wrapMethod(PlayerPuppet)
 protected cb func OnGameAttached() -> Bool {
     let result: Bool = wrappedMethod();
@@ -19,15 +26,7 @@ protected cb func OnDetach() -> Bool {
 @wrapMethod(PlayerPuppet)
 protected cb func OnStatusEffectApplied(evt: ref<ApplyStatusEffectEvent>) -> Bool {
     let result: Bool = wrappedMethod(evt);
-    let effectID: TweakDBID = evt.staticData.GetID();
-    let tier: Int32 = 0;
-    if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common" {
-        tier = 1;
-    } else if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon" {
-        tier = 2;
-    } else if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare" {
-        tier = 3;
-    }
+    let tier: Int32 = DSPGetImmunoTier(evt.staticData.GetID());
     if tier > 0 {
         GameInstance.GetQuestsSystem(this.GetGame()).SetFactStr("dsp_immuno_applied", tier);
     }
@@ -37,15 +36,7 @@ protected cb func OnStatusEffectApplied(evt: ref<ApplyStatusEffectEvent>) -> Boo
 @wrapMethod(PlayerPuppet)
 protected cb func OnStatusEffectRemoved(evt: ref<RemoveStatusEffect>) -> Bool {
     let result: Bool = wrappedMethod(evt);
-    let effectID: TweakDBID = evt.staticData.GetID();
-    let tier: Int32 = 0;
-    if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Common" {
-        tier = 1;
-    } else if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Uncommon" {
-        tier = 2;
-    } else if effectID == t"BaseStatusEffect.MartinezSandevistan_Immunoblocker_Rare" {
-        tier = 3;
-    }
+    let tier: Int32 = DSPGetImmunoTier(evt.staticData.GetID());
     if tier > 0 {
         GameInstance.GetQuestsSystem(this.GetGame()).SetFactStr("dsp_immuno_removed", tier);
     }

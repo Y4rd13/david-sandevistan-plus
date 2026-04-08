@@ -103,10 +103,8 @@ function immunoblocker_logic.attach(dsp)
 	--   'ineffective' = neural degradation exceeds dosage (only stat buffs + 25% strain drain)
 	--   'none'        = no immunoblocker active
 	-- Tier max levels: Common 0-1 (partial 2), Uncommon 0-2 (partial 3), Rare 0-5 (always full)
-	dsp.GetImmunoblockerEffectiveness = (function(self)
-		local tier = self:GetImmunoblockerTier()
+	dsp.GetImmunoblockerEffectivenessForTier = (function(self, tier)
 		if tier == 0 then return 'none' end
-		-- Tolerance reduces effective tier
 		local effectiveTier = math.max(tier - (self.toleranceStage or 0), 0)
 		if effectiveTier == 0 then return 'ineffective' end
 		local psycho = self.CyberPsychoWarnings
@@ -115,6 +113,9 @@ function immunoblocker_logic.attach(dsp)
 		if psycho <= maxEffective[effectiveTier] then return 'full' end
 		if psycho == partialLevel[effectiveTier] then return 'partial' end
 		return 'ineffective'
+	 end)
+	dsp.GetImmunoblockerEffectiveness = (function(self)
+		return self:GetImmunoblockerEffectivenessForTier(self:GetImmunoblockerTier())
 	 end)
 
 	-- Show immunoblocker status after consumption (tolerance + efficacy feedback)
