@@ -238,10 +238,7 @@ dsp = {
 		strainPerOveruseBonus = 3,       -- extra strain per activation beyond safe limit
 		strainPerMinuteActive = 2,       -- strain per 60s of Sandy active time
 		strainPerSecSafetyOff = 0.10,    -- strain/sec while Safety OFF
-		strainPerKillGang = 2,           -- kill strain: gang members (lowest)
-		strainPerKillCorpo = 3,          -- kill strain: corporate security
-		strainPerKillNCPD = 5,           -- kill strain: NCPD / NetWatch
-		strainPerKillCivilian = 8,       -- kill strain: civilians / unaffiliated (highest)
+		-- kill strain per faction: computed in DSPKillTracker.reds (gang=2, corpo=3, ncpd=5, civilian=8)
 		strainDrainSafeArea = 0.05,      -- strain/sec drain in safe areas
 		strainDrainSleep = 40,           -- strain drained per sleep (scaled by hours)
 		strainDrainRipper = 25,          -- strain drained per ripperdoc visit
