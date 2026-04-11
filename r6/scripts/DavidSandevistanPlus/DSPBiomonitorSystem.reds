@@ -127,7 +127,8 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         }
 
         let milestoneText: String;
-        if this.m_bioMilestonePct <= 0 { milestoneText = "Not started"; }
+        if this.m_bioDoses <= 0 { milestoneText = "—"; }
+        else if this.m_bioMilestonePct <= 0 { milestoneText = "Not started"; }
         else if this.m_bioMilestonePct < 33 { milestoneText = "In progress"; }
         else if this.m_bioMilestonePct < 66 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Stabilizing"; }
         else if this.m_bioMilestonePct < 100 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Improving"; }
@@ -166,13 +167,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("BIOMONITOR STATUS", -1.00, "", ""));
 
         controller.StartAnimation();
-
-        // Auto-close: schedule slide/collapse animation after 5s (same as manual close)
-        if !manualOpen {
-            let autoCloseCb: ref<DSPBioAutoCloseCallback> = new DSPBioAutoCloseCallback();
-            autoCloseCb.system = this;
-            GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(autoCloseCb, 5.0, false);
-        }
     }
 
     public func RemoveBiomonitorWidget() -> Void {
@@ -252,11 +246,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("SUBSTANCE DETECTED", -1.00, "", ""));
 
         controller.StartAnimation();
-
-        // Auto-close substance detection after 5s with slide animation
-        let autoCloseCb: ref<DSPCyberwareAutoCloseCallback> = new DSPCyberwareAutoCloseCallback();
-        autoCloseCb.system = this;
-        GameInstance.GetDelaySystem(this.GetGameInstance()).DelayCallback(autoCloseCb, 5.0, false);
     }
 
     public func RemoveCyberwareWidget() -> Void {

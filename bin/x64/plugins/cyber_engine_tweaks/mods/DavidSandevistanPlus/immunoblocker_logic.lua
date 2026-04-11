@@ -154,30 +154,24 @@ function immunoblocker_logic.attach(dsp)
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
 		local threshold = self:GetStrainThreshold()
 		local strainPct = threshold > 0 and math.floor((self.neuralStrain or 0) / threshold * 100) or 0
-		local rx = self:GetPrescription(self.CyberPsychoWarnings)
-		local rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
-		local rxCompleted = self.completedDoses or 0
 		local displayTier = self:GetBiomonitorDisplayTier()
-		-- Protocol data
-		local visitsCompleted = self.completedVisits or 0
-		local requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
-		local completedRest = math.min(self.completedRestHours or 0, requiredRest)
-		-- Visit cooldown remaining (hours until next visit allowed)
-		local visitCooldownH = 0
-		if self.visitCooldownUntil then
-			pcall(function()
-				local now = Game.GetTimeSystem():GetGameTimeStamp()
-				if self.visitCooldownUntil > now then
-					visitCooldownH = math.ceil((self.visitCooldownUntil - now) / 3600)
-				end
-			end)
-		end
-		local milestonePct = 0
-		if rxTotal > 0 then
-			local doseP = rxCompleted / rxTotal
-			local visitP = rx.visits > 0 and (visitsCompleted / rx.visits) or 1.0
-			local restP = requiredRest > 0 and (completedRest / requiredRest) or 1.0
-			milestonePct = math.floor((doseP + visitP + restP) / 3.0 * 100)
+		-- Protocol data: only show prescription details after Viktor prescribes treatment
+		local rxTotal, rxCompleted, visitsCompleted, visitsRequired = 0, 0, 0, 0
+		local requiredRest, completedRest, milestonePct = 0, 0, 0
+		if self.treatmentActive then
+			local rx = self:GetPrescription(self.CyberPsychoWarnings)
+			rxTotal = math.max(rx.doses, self.prescribedDoses or 0)
+			rxCompleted = self.completedDoses or 0
+			visitsCompleted = self.completedVisits or 0
+			visitsRequired = rx.visits
+			requiredRest = math.max(rx.restHours, self.prescribedRestHours or 0)
+			completedRest = math.min(self.completedRestHours or 0, requiredRest)
+			if rxTotal > 0 then
+				local doseP = rxCompleted / rxTotal
+				local visitP = visitsRequired > 0 and (visitsCompleted / visitsRequired) or 1.0
+				local restP = requiredRest > 0 and (completedRest / requiredRest) or 1.0
+				milestonePct = math.floor((doseP + visitP + restP) / 3.0 * 100)
+			end
 		end
 		-- SFX
 		playBiomonitorSound("ui_hacking_access_panel")
@@ -190,7 +184,7 @@ function immunoblocker_logic.attach(dsp)
 					math.floor(completedRest),
 					math.floor(requiredRest),
 					visitsCompleted,
-					rx.visits,
+					visitsRequired,
 					rxTotal,
 					milestonePct
 				)
@@ -206,6 +200,12 @@ function immunoblocker_logic.attach(dsp)
 				)
 			end
 		end)
+		-- Auto-close after 5s (same animation as manual close)
+		if not manualOpen then
+			self.biomonitorAutoCloseAt = os.clock() + 5.0
+		else
+			self.biomonitorAutoCloseAt = nil
+		end
 	 end)
 
 	-- Show substance detection biomonitor when immunoblocker is consumed
@@ -248,6 +248,7 @@ function immunoblocker_logic.attach(dsp)
 				bioSystem:ShowSubstanceDetection(tierName, feedbackMsg)
 			end
 		end)
+		self.substanceDetectionAutoCloseAt = os.clock() + 5.0
 	 end)
 
 	dsp.immunoLastQty = nil

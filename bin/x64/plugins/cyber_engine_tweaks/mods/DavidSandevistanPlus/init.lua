@@ -3075,6 +3075,23 @@ registerForEvent('onUpdate', function(dt)
         end
         if #dsp.biomonitorTickTimers == 0 then dsp.biomonitorTickTimers = nil end
     end
+    -- Auto-close biomonitor/substance detection (same animation as manual close)
+    local now = os.clock()
+    if dsp.biomonitorAutoCloseAt and now >= dsp.biomonitorAutoCloseAt then
+        dsp.biomonitorAutoCloseAt = nil
+        dsp.biomonitorOpen = false
+        pcall(function()
+            local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
+            if bioSystem then bioSystem:RemoveBiomonitorWidget() end
+        end)
+    end
+    if dsp.substanceDetectionAutoCloseAt and now >= dsp.substanceDetectionAutoCloseAt then
+        dsp.substanceDetectionAutoCloseAt = nil
+        pcall(function()
+            local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
+            if bioSystem then bioSystem:RemoveCyberwareWidget() end
+        end)
+    end
     -- Last Breath delayed lore message
     if dsp.lastBreathMessage then
         dsp.lastBreathMessage.elapsed = dsp.lastBreathMessage.elapsed + dt
