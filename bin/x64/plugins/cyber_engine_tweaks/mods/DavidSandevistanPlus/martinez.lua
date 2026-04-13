@@ -122,6 +122,22 @@ martinez.PsychosisCombatBuff_SM1         = 'BaseStatusEffect.MartinezSandevistan
 martinez.PsychosisCombatBuff_SM2         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM2'
 martinez.PsychosisCombatBuff_SM3         = 'BaseStatusEffect.MartinezSandevistan_PsychosisCombatBuff_SM3'
 
+-- MartinezRush: kill-triggered combat burst during Sandy (Edgerunner-inspired)
+-- Distinct from PsychosisCombatBuff — voluntary-adjacent, Sandy stays active, 12s (15s if Safety OFF)
+martinez.MartinezRush                    = 'BaseStatusEffect.MartinezSandevistan_MartinezRush'
+martinez.MartinezRush_LP                 = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_LP'
+martinez.MartinezRush_SMG                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SMG'
+martinez.MartinezRush_SM1                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM1'  -- MaxDuration
+martinez.MartinezRush_SM2                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM2'  -- CycleTime
+martinez.MartinezRush_SM3                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM3'  -- AttackSpeed
+martinez.MartinezRush_SM4                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM4'  -- ReloadTime
+martinez.MartinezRush_SM5                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM5'  -- MaxSpeed
+martinez.MartinezRush_SM6                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM6'  -- CritChance
+martinez.MartinezRush_SM7                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM7'  -- CritDamage
+martinez.MartinezRush_SM8                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM8'  -- Armor
+martinez.MartinezRush_SM9                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_SM9'  -- HealthInCombatRegenRate
+martinez.MartinezRush_FX1                = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_FX1'
+
 martinez.SandyStrainEffect               = 'BaseStatusEffect.MartinezSandevistan_SandyStrain'
 martinez.SandyStrainEffect_FX1           = 'BaseStatusEffect.MartinezSandevistan_SandyStrain_FX1'
 
@@ -1105,6 +1121,52 @@ function martinez.CreateSandevistan(self)
 		,{self.PsychosisCombatBuff_LP} ,nil ,false ,false ,nil ,false ,false ,false
 		,'BaseStatusEffectTypes.Misc' ,true ,SandevistanIcon
 	})
+
+	-- MartinezRush: kill-triggered combat burst during Sandy (Edgerunner-inspired)
+	-- +33% fire rate, +30% melee, +54% reload, +20% movement, +15 crit, +25 crit dmg, +40% armor, 5x regen
+	-- Base duration 12s via MaxDuration SM (Lua extends to 15s if Safety OFF via rushSafetyOffExtension flag)
+	self:CreateStatusEffect(self.MartinezRush,{
+		 '' --AIData
+		,{} --SFX (handled via CET Game.GetAudioSystem():Play)
+		,{self.MartinezRush_FX1} --VFX
+		,'' --additionalParam
+		,{} --debugTags
+		,self.MartinezRush_SMG --duration
+		,false --dynamicDuration
+		,{'Buff'} --gameplayTags
+		,{} --immunityStats
+		,true --isAffectedByTimeDilationNPC
+		,true --isAffectedByTimeDilationPlayer
+		,'RTDB.StatusEffect_inline0' --maxStacks
+		,{self.MartinezRush_LP} --packages
+		,nil --playerData
+		,false --reapplyPackagesOnMaxStacks
+		,false --removeAllStacksWhenDurationEnds
+		,nil --removeAllStacksWhenDurationEndsStatModifiers
+		,false --removeOnStoryTier
+		,false --replicated
+		,false --savable
+		,'BaseStatusEffectTypes.Misc' --statusEffectType
+		,true --stopActiveSfxOnDeactivate
+		,SandevistanIcon --uiData
+	})
+	local MartinezRushBuffs = {
+		self.MartinezRush_SM2, self.MartinezRush_SM3, self.MartinezRush_SM4, self.MartinezRush_SM5,
+		self.MartinezRush_SM6, self.MartinezRush_SM7, self.MartinezRush_SM8, self.MartinezRush_SM9
+	}
+	self:CreateLogicPackage(self.MartinezRush_LP, { '', {}, {}, {}, '' , false, {}, MartinezRushBuffs })
+	self:CreateStatModifierGroup(self.MartinezRush_SMG, { false, false, {}, false, {self.MartinezRush_SM1}, -1, nil })
+	self:CreateConstantStatModifier(self.MartinezRush_SM1, { 'Additive', 'BaseStats.MaxDuration', 12.0 })
+	self:CreateConstantStatModifier(self.MartinezRush_SM2, { 'Multiplier', 'BaseStats.CycleTime', 0.60 })   -- -40% cycle = ~+67% fire rate
+	self:CreateConstantStatModifier(self.MartinezRush_SM3, { 'Multiplier', 'BaseStats.AttackSpeed', 1.40 })  -- +40% melee
+	self:CreateConstantStatModifier(self.MartinezRush_SM4, { 'Multiplier', 'BaseStats.ReloadTime', 0.55 })   -- -45% reload time = ~+82% reload speed
+	self:CreateConstantStatModifier(self.MartinezRush_SM5, { 'Multiplier', 'BaseStats.MaxSpeed', 1.25 })     -- +25% movement
+	self:CreateConstantStatModifier(self.MartinezRush_SM6, { 'Additive', 'BaseStats.CritChance', 20.0 })
+	self:CreateConstantStatModifier(self.MartinezRush_SM7, { 'Additive', 'BaseStats.CritDamage', 35.0 })
+	self:CreateConstantStatModifier(self.MartinezRush_SM8, { 'Multiplier', 'BaseStats.Armor', 1.45 })        -- +45% armor
+	self:CreateConstantStatModifier(self.MartinezRush_SM9, { 'Multiplier', 'BaseStats.HealthInCombatRegenRate', 6.0 })
+	self:CloneRecord(self.MartinezRush_FX1,VFX_SuperHacked)
+	TweakDB:SetFlat(self.MartinezRush_FX1..'.name', self.martinez_fx_onscreen_frame) -- red frame edges (distinct from Fury laugh)
 
 	-- RuntimeExhaustion: ×0.6 speed + ×0.5 armor when runtime <10% during Sandy
 	self:CreateConstantStatModifier(self.RuntimeExhaustion_SM1, { 'Multiplier', 'BaseStats.MaxSpeed', 0.6 })

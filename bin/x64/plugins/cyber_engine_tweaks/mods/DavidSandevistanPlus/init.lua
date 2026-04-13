@@ -377,6 +377,12 @@ dsp = {
 	,microEpisodeTimer = nil
 	,lastMicroEpisodeType = nil
 	,autoInjectorCooldown = 0
+	-- Martinez Rush state (Edgerunner-inspired kill-triggered burst)
+	,lastRushProcTime = 0          -- os.clock() of last proc (45s cooldown)
+	,rushActive = false            -- true during 12s/15s Rush window
+	,rushEndTime = nil             -- os.clock() when current Rush ends
+	,rushSafetyOffExtension = false -- true if current Rush activated with Safety OFF (extends to 15s)
+	,rushCrashEndTime = nil        -- os.clock() when post-Rush crash ends (3s)
 	,autoInjectorEquipped = nil  -- cached per displayTick cycle
 	,immunoWarnedThisDose = false  -- one-shot warning per immunoblocker dose
 	,immunoblockerRefreshed = false  -- set true by observer when new immunoblocker consumed; consumed by removal observer
@@ -1390,6 +1396,10 @@ dsp = {
 						drainRate = 1.0 + (overTime ^ 1.5)  -- exponential curve, hardcoded
 					end
 				end
+				-- Martinez Rush: ×1.5 drain during window (Rush cost = faster tank burn)
+				if self.rushActive then
+					drainRate = drainRate * 1.5
+				end
 				self.runTime = self.runTime - dt * drainRate
 			end
 			if self.runTime < 0 then self.runTime = 0 end
@@ -1610,6 +1620,8 @@ dsp = {
 							if self.isRunning and self.CyberPsychoWarnings >= 3 and math.random() < 0.40 then
 								self.nextHallucinationTime = os.clock() + 2.0 + math.random() * 3.0
 							end
+							-- Try to proc Martinez Rush (gates + cooldown handled inside)
+							self:TryProcMartinezRush()
 						end
 						-- Low runtime strain: body is exhausted (raw: physical stress, not tolerance)
 						if self.isRunning then
@@ -2706,6 +2718,62 @@ dsp.UpdatePsychoStamina = (function(self)
 	end
  end)
 
+-- Martinez Rush: Edgerunner-inspired kill-triggered combat burst during Sandy
+-- Chance scales with cyberpsychosis stage. Cost: runtime drain ×1.5 during window + post-Rush crash.
+-- Does NOT add strain directly (preserves stage progression balance).
+local rushChanceByStage = { [0]=0.02, [1]=0.04, [2]=0.07, [3]=0.12, [4]=0.18, [5]=0.25 }
+local rushVoiceLines = {
+	"In the zone...",
+	"Everything's clicking...",
+	"Got this.",
+	"Time to move.",
+	"Feel it coursing through me...",
+}
+-- SFX: Kerenzikov activation cue — fits the time-dilation/focus theme of Rush
+-- (note: game files use the misspelling "kereznikov", not "kerenzikov")
+local rushSFX = "time_dilation_kereznikov_enter"
+
+dsp.TryProcMartinezRush = (function(self)
+	-- Gates
+	if not self.isRunning then return false end              -- only during Sandy
+	if self.lastBreath then return false end                 -- blocked during Last Breath
+	if self.rushActive then return false end                 -- already active, no stacking
+	if self.CachedInMenu or self.CachedBrainDance then return false end
+	if not self.VIsInControl then return false end
+
+	-- Cooldown (45s real-time between procs)
+	local now = os.clock()
+	if now - (self.lastRushProcTime or 0) < 45 then return false end
+
+	-- Chance roll
+	local chance = rushChanceByStage[self.CyberPsychoWarnings] or 0.02
+	if math.random() > chance then return false end
+
+	-- PROC
+	self.lastRushProcTime = now
+	self.rushActive = true
+	self.rushSafetyOffExtension = not self.SafetyOn  -- +25% duration if Safety OFF
+	local duration = self.rushSafetyOffExtension and 15 or 12
+	self.rushEndTime = now + duration
+
+	-- Apply status effect (stats + VFX)
+	self:StatusEffect_CheckAndApply(self.martinez.MartinezRush)
+
+	-- SFX — non-blocking, uses AudioSystem
+	pcall(function()
+		Game.GetAudioSystem():Play(CName.new(rushSFX))
+	end)
+
+	-- HUD notification
+	if self.bbs then
+		self.bbs:SendMessage(rushVoiceLines[math.random(#rushVoiceLines)], 2.5)
+	end
+
+	dlog('[DSP] Martinez Rush proc! stage=' .. tostring(self.CyberPsychoWarnings) ..
+		 ' duration=' .. tostring(duration) .. ' safetyOff=' .. tostring(self.rushSafetyOffExtension))
+	return true
+ end)
+
 require('./sms.lua').attach(dsp)
 require('./psychosis.lua').attach(dsp)
 require('./death.lua').attach(dsp)
@@ -3090,6 +3158,24 @@ registerForEvent('onUpdate', function(dt)
         pcall(function()
             local bioSystem = Game.GetScriptableSystemsContainer():Get(CName.new('DSPBiomonitorSystem'))
             if bioSystem then bioSystem:RemoveCyberwareWidget() end
+        end)
+    end
+    -- Martinez Rush: end window tick + post-Rush crash
+    if dsp.rushActive and dsp.rushEndTime and now >= dsp.rushEndTime then
+        dsp.rushActive = false
+        dsp.rushEndTime = nil
+        dsp.rushSafetyOffExtension = false
+        -- Status effect expires naturally via MaxDuration. Apply post-Rush crash (3s stamina drain)
+        pcall(function()
+            dsp:StatusEffect_CheckAndApply(dsp.martinez.StaminaDrain)
+        end)
+        dsp.rushCrashEndTime = now + 3.0
+        dlog('[DSP] Martinez Rush ended, crash applied (3s)')
+    end
+    if dsp.rushCrashEndTime and now >= dsp.rushCrashEndTime then
+        dsp.rushCrashEndTime = nil
+        pcall(function()
+            dsp:StatusEffect_CheckAndRemove(dsp.martinez.StaminaDrain)
         end)
     end
     -- Last Breath delayed lore message
