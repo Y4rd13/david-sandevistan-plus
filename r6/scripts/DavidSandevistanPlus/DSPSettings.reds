@@ -163,6 +163,26 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
 
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Combat Stats")
+    @runtimeProperty("ModSettings.category.order", "3")
+    @runtimeProperty("ModSettings.displayName", "Martinez Rush Chance Multiplier")
+    @runtimeProperty("ModSettings.description", "Global multiplier for Martinez Rush proc chance per cyberpsychosis stage. Base chances: 2% (stage 0), 4%, 7%, 12%, 18%, 25% (stage 5). 1.0 = default, 0.5 = half as frequent, 2.0 = double. Rush is a 12s kill-triggered combat burst during Sandy: +67% fire rate, +82% reload, +25% movement, +40% melee, +20 crit, +35 crit dmg, +45% armor. Cost: runtime drain x1.5 during window + 3s post-Rush stamina crash. Cooldown: 45s real-time between procs.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    public let rushChanceMultiplier: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Combat Stats")
+    @runtimeProperty("ModSettings.category.order", "3")
+    @runtimeProperty("ModSettings.displayName", "Martinez Rush Duration (sec)")
+    @runtimeProperty("ModSettings.description", "Duration of Martinez Rush in seconds. Safety OFF extends by 25% (e.g. 12s becomes 15s).")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "6")
+    @runtimeProperty("ModSettings.max", "30")
+    public let rushDuration: Int32 = 12;
+
     // ==================== Category 4: Cyberpsychosis ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")

@@ -159,6 +159,13 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
+	cfg.rushChanceMultiplier = settings.rushChanceMultiplier
+	cfg.rushDuration = settings.rushDuration
+	-- Propagate rushDuration to the TweakDB MaxDuration modifier so the status effect expires in sync with Lua window
+	pcall(function()
+		TweakDB:SetFlat(TweakDBID.new('BaseStatusEffect.MartinezSandevistan_MartinezRush_SM1.value'), cfg.rushDuration * 1.0)
+		TweakDB:Update(TweakDBID.new('BaseStatusEffect.MartinezSandevistan_MartinezRush_SM1'))
+	end)
 	-- Enum DSPSandyLut: EnumInt returns ULL, tonumber() converts to Lua number
 	pcall(function() cfg.sandyLutIndex = tonumber(EnumInt(settings.sandyLut)) or 0 end)
 
@@ -284,6 +291,10 @@ dsp = {
 		-- Micro-Episodes
 		enableMicroEpisodes = true,      -- random involuntary symptoms between episodes
 		microEpisodeFrequency = 1.0,     -- multiplier (0.5 = half, 2.0 = double)
+
+		-- Martinez Rush (Edgerunner-inspired kill-triggered combat burst)
+		rushChanceMultiplier = 1.0,      -- multiplier on per-stage proc chance (base: 2/4/7/12/18/25%)
+		rushDuration = 12,               -- base duration in seconds (Safety OFF extends by 25%)
 
 	}
 	,martinez = require('./martinez.lua')
@@ -2745,15 +2756,17 @@ dsp.TryProcMartinezRush = (function(self)
 	local now = os.clock()
 	if now - (self.lastRushProcTime or 0) < 45 then return false end
 
-	-- Chance roll
-	local chance = rushChanceByStage[self.CyberPsychoWarnings] or 0.02
+	-- Chance roll (base per stage × user-configurable multiplier)
+	local baseChance = rushChanceByStage[self.CyberPsychoWarnings] or 0.02
+	local chance = baseChance * (self.cfg.rushChanceMultiplier or 1.0)
 	if math.random() > chance then return false end
 
 	-- PROC
 	self.lastRushProcTime = now
 	self.rushActive = true
 	self.rushSafetyOffExtension = not self.SafetyOn  -- +25% duration if Safety OFF
-	local duration = self.rushSafetyOffExtension and 15 or 12
+	local baseDuration = self.cfg.rushDuration or 12
+	local duration = self.rushSafetyOffExtension and math.floor(baseDuration * 1.25) or baseDuration
 	self.rushEndTime = now + duration
 
 	-- Apply status effect (stats + VFX)
