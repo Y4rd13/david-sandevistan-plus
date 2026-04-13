@@ -2,7 +2,7 @@ local strain = {}
 
 -- Hoisted tables (created once at require time, not per-call)
 local strainThresholds = { [0]=100, [1]=85, [2]=70, [3]=55, [4]=40, [5]=30 }
-local strainGuaranteed = { [2]=120, [3]=100, [4]=80, [5]=70 }
+local strainGuaranteed = { [2]=120, [3]=100, [4]=100, [5]=70 }
 local immunoReduction = { full = 0.8, partial = 0.5 }
 
 function strain.attach(dsp)
@@ -20,12 +20,12 @@ function strain.attach(dsp)
 	local stageStrainMult = { [0]=0.5, [1]=0.5, [2]=0.75, [3]=1.0, [4]=1.0, [5]=1.0 }
 
 	-- Passive strain per second at high stages (chrome consuming you)
-	-- Tuned so stage 4 reaches threshold (~40) in ~4.8min, stage 5 in ~2.8min (without combat/immunoblocker)
-	local passiveStrainPerSec = { [4]=0.04, [5]=0.08 }
+	-- Stage 4 reaches threshold (40) in ~27min idle, stage 5 in ~10min — ties safe area drain at stage 5
+	local passiveStrainPerSec = { [4]=0.025, [5]=0.05 }
 
 	-- Natural strain decay at low stages (body can still recover on its own)
-	-- Stage 3+ = no natural decay (needs external help)
-	local naturalDecayPerSec = { [0]=-0.03, [1]=-0.02, [2]=-0.01 }
+	-- Stage 3 has minimal decay so progression is not 100% one-way
+	local naturalDecayPerSec = { [0]=-0.03, [1]=-0.02, [2]=-0.01, [3]=-0.005 }
 
 	-- Episode cooldown: minimum in-game hours between stage changes
 	-- Prevents speed-running through all stages in one session

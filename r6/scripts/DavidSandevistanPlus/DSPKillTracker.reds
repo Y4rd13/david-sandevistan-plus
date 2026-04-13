@@ -49,7 +49,7 @@ protected func RewardKiller(killer: wref<GameObject>, killType: gameKillType, is
         case 0: strainCost = 2; break;  // gang
         case 1: strainCost = 3; break;  // corpo
         case 2: strainCost = 5; break;  // ncpd
-        case 3: strainCost = 8; break;  // civilian
+        case 3: strainCost = 6; break;  // civilian
         default: strainCost = 2; break;
     }
 
