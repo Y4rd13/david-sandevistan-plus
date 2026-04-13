@@ -161,10 +161,51 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.staminaOnKill = settings.staminaOnKill
 	cfg.rushChanceMultiplier = settings.rushChanceMultiplier
 	cfg.rushDuration = settings.rushDuration
-	-- Propagate rushDuration to the TweakDB MaxDuration modifier so the status effect expires in sync with Lua window
+	cfg.rushCooldown = settings.rushCooldown
+	cfg.rushDrainMultiplier = settings.rushDrainMultiplier
+	cfg.rushFireRatePercent = settings.rushFireRatePercent
+	cfg.rushReloadPercent = settings.rushReloadPercent
+	cfg.rushMeleePercent = settings.rushMeleePercent
+	cfg.rushMovementPercent = settings.rushMovementPercent
+	cfg.rushCritChanceBonus = settings.rushCritChanceBonus
+	cfg.rushCritDamageBonus = settings.rushCritDamageBonus
+	cfg.rushArmorPercent = settings.rushArmorPercent
+	cfg.rushRegenMultiplier = settings.rushRegenMultiplier
+	-- Propagate Rush tunings to TweakDB stat modifiers so the status effect matches user config
 	pcall(function()
-		TweakDB:SetFlat(TweakDBID.new('BaseStatusEffect.MartinezSandevistan_MartinezRush_SM1.value'), cfg.rushDuration * 1.0)
-		TweakDB:Update(TweakDBID.new('BaseStatusEffect.MartinezSandevistan_MartinezRush_SM1'))
+		local rushBase = 'BaseStatusEffect.MartinezSandevistan_MartinezRush_'
+		-- SM1: MaxDuration (Additive, seconds)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM1.value'), cfg.rushDuration * 1.0)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM1'))
+		-- SM2: CycleTime (Multiplier, inverted - lower = faster)
+		local cycleMult = (cfg.rushFireRatePercent > 0) and (1.0 / (1.0 + cfg.rushFireRatePercent / 100.0)) or 1.0
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM2.value'), cycleMult)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM2'))
+		-- SM3: AttackSpeed (Multiplier, higher = faster)
+		local meleeMult = 1.0 + (cfg.rushMeleePercent / 100.0)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM3.value'), meleeMult)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM3'))
+		-- SM4: ReloadTime (Multiplier, inverted - lower = faster)
+		local reloadMult = (cfg.rushReloadPercent > 0) and (1.0 / (1.0 + cfg.rushReloadPercent / 100.0)) or 1.0
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM4.value'), reloadMult)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM4'))
+		-- SM5: MaxSpeed (Multiplier, higher = faster)
+		local speedMult = 1.0 + (cfg.rushMovementPercent / 100.0)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM5.value'), speedMult)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM5'))
+		-- SM6: CritChance (Additive, flat)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM6.value'), cfg.rushCritChanceBonus * 1.0)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM6'))
+		-- SM7: CritDamage (Additive, flat)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM7.value'), cfg.rushCritDamageBonus * 1.0)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM7'))
+		-- SM8: Armor (Multiplier)
+		local armorMult = 1.0 + (cfg.rushArmorPercent / 100.0)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM8.value'), armorMult)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM8'))
+		-- SM9: HealthInCombatRegenRate (Multiplier)
+		TweakDB:SetFlat(TweakDBID.new(rushBase .. 'SM9.value'), cfg.rushRegenMultiplier * 1.0)
+		TweakDB:Update(TweakDBID.new(rushBase .. 'SM9'))
 	end)
 	-- Enum DSPSandyLut: EnumInt returns ULL, tonumber() converts to Lua number
 	pcall(function() cfg.sandyLutIndex = tonumber(EnumInt(settings.sandyLut)) or 0 end)
@@ -295,6 +336,16 @@ dsp = {
 		-- Martinez Rush (Edgerunner-inspired kill-triggered combat burst)
 		rushChanceMultiplier = 1.0,      -- multiplier on per-stage proc chance (base: 2/4/7/12/18/25%)
 		rushDuration = 12,               -- base duration in seconds (Safety OFF extends by 25%)
+		rushCooldown = 45,               -- real-time seconds between procs
+		rushDrainMultiplier = 1.5,       -- runtime drain multiplier while Rush active
+		rushFireRatePercent = 67,        -- ranged fire rate bonus (%)
+		rushReloadPercent = 82,          -- reload speed bonus (%)
+		rushMeleePercent = 40,           -- melee attack speed bonus (%)
+		rushMovementPercent = 25,        -- movement speed bonus (%)
+		rushCritChanceBonus = 20,        -- flat crit chance added
+		rushCritDamageBonus = 35,        -- flat crit damage added
+		rushArmorPercent = 45,           -- armor bonus (%)
+		rushRegenMultiplier = 6.0,       -- combat regen multiplier (1.0 = disabled)
 
 	}
 	,martinez = require('./martinez.lua')
@@ -1407,9 +1458,9 @@ dsp = {
 						drainRate = 1.0 + (overTime ^ 1.5)  -- exponential curve, hardcoded
 					end
 				end
-				-- Martinez Rush: ×1.5 drain during window (Rush cost = faster tank burn)
+				-- Martinez Rush: configurable drain multiplier during window (Rush cost = faster tank burn)
 				if self.rushActive then
-					drainRate = drainRate * 1.5
+					drainRate = drainRate * (self.cfg.rushDrainMultiplier or 1.5)
 				end
 				self.runTime = self.runTime - dt * drainRate
 			end
@@ -2754,7 +2805,7 @@ dsp.TryProcMartinezRush = (function(self)
 
 	-- Cooldown (45s real-time between procs)
 	local now = os.clock()
-	if now - (self.lastRushProcTime or 0) < 45 then return false end
+	if now - (self.lastRushProcTime or 0) < (self.cfg.rushCooldown or 45) then return false end
 
 	-- Chance roll (base per stage × user-configurable multiplier)
 	local baseChance = rushChanceByStage[self.CyberPsychoWarnings] or 0.02

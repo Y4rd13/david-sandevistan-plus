@@ -163,26 +163,6 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.max", "100.0")
     public let staminaOnKill: Float = 22.0;
 
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Combat Stats")
-    @runtimeProperty("ModSettings.category.order", "3")
-    @runtimeProperty("ModSettings.displayName", "Martinez Rush Chance Multiplier")
-    @runtimeProperty("ModSettings.description", "Global multiplier for Martinez Rush proc chance per cyberpsychosis stage. Base chances: 2% (stage 0), 4%, 7%, 12%, 18%, 25% (stage 5). 1.0 = default, 0.5 = half as frequent, 2.0 = double. Rush is a 12s kill-triggered combat burst during Sandy: +67% fire rate, +82% reload, +25% movement, +40% melee, +20 crit, +35 crit dmg, +45% armor. Cost: runtime drain x1.5 during window + 3s post-Rush stamina crash. Cooldown: 45s real-time between procs.")
-    @runtimeProperty("ModSettings.step", "0.1")
-    @runtimeProperty("ModSettings.min", "0.25")
-    @runtimeProperty("ModSettings.max", "3.0")
-    public let rushChanceMultiplier: Float = 1.0;
-
-    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
-    @runtimeProperty("ModSettings.category", "Combat Stats")
-    @runtimeProperty("ModSettings.category.order", "3")
-    @runtimeProperty("ModSettings.displayName", "Martinez Rush Duration (sec)")
-    @runtimeProperty("ModSettings.description", "Duration of Martinez Rush in seconds. Safety OFF extends by 25% (e.g. 12s becomes 15s).")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "6")
-    @runtimeProperty("ModSettings.max", "30")
-    public let rushDuration: Int32 = 12;
-
     // ==================== Category 4: Cyberpsychosis ====================
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
@@ -343,6 +323,129 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.displayName", "Sandevistan Color Grading")
     @runtimeProperty("ModSettings.description", "Color grading during Sandevistan. Requires game restart to apply.")
     public let sandyLut: DSPSandyLut = DSPSandyLut.Neon;
+
+
+    // ==================== Category 7: Martinez Rush ====================
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Chance Multiplier")
+    @runtimeProperty("ModSettings.description", "Global multiplier for Martinez Rush proc chance on kill. Base chance scales with cyberpsychosis stage: 2% (stage 0), 4%, 7%, 12%, 18%, 25% (stage 5). 1.0 = default, 0.5 = half as frequent, 2.0 = double. Higher psychosis = more power = more risk.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "0.25")
+    @runtimeProperty("ModSettings.max", "3.0")
+    public let rushChanceMultiplier: Float = 1.0;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Duration (sec)")
+    @runtimeProperty("ModSettings.description", "Duration of the Rush window in seconds. Safety OFF extends by 25% (e.g. 12s becomes 15s).")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "6")
+    @runtimeProperty("ModSettings.max", "30")
+    public let rushDuration: Int32 = 12;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Cooldown (sec)")
+    @runtimeProperty("ModSettings.description", "Minimum real-time seconds between Rush procs. Prevents back-to-back triggers on kill streaks.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "15")
+    @runtimeProperty("ModSettings.max", "180")
+    public let rushCooldown: Int32 = 45;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Runtime Drain Multiplier")
+    @runtimeProperty("ModSettings.description", "Runtime drain multiplier while Rush is active. 1.5 = 50% faster drain during the window. Primary cost to balance the power burst.")
+    @runtimeProperty("ModSettings.step", "0.1")
+    @runtimeProperty("ModSettings.min", "1.0")
+    @runtimeProperty("ModSettings.max", "3.0")
+    public let rushDrainMultiplier: Float = 1.5;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Fire Rate Bonus (%)")
+    @runtimeProperty("ModSettings.description", "Ranged fire rate increase during Rush. 67% = default (+67% rate of fire for all ranged weapons). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "150")
+    public let rushFireRatePercent: Int32 = 67;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Reload Speed Bonus (%)")
+    @runtimeProperty("ModSettings.description", "Reload speed increase during Rush. 82% = default (reloads take 45% of normal time). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "150")
+    public let rushReloadPercent: Int32 = 82;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Melee Attack Speed Bonus (%)")
+    @runtimeProperty("ModSettings.description", "Melee attack speed increase during Rush. 40% = default (+40% swing rate for blades and blunt weapons). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "150")
+    public let rushMeleePercent: Int32 = 40;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Movement Speed Bonus (%)")
+    @runtimeProperty("ModSettings.description", "Movement speed increase during Rush. 25% = default (+25% run/sprint speed). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "100")
+    public let rushMovementPercent: Int32 = 25;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Crit Chance Bonus")
+    @runtimeProperty("ModSettings.description", "Flat critical hit chance added during Rush. 20 = default (+20 crit chance points). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "1")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "100")
+    public let rushCritChanceBonus: Int32 = 20;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Crit Damage Bonus")
+    @runtimeProperty("ModSettings.description", "Flat critical damage added during Rush. 35 = default (+35 crit damage points). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "200")
+    public let rushCritDamageBonus: Int32 = 35;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Armor Bonus (%)")
+    @runtimeProperty("ModSettings.description", "Armor increase during Rush. 45% = default (+45% damage reduction). Set to 0 to disable.")
+    @runtimeProperty("ModSettings.step", "5")
+    @runtimeProperty("ModSettings.min", "0")
+    @runtimeProperty("ModSettings.max", "200")
+    public let rushArmorPercent: Int32 = 45;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Rush Combat Regen Multiplier")
+    @runtimeProperty("ModSettings.description", "Health regen rate multiplier in combat during Rush. 6.0 = default (6x normal regen). 1.0 disables the bonus.")
+    @runtimeProperty("ModSettings.step", "0.5")
+    @runtimeProperty("ModSettings.min", "1.0")
+    @runtimeProperty("ModSettings.max", "20.0")
+    public let rushRegenMultiplier: Float = 6.0;
 
 
     // ==================== Lifecycle ====================
