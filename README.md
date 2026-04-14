@@ -31,7 +31,7 @@ An animated biomonitor panel (Animated Widgets Framework) showing all treatment 
 - **Protocol section**: Prescribed doses + tier, Visits (with countdown to next), Rest hours, Milestone progress
 - **Substance detection**: Separate cyan notification panel when immunoblocker is consumed — shows detected substance and dynamic feedback ("Insufficient for Stage V" / "Treatment dose registered — 3 remaining")
 - **Auto-fade**: Substance detection fades after 8s, main biomonitor stays until manually closed
-- **Position configurable** via MartinezPLUS settings
+- **Position configurable** via the in-game Mod Settings UI
 
 ### Progressive Cyberpsychosis
 
@@ -107,7 +107,7 @@ An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Sa
 | Sandy activation | +5 base | +3 per overuse beyond safe limit |
 | Sandy active | +2/min | Continuous accumulation |
 | Safety OFF | +0.15/s | Automatic at stage 5 |
-| Kill (Sandy active) | +2 to +8 | Faction-based (configurable): civilian=8, NCPD=5, corpo=3, gang=2 |
+| Kill (Sandy active) | +2 to +6 | Faction-based (configurable): civilian=6, NCPD=5, corpo=3, gang=2 |
 | Low runtime (<10%) | +0.5/s | Body exhausted, Sandy stresses it more |
 | Zero runtime (0%) | +1.0/s | Death wish — body screams |
 
@@ -315,6 +315,23 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
 | **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
 
+### Martinez Rush (Kill-Triggered Combat Burst)
+
+An Edgerunner-inspired burst that can proc on kill while Sandy is active — V briefly slips into the same combat high David hit during his best runs. Higher psychosis = higher chance, higher risk.
+
+| Mechanic | Detail |
+|----------|--------|
+| Trigger | Every kill during Sandy rolls against a per-stage chance (2% / 4% / 7% / 12% / 18% / 25%) |
+| Cooldown | 45s real-time between procs (configurable) |
+| Duration | 12s base, +25% if Safety OFF — so up to 15s |
+| Requires Edgerunner perk | Default **on**. Rush only procs if V has the vanilla Edgerunner perk unlocked in the Reflexes tree. Disable the toggle to get Rush regardless of perks. |
+| Stat bonuses (configurable) | +67% fire rate, +40% melee speed, +82% reload speed, +25% movement, +20 crit chance, +35 crit damage, +45% armor, 6.0× combat regen |
+| Cost | Runtime drain ×1.5 for the entire window, plus a 3s stamina crash that lands **the moment Sandy deactivates** (never wasted in time dilation) |
+| Audio cue | Kerenzikov entry SFX + a 35% chance per kill to hear V laugh (`ono_v_laughs_hard/soft/long`, 3.5s cooldown between laughs) |
+| Visual cue | ~0.56s pre-cue flash (`dsp_martinez_rush_init` — custom effect shipped with the mod archive) then a red Blackwall frame overlay around the screen edges for the duration |
+
+Every bonus above plus the chance multiplier, duration, cooldown, drain multiplier and perk gate are exposed as their own entries under the **Martinez Rush** category in the in-game Mod Settings UI. Rush does **not** add neural strain — it intentionally stays out of the cyberpsychosis progression budget so the stage cadence stays intact.
+
 ### Activity Tracking + Sleep Multiplier
 
 Human connections reduce Neural Strain and improve sleep recovery. David stayed human through Lucy and his crew -- these interactions ground V the same way.
@@ -352,24 +369,21 @@ Cyberpunk 2077/
 │   ├── david-sandevistan-plus.archive
 │   └── david-sandevistan-plus.archive.xl
 ├── bin/x64/plugins/cyber_engine_tweaks/mods/
-│   ├── DavidSandevistanPlus/
-│   │   ├── init.lua
-│   │   ├── martinez.lua
-│   │   ├── loreEffects.lua
-│   │   ├── strain.lua
-│   │   ├── psychosis.lua
-│   │   ├── death.lua
-│   │   ├── immunoblocker.lua
-│   │   ├── immunoblocker_logic.lua
-│   │   ├── gameListeners.lua
-│   │   ├── entEffects.lua
-│   │   ├── ncpd.lua
-│   │   ├── hud.lua
-│   │   ├── sms.lua
-│   │   ├── voice.lua
-│   │   └── gui.lua
-│   └── MartinezPLUS/
-│       └── init.lua
+│   └── DavidSandevistanPlus/
+│       ├── init.lua
+│       ├── martinez.lua
+│       ├── strain.lua
+│       ├── psychosis.lua
+│       ├── death.lua
+│       ├── immunoblocker_logic.lua
+│       ├── loreEffects.lua
+│       ├── gameListeners.lua
+│       ├── entEffects.lua
+│       ├── ncpd.lua
+│       ├── hud.lua
+│       ├── sms.lua
+│       ├── voice.lua
+│       └── gui.lua
 ├── r6/audioware/DavidSandevistanPlus/
 │   ├── audios.yaml
 │   └── last_breath_song.ogg
@@ -504,7 +518,7 @@ For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dila
 
 ## How It Works
 
-**DavidSandevistanPlus** has all gameplay values exposed in a configurable `cfg` table. **MartinezPLUS** provides the Native Settings UI and writes to `DavidSandevistanPlus/config.json`. Changes to TweakDB values apply instantly; gameplay parameters update both at runtime and persist to disk.
+**DavidSandevistanPlus** exposes all gameplay values through the native Mod Settings framework: tunables are declared on `DSPSettings.reds` (`@runtimeProperty`), the redscript scriptable system writes a `dsp_settings_changed` quest fact on save, and the CET side pulls the updated values into the runtime `cfg` table via `syncSettingsFromRedscript()`. TweakDB stat flats are rewritten on the fly through `TweakDB:SetFlat` + `TweakDB:Update` so most tuning takes effect without a game restart.
 
 ### Daily Activation Counter
 

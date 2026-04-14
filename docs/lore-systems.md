@@ -73,7 +73,7 @@ When strain >= threshold → dice roll each second:
 
 | Faction | Strain Cost | Lore |
 |---------|-------------|------|
-| Civilian / Unaffiliated | 8 | David never wanted to hurt civilians |
+| Civilian / Unaffiliated | 6 | David never wanted to hurt civilians |
 | NCPD / NetWatch | 5 | Killing cops accelerates psychosis |
 | Arasaka / Militech / KangTao | 3 | Corporate security |
 | All gangs | 2 | Normal enemies |
@@ -87,9 +87,9 @@ Per-faction strain values are configurable. Kill strain routes through `DSPHUDSy
 | 0 | 100 | — | — | Hard to trigger — only dice rolls, no guaranteed |
 | 1 | 85 | — | 48h | Manageable with care |
 | 2 | 70 | 120 (50%) | 36h | Casual overuse is dangerous |
-| 3 | 55 | 100 (50%) | 24h | Almost any aggressive session triggers |
-| 4 | 40 | 80 (50%) | 12h | Constant danger, passive strain +0.04/s |
-| 5 | 30 | 70 (forced) | 6h | Near-inevitable — Last Breath territory, passive +0.08/s |
+| 3 | 55 | 100 (50%) | 24h | Almost any aggressive session triggers; minimal natural decay (-0.005/s) |
+| 4 | 40 | 100 (50%) | 12h | Constant danger, passive strain +0.025/s |
+| 5 | 30 | 70 (forced) | 6h | Near-inevitable — Last Breath territory, passive +0.05/s |
 
 ### Design Decision: No Auto-Level-Decrease
 
@@ -514,6 +514,72 @@ During Last Breath decay, V's cyberware malfunctions and corrupts nearby civilia
 | Chorus 1 (58s) | 30% |
 | Chorus 2 (149s) | 40% |
 | Final Chorus (203s) | 60% |
+
+## System 9: Martinez Rush (Kill-Triggered Combat Burst)
+
+Edgerunner-inspired short combat burst that can proc on kill while Sandy is active — a controlled echo of the vanilla Edgerunner perk's rage state, but gated so it never competes with the cyberpsychosis stage progression.
+
+### Proc Conditions
+
+Every kill during Sandy runs a roll against a stage-scaled chance. All gates must pass:
+
+| Gate | Check |
+|------|-------|
+| Sandy is running | `isRunning == true` |
+| Not in Last Breath | `lastBreath == false` |
+| No existing Rush active | `rushActive == false` |
+| Not paused / menu / braindance | — |
+| V is in control | `VIsInControl == true` |
+| Real-time cooldown elapsed | `now - lastRushProcTime >= rushCooldown` (default 45s) |
+| Optional: Edgerunner perk | `HasEdgerunnerPerk()` if `rushRequireEdgerunner` toggle is on (default on) |
+
+### Stage-Scaled Proc Chance
+
+Higher psychosis = more power = more risk. Multiplied globally by `rushChanceMultiplier` (default 1.0):
+
+| Stage | Base chance |
+|-------|-------------|
+| 0 | 2% |
+| 1 | 4% |
+| 2 | 7% |
+| 3 | 12% |
+| 4 | 18% |
+| 5 | 25% |
+
+### Effect (12s window, +25% if Safety OFF)
+
+Dynamic stat modifiers propagated from Mod Settings to a `MartinezRush` status effect via TweakDB `SetFlat`. Defaults:
+
+| Stat | Default bonus | SM (martinez.lua) |
+|------|--------------|-------------------|
+| Fire rate (CycleTime, inverted) | +67% | `SM2` |
+| Melee attack speed | +40% | `SM3` |
+| Reload speed (ReloadTime, inverted) | +82% | `SM4` |
+| Movement speed | +25% | `SM5` |
+| Crit chance | +20 | `SM6` |
+| Crit damage | +35 | `SM7` |
+| Armor | +45% | `SM8` |
+| Combat regen rate | 6.0× | `SM9` |
+
+Each value is exposed as its own Mod Setting in the Martinez Rush category.
+
+### Cost
+
+- **Runtime drain multiplier** (default 1.5×) applies for the entire Rush window — the Sandy tank burns ~50% faster until the window closes.
+- **Post-Rush stamina crash** — 3s StaminaDrain status effect, but **deferred until Sandy deactivates**, so the penalty always lands while V can actually feel it (during time dilation the drain is invisible).
+- **Does NOT add strain directly** — Rush explicitly avoids touching cyberpsychosis progression so the user's stage cadence stays intact.
+
+### Audio / Visual Cues
+
+- **Pre-cue VFX** (~0.56s): `dsp_martinez_rush_init` — custom effect shipped in the DSP archive, shaders (`reflex_buster` + `zoom`) plus the stock `p_berserk` particles. Distinct from MartinezFury's edgerunner overlay so the two never get confused.
+- **Entry SFX**: `time_dilation_kereznikov_enter` — the Kerenzikov bullet-time cue (note: the game misspells it "kereznikov").
+- **Active VFX**: `martinez_fx_onscreen_frame` — red Blackwall frame overlay around the screen edges (bound to the `MartinezRush` status effect's FX1).
+- **Laugh on kill**: during the Rush window, each kill has a 35% chance to play a random V laugh (`ono_v_laughs_hard` / `ono_v_laughs_soft` / `ono_v_laugh_long`) with a 3.5s cooldown between laughs to avoid spam.
+- **HUD message**: one of five short voice lines ("In the zone...", "Everything's clicking...", etc.).
+
+### Edgerunner Perk Gate
+
+When `rushRequireEdgerunner` is on, Rush only procs if V has the vanilla Edgerunner perk unlocked in the Reflexes tree. The resolver probes a list of known perk TweakDBID candidates (`NewPerks.Reflexes_Central_Master_Perk_1` and four variants) and caches the first one the live TweakDB accepts, so the check survives perk-tree renames across game patches without a code change. Fails closed if no candidate matches — safer than silently bypassing the gate.
 
 ## Cross-System Interactions
 

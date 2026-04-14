@@ -34,7 +34,7 @@
 ## Project Overview
 
 Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and full configurability.
-Two components: **DavidSandevistanPlus** (game logic) + **MartinezPLUS** (Native Settings tuner UI).
+All tuning lives inside **DavidSandevistanPlus** and is exposed through the native Mod Settings framework via `DSPSettings.reds` (no external tuner mod).
 
 ## Key Paths
 - **Project repo**: `/mnt/g/Documentos/Projects/david-sandevistan/`
