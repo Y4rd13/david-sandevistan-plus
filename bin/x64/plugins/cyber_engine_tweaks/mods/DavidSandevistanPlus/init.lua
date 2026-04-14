@@ -159,6 +159,7 @@ local function syncSettingsFromRedscript(cfg)
 	cfg.headshotDamageMultiplier = settings.headshotDamageMultiplier
 	cfg.healOnKill = settings.healOnKill
 	cfg.staminaOnKill = settings.staminaOnKill
+	cfg.rushRequireEdgerunner = settings.rushRequireEdgerunner
 	cfg.rushChanceMultiplier = settings.rushChanceMultiplier
 	cfg.rushDuration = settings.rushDuration
 	cfg.rushCooldown = settings.rushCooldown
@@ -334,6 +335,7 @@ dsp = {
 		microEpisodeFrequency = 1.0,     -- multiplier (0.5 = half, 2.0 = double)
 
 		-- Martinez Rush (Edgerunner-inspired kill-triggered combat burst)
+		rushRequireEdgerunner = false,   -- gate Rush procs behind the vanilla Edgerunner perk
 		rushChanceMultiplier = 1.0,      -- multiplier on per-stage proc chance (base: 2/4/7/12/18/25%)
 		rushDuration = 12,               -- base duration in seconds (Safety OFF extends by 25%)
 		rushCooldown = 45,               -- real-time seconds between procs
@@ -445,6 +447,8 @@ dsp = {
 	,rushEndTime = nil             -- os.clock() when current Rush ends
 	,rushSafetyOffExtension = false -- true if current Rush activated with Safety OFF (extends to 15s)
 	,rushCrashEndTime = nil        -- os.clock() when post-Rush crash ends (3s)
+	,rushCrashPending = false      -- true if Rush window ended but Sandy still active (crash deferred)
+	,edgerunnerPerkID = nil        -- cached TweakDBID of the Edgerunner perk (resolved lazily via HasEdgerunnerPerk)
 	,autoInjectorEquipped = nil  -- cached per displayTick cycle
 	,immunoWarnedThisDose = false  -- one-shot warning per immunoblocker dose
 	,immunoblockerRefreshed = false  -- set true by observer when new immunoblocker consumed; consumed by removal observer
@@ -2795,6 +2799,43 @@ local rushVoiceLines = {
 -- (note: game files use the misspelling "kereznikov", not "kerenzikov")
 local rushSFX = "time_dilation_kereznikov_enter"
 
+-- Edgerunner perk detection — CP2077 2.0+ moved perks to the "NewPerks" namespace
+-- and the exact ID varies across patches, so we probe several candidates and
+-- cache whichever one the live TweakDB recognizes. `nil` = never probed,
+-- `false` = probed but player does not have it, `<tweakID>` = cached hit.
+local edgerunnerPerkCandidates = {
+	"NewPerks.Reflexes_Central_Master_Perk_1",  -- typical post-2.0 master perk slot
+	"NewPerks.Reflexes_Central_Perk3_3",
+	"NewPerks.Reflexes_Master_Perk_1",
+	"NewPerks.Edgerunner",
+	"Perks.Edgerunner",
+}
+
+dsp.HasEdgerunnerPerk = (function(self)
+	local player = self.cachedPlayer or Game.GetPlayer()
+	if not player then return false end
+	local dev
+	pcall(function() dev = player:GetPlayerDevelopmentData() end)
+	if not dev then return false end
+	-- Fast path: cached hit
+	if self.edgerunnerPerkID then
+		local ok, has = pcall(function() return dev:IsNewPerkBought(self.edgerunnerPerkID) end)
+		return ok and has or false
+	end
+	-- Probe: try each candidate, cache the first one the API accepts
+	for _, idStr in ipairs(edgerunnerPerkCandidates) do
+		local tdbid = TweakDBID.new(idStr)
+		local ok, has = pcall(function() return dev:IsNewPerkBought(tdbid) end)
+		if ok then
+			self.edgerunnerPerkID = tdbid
+			dlog('[DSP] Edgerunner perk ID resolved: ' .. idStr .. ' has=' .. tostring(has))
+			return has
+		end
+	end
+	dlog('[DSP] Edgerunner perk: no candidate ID matched the live TweakDB — gate will block Rush if require is ON')
+	return false
+ end)
+
 dsp.TryProcMartinezRush = (function(self)
 	-- Gates
 	if not self.isRunning then return false end              -- only during Sandy
@@ -2802,6 +2843,9 @@ dsp.TryProcMartinezRush = (function(self)
 	if self.rushActive then return false end                 -- already active, no stacking
 	if self.CachedInMenu or self.CachedBrainDance then return false end
 	if not self.VIsInControl then return false end
+
+	-- Optional requirement: vanilla Edgerunner perk (Reflexes master)
+	if self.cfg.rushRequireEdgerunner and not self:HasEdgerunnerPerk() then return false end
 
 	-- Cooldown (45s real-time between procs)
 	local now = os.clock()
@@ -3234,16 +3278,22 @@ registerForEvent('onUpdate', function(dt)
         end)
     end
     -- Martinez Rush: end window tick + post-Rush crash
+    -- Crash is deferred until Sandy deactivates — while Sandy runs you're in time
+    -- dilation and the drain is invisible, so applying it there wastes the penalty.
     if dsp.rushActive and dsp.rushEndTime and now >= dsp.rushEndTime then
         dsp.rushActive = false
         dsp.rushEndTime = nil
         dsp.rushSafetyOffExtension = false
-        -- Status effect expires naturally via MaxDuration. Apply post-Rush crash (3s stamina drain)
+        dsp.rushCrashPending = true
+        dlog('[DSP] Martinez Rush window ended, crash pending')
+    end
+    if dsp.rushCrashPending and not dsp.isRunning then
+        dsp.rushCrashPending = false
         pcall(function()
             dsp:StatusEffect_CheckAndApply(dsp.martinez.StaminaDrain)
         end)
         dsp.rushCrashEndTime = now + 3.0
-        dlog('[DSP] Martinez Rush ended, crash applied (3s)')
+        dlog('[DSP] Martinez Rush crash started (3s) — Sandy just deactivated')
     end
     if dsp.rushCrashEndTime and now >= dsp.rushCrashEndTime then
         dsp.rushCrashEndTime = nil

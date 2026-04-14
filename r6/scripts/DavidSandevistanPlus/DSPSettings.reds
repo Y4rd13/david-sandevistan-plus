@@ -330,6 +330,13 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Martinez Rush")
     @runtimeProperty("ModSettings.category.order", "7")
+    @runtimeProperty("ModSettings.displayName", "Require Edgerunner Perk")
+    @runtimeProperty("ModSettings.description", "If enabled, Martinez Rush only procs when V has the Edgerunner perk unlocked (Reflexes tree). Makes the feature feel like a natural extension of the vanilla perk. Default: off (Rush works regardless of perks).")
+    public let rushRequireEdgerunner: Bool = false;
+
+    @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
+    @runtimeProperty("ModSettings.category", "Martinez Rush")
+    @runtimeProperty("ModSettings.category.order", "7")
     @runtimeProperty("ModSettings.displayName", "Rush Chance Multiplier")
     @runtimeProperty("ModSettings.description", "Global multiplier for Martinez Rush proc chance on kill. Base chance scales with cyberpsychosis stage: 2% (stage 0), 4%, 7%, 12%, 18%, 25% (stage 5). 1.0 = default, 0.5 = half as frequent, 2.0 = double. Higher psychosis = more power = more risk.")
     @runtimeProperty("ModSettings.step", "0.1")
