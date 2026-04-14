@@ -25,3 +25,6 @@ tools/
 voice_lines/
 __pycache__/
 generate_voice_lines.py
+
+# Internal planning docs (not for public repo)
+docs/superpowers/
