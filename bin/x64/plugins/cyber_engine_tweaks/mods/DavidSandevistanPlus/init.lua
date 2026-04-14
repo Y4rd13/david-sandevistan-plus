@@ -2820,6 +2820,15 @@ dsp.TryProcMartinezRush = (function(self)
 	local duration = self.rushSafetyOffExtension and math.floor(baseDuration * 1.25) or baseDuration
 	self.rushEndTime = now + duration
 
+	-- Pre-cue VFX: ~0.56s berserk init flash (zoom + reflex shader pulse)
+	-- Fires in parallel with status effect — purely visual, no gameplay impact
+	pcall(function()
+		local player = self.cachedPlayer or Game.GetPlayer()
+		if player then
+			GameObjectEffectHelper.StartEffectEvent(player, CName.new(self.martinez.dsp_martinez_rush_init), false, worldEffectBlackboard.new())
+		end
+	end)
+
 	-- Apply status effect (stats + VFX)
 	self:StatusEffect_CheckAndApply(self.martinez.MartinezRush)
 

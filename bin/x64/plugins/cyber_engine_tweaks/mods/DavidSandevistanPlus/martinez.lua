@@ -247,6 +247,7 @@ martinez.martinez_fx_onscreen_sick_start         = 'martinez_fx_onscreen_sick_st
 martinez.martinez_fx_onscreen_sick_pulse         = 'martinez_fx_onscreen_sick_pulse'
 martinez.martinez_fx_onscreen_sick_2023          = 'martinez_fx_onscreen_sick_2023'
 martinez.martinez_fx_MAXTAC                      = 'martinez_fx_MAXTAC'
+martinez.dsp_martinez_rush_init                  = 'dsp_martinez_rush_init'
 
 -- Sandy LUT effects (user-selectable color grading during time dilation)
 martinez.sandyLutEffects = {
@@ -1385,6 +1386,7 @@ function martinez.CreateNew_FX_Status_Effects(self)
 	self.entEffects:CreateCustomEffect('player',self.martinez_fx_onscreen_sick_pulse,"ep1\\fx\\quest\\q301\\border\\q301_blackwall_onscreen_analog_sick_soft_pulse.effect")
 	self.entEffects:CreateCustomEffect('player',self.martinez_fx_onscreen_sick_2023,"ep1\\fx\\quest\\q301\\border\\trailer2023\\q301_blackwall_onscreen_analog_sick_trailer2023.effect")
 	self.entEffects:CreateCustomEffect('player',self.martinez_fx_MAXTAC,"base\\fx\\quest\\q003\\intro\\q003_intro_screen_scanning.effect")
+	self.entEffects:CreateCustomEffect('player',self.dsp_martinez_rush_init,"base\\fx\\player\\dsp_martinez_rush_init.effect")
 	self.entEffects:Finalize('player')
 	
     local AllPlacementTags = {'Head','Neck','Neck1','Spine2','Spine3','LeftShoulder','RightShoulder','LeftForeArm','RightForeArm','LeftHand','RightHand','RightUpLeg','LeftUpLeg','LeftLeg','RightLeg'}
