@@ -153,8 +153,6 @@ function immunoblocker_logic.attach(dsp)
 		local eff = self:GetImmunoblockerEffectiveness()
 		local effPct = ({ full = 100, partial = 50, ineffective = 0, none = 0 })[eff] or 0
 		local threshold = self:GetStrainThreshold()
-		local guaranteed = self:GetStrainGuaranteed() or 0
-		local strainCurrent = math.floor(self.neuralStrain or 0)
 		local strainPct = threshold > 0 and math.floor((self.neuralStrain or 0) / threshold * 100) or 0
 		local displayTier = self:GetBiomonitorDisplayTier()
 		-- Protocol data: only show prescription details after Viktor prescribes treatment
@@ -190,7 +188,6 @@ function immunoblocker_logic.attach(dsp)
 					rxTotal,
 					milestonePct
 				)
-				bioSystem:SetBiomonitorStrain(strainCurrent, math.floor(threshold), math.floor(guaranteed))
 				bioSystem:ShowBiomonitor(
 					displayTier,
 					self.toleranceStage or 0,

@@ -21,11 +21,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
     private let m_bioDoses: Int32;
     private let m_bioMilestonePct: Int32;
 
-    // Strain readout (set by CET before ShowBiomonitor)
-    private let m_bioStrainCurrent: Int32;
-    private let m_bioStrainThreshold: Int32;
-    private let m_bioStrainGuaranteed: Int32;
-
     public static func GetInstance(gi: GameInstance) -> ref<DSPBiomonitorSystem> {
         return GameInstance.GetScriptableSystemsContainer(gi).Get(n"DSPBiomonitorSystem") as DSPBiomonitorSystem;
     }
@@ -61,12 +56,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         this.m_bioVisitsRequired = visitsRequired;
         this.m_bioDoses = doses;
         this.m_bioMilestonePct = milestonePct;
-    }
-
-    public func SetBiomonitorStrain(current: Int32, threshold: Int32, guaranteed: Int32) -> Void {
-        this.m_bioStrainCurrent = current;
-        this.m_bioStrainThreshold = threshold;
-        this.m_bioStrainGuaranteed = guaranteed;
     }
 
     // ---------------------------------------------------------------
@@ -145,18 +134,6 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         else if this.m_bioMilestonePct < 100 { milestoneText = IntToString(this.m_bioMilestonePct) + "% — Improving"; }
         else { milestoneText = "Complete"; }
 
-        // Strain readout: "current / threshold→guaranteed" or "current / threshold" if no guaranteed exists
-        let strainText: String;
-        if this.m_bioStrainThreshold > 0 {
-            if this.m_bioStrainGuaranteed > 0 {
-                strainText = IntToString(this.m_bioStrainCurrent) + " / " + IntToString(this.m_bioStrainThreshold) + "→" + IntToString(this.m_bioStrainGuaranteed);
-            } else {
-                strainText = IntToString(this.m_bioStrainCurrent) + " / " + IntToString(this.m_bioStrainThreshold);
-            }
-        } else {
-            strainText = IntToString(strainPct) + "%";
-        }
-
         let bioCanvas: ref<inkCanvas> = new inkCanvas();
         bioCanvas.SetName(n"DSPBiomonitor");
         bioCanvas.SetAnchor(inkEAnchor.TopLeft);
@@ -184,7 +161,7 @@ public class DSPBiomonitorSystem extends ScriptableSystem {
         ArrayPush(controller.m_items, new MonitorListItem("Prescribed:", -1.00, prescribedText, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Treatment:", -1.00, rxText, ""));
         ArrayPush(controller.m_items, new MonitorListItem("Cyberpsychosis:", -1.00, psychoName, ""));
-        ArrayPush(controller.m_items, new MonitorListItem("Strain:", -1.00, strainText, ""));
+        ArrayPush(controller.m_items, new MonitorListItem("Neural Load:", -1.00, IntToString(strainPct) + "%", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Efficacy:", -1.00, IntToString(efficacyPct) + "%", ""));
         ArrayPush(controller.m_items, new MonitorListItem("Tolerance:", -1.00, tolName, ""));
         ArrayPush(controller.m_items, new MonitorListItem("BIOMONITOR STATUS", -1.00, "", ""));
