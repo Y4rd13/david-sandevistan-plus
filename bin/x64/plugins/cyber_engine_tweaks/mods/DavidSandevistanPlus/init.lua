@@ -335,7 +335,7 @@ dsp = {
 		microEpisodeFrequency = 1.0,     -- multiplier (0.5 = half, 2.0 = double)
 
 		-- Martinez Rush (Edgerunner-inspired kill-triggered combat burst)
-		rushRequireEdgerunner = false,   -- gate Rush procs behind the vanilla Edgerunner perk
+		rushRequireEdgerunner = true,    -- gate Rush procs behind the vanilla Edgerunner perk
 		rushChanceMultiplier = 1.0,      -- multiplier on per-stage proc chance (base: 2/4/7/12/18/25%)
 		rushDuration = 12,               -- base duration in seconds (Safety OFF extends by 25%)
 		rushCooldown = 45,               -- real-time seconds between procs

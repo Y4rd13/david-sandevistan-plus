@@ -331,8 +331,8 @@ public class DSPSettings extends ScriptableSystem {
     @runtimeProperty("ModSettings.category", "Martinez Rush")
     @runtimeProperty("ModSettings.category.order", "7")
     @runtimeProperty("ModSettings.displayName", "Require Edgerunner Perk")
-    @runtimeProperty("ModSettings.description", "If enabled, Martinez Rush only procs when V has the Edgerunner perk unlocked (Reflexes tree). Makes the feature feel like a natural extension of the vanilla perk. Default: off (Rush works regardless of perks).")
-    public let rushRequireEdgerunner: Bool = false;
+    @runtimeProperty("ModSettings.description", "If enabled, Martinez Rush only procs when V has the Edgerunner perk unlocked (Reflexes tree). Makes the feature feel like a natural extension of the vanilla perk. Default: on.")
+    public let rushRequireEdgerunner: Bool = true;
 
     @runtimeProperty("ModSettings.mod", "David Sandevistan Plus")
     @runtimeProperty("ModSettings.category", "Martinez Rush")
