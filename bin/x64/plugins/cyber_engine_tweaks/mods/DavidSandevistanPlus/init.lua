@@ -449,6 +449,7 @@ dsp = {
 	,rushCrashEndTime = nil        -- os.clock() when post-Rush crash ends (3s)
 	,rushCrashPending = false      -- true if Rush window ended but Sandy still active (crash deferred)
 	,edgerunnerPerkID = nil        -- cached TweakDBID of the Edgerunner perk (resolved lazily via HasEdgerunnerPerk)
+	,lastRushKillLaugh = 0         -- os.clock() of last kill-laugh during Rush (cooldown gate)
 	,autoInjectorEquipped = nil  -- cached per displayTick cycle
 	,immunoWarnedThisDose = false  -- one-shot warning per immunoblocker dose
 	,immunoblockerRefreshed = false  -- set true by observer when new immunoblocker consumed; consumed by removal observer
@@ -1688,6 +1689,8 @@ dsp = {
 							end
 							-- Try to proc Martinez Rush (gates + cooldown handled inside)
 							self:TryProcMartinezRush()
+							-- During Rush window: random chance to laugh on kill (combat high)
+							self:TryRushKillLaugh()
 						end
 						-- Low runtime strain: body is exhausted (raw: physical stress, not tolerance)
 						if self.isRunning then
@@ -2798,6 +2801,29 @@ local rushVoiceLines = {
 -- SFX: Kerenzikov activation cue — fits the time-dilation/focus theme of Rush
 -- (note: game files use the misspelling "kereznikov", not "kerenzikov")
 local rushSFX = "time_dilation_kereznikov_enter"
+
+-- Laugh-on-kill during Martinez Rush — thrill of combat bleeds through as audible laughs.
+-- Only fires while the Rush window is active. Rate-limited to avoid spam on kill streaks.
+local rushKillLaughPool = { "ono_v_laughs_hard", "ono_v_laughs_soft", "ono_v_laugh_long" }
+local rushKillLaughChance = 0.35     -- per-kill probability
+local rushKillLaughCooldown = 3.5    -- minimum seconds between laughs
+
+dsp.TryRushKillLaugh = (function(self)
+	if not self.rushActive then return end
+	local now = os.clock()
+	if now - (self.lastRushKillLaugh or 0) < rushKillLaughCooldown then return end
+	if math.random() > rushKillLaughChance then return end
+	self.lastRushKillLaugh = now
+	local sound = rushKillLaughPool[math.random(#rushKillLaughPool)]
+	pcall(function()
+		local V = self.cachedPlayer or Game.GetPlayer()
+		if V and IsDefined(V) then
+			local evt = SoundPlayEvent.new()
+			evt.soundName = sound
+			V:QueueEvent(evt)
+		end
+	end)
+ end)
 
 -- Edgerunner perk detection — CP2077 2.0+ moved perks to the "NewPerks" namespace
 -- and the exact ID varies across patches, so we probe several candidates and
