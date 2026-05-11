@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches: [main, beta]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ github.ref_name }}
+
+      - name: Force branch to workflow sha
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: git reset --hard "$WORKFLOW_SHA"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install release dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Ensure zip tooling is available
+        run: |
+          if ! command -v zip >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y zip
+          fi
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: "semantic-release-bot"
+          GIT_AUTHOR_EMAIL: "semantic-release-bot@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "semantic-release-bot"
+          GIT_COMMITTER_EMAIL: "semantic-release-bot@users.noreply.github.com"
+        run: npx semantic-release

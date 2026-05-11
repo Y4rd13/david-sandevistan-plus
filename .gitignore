@@ -3,6 +3,10 @@
 config.json
 *.zip
 
+# Node / semantic-release tooling (devDependencies only, not shipped with the mod)
+node_modules/
+dist/
+
 # WolvenKit
 wolven/
 
