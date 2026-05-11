@@ -45,13 +45,6 @@
       }
     ],
     [
-      "@semantic-release/changelog",
-      {
-        "changelogFile": "CHANGELOG.md",
-        "changelogTitle": "# Changelog\n\nAll notable changes to David Sandevistan Plus are tracked here. Versions follow [Semantic Versioning](https://semver.org/) and entries are generated automatically by [semantic-release](https://github.com/semantic-release/semantic-release) from Conventional Commits on the squashed PR titles."
-      }
-    ],
-    [
       "@semantic-release/exec",
       {
         "prepareCmd": "bash .github/scripts/build-mod-zip.sh ${nextRelease.version}"
@@ -68,13 +61,6 @@
         ],
         "successComment": false,
         "failComment": false
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": ["CHANGELOG.md"],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]
   ]
