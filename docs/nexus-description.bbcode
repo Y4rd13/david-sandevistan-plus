@@ -1,0 +1,247 @@
+[size=4][b]David Sandevistan Plus[/b][/size]
+[i]A custom Sandevistan mod with lore-accurate defaults and every gameplay parameter exposed through an in-game Mod Settings tab.[/i]
+
+[size=3][b]Why This Exists[/b][/size]
+
+Hey chooms. Every Sandevistan mod out there does the same thing: bigger slow-mo, longer runtime, bigger numbers. None of them ask the real question, which is what David Martinez's Sandy actually felt like in Edgerunners. The man burned out from the inside. His body fell apart, his brain went sideways, and at the end he chose to die on his feet rather than live without the chrome.
+
+So I built this. David Sandevistan Plus rewrites the vanilla Sandevistan from the ground up to feel like David's run through Night City, not a bullet-time toy. Neural strain accumulates from use. Cyberpsychosis progresses through six stages, each one stripping a little more humanity from V. Doc prescribes a treatment protocol you have to actually follow. Vendors stock the immunoblockers you need to stay sane, but use them too often and tolerance builds until the meds stop working. Kill too many civilians and NCPD MaxTac comes down on your head. Die at stage five with Second Heart equipped and you get Last Breath, a song-synced final stand inspired by Episode 10. There is no save scumming this one. Last Breath is a one-way trip.
+
+Everything is configurable, everything is reversible, everything tracks through a custom HUD and an animated medtech biomonitor. If you want the full lore-accurate experience just install it and play. If you want to tune the curves yourself, the Mod Settings tab exposes 44 separate tunables across seven categories.
+
+[size=3][b]At a Glance[/b][/size]
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/cyberpsychosis-stages.svg[/img]
+
+Six progression stages, each with its own threshold, passive strain, cooldown, runtime ceiling, hallucination cadence, auto-attack chances, and treatment requirements. All values verified against the live codebase.
+
+[size=3][b]Core Systems[/b][/size]
+
+[b]Progressive Cyberpsychosis (6 stages)[/b]
+Strain builds from Sandy use, kills, Safety OFF time, and low runtime. Every fifteen seconds a dice roll fires against the current stage threshold. At guaranteed strain the episode is forced. Each stage permanently changes how V plays:
+[list]
+[*][b]Stage 0 Normal[/b] - dilation capped at 90%, only dice rolls can trigger episodes
+[*][b]Stage 1 Unstable[/b] - subtle tremor, micro-episodes every 5 to 10 minutes
+[*][b]Stage 2 Glitching[/b] - persistent glitch VFX, heartbeat, random nosebleeds, auto-attack chances begin
+[*][b]Stage 3 Losing It[/b] - hallucinations spawn (phantom NPCs), manic laughter, stronger tremor
+[*][b]Stage 4 On The Edge[/b] - 3-layer VFX, passive strain accumulation, Blackwall scream at episode start
+[*][b]Stage 5 Cyberpsycho[/b] - Safety OFF automatic, the Sandy stays active during episodes, death is near-inevitable
+[*][b]Stage VI Last Breath[/b] - permanent. Triggered only when V dies at stage 5 with Second Heart equipped
+[/list]
+
+[b]Neural Strain (Episode Trigger)[/b]
+Strain sources are split into two categories. Tolerance-based strain (activation, overuse, active time) is scaled by stage so the body resists more at low stages and breaks down faster at high stages. Psychological strain (kills, Safety OFF, low runtime) bypasses the scaling and hits equally hard regardless of stage. Kill strain varies by faction: gang +2, corpo +3, NCPD +5, civilian +6. Killing innocents costs the most because David Martinez never wanted to.
+
+[b]Martinez Rush (Kill-Triggered Combat Burst)[/b]
+Edgerunner-inspired short combat burst that can proc on kill while Sandy is active. Higher psychosis stage = higher chance of proc. Twelve-second window (extended to fifteen if Safety OFF) where every weapon stat spikes at once: +67% fire rate, +82% reload speed, +40% melee attack speed, +25% movement speed, +20 crit chance, +35 crit damage, +45% armor, 6.0x combat regen. Cost is a 1.5x runtime drain for the entire window plus a 3-second stamina crash deferred to the moment Sandy actually deactivates. Rush does not add neural strain, by design, so the cyberpsychosis stage cadence stays intact.
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/svg/martinez-rush-timeline.svg[/img]
+
+[b]Auto-Attack (Involuntary Weapon Fire)[/b]
+At stage 2 and up, V's weapon can fire on its own through AIWeapon.Fire(), the same method Wannabe Edgerunner uses. Four trigger points, each with stage-scaled chances: stage change, manic laugh, low runtime, nosebleed. If a weapon is in hand it fires immediately. If V is unarmed, DrawItemRequest forces a weapon draw, then fires after a 2-second delay. The target is forced hostile, V gets a tremor spike and a PsychoWarningEffect_Medium, then a 30-second global cooldown applies before the next attack can fire.
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/svg/auto-attack-trigger-matrix.svg[/img]
+
+[b]Last Breath (Stage VI)[/b]
+When V dies at psycho level 5 and Second Heart revives them, Stage VI begins. David's final stand, inspired by Episode 10 of Edgerunners. The entire phase is synchronized to "I Really Want to Stay at Your House" by Rosa Walton, about 4:05 minutes long, and runs in two phases:
+[list]
+[*][b]Peace phase (20 seconds)[/b] - all psychosis VFX stripped, the world is clear, Sandy ramps from 90% to 99.35% dilation over 5 seconds and holds the peak for the remaining 10 seconds. The song starts at the 3-second mark.
+[*][b]Decay phase (~225 seconds, song-synced)[/b] - combat buffs active throughout (+50% movement, +100% armor, x10 health regen). Effects are tied to the song's emotional arc. Chorus 1 unleashes a 20-meter EMP wave (Ticking Time Bomb), a 25-meter Blackwall corruption field, and 30% civilian corruption near V. Verse 2 quiets everything down. Chorus 2 hits at full intensity with 40% civilian corruption. Bridge strips all effects for a moment of clarity. Final Chorus is peak burst with 60% corruption. Dilation degrades from 99.35% down to 90% across the entire phase.
+[*][b]Death[/b] - runtime hits zero, "THE MOON, I CAN SEE IT" displays, then 3 seconds of terminal clarity before DAVID MARTINEZ FLATLINED is the last message you ever see. Permanent.
+[/list]
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/svg/dilation-last-breath-timeline.svg[/img]
+
+Last Breath cannot be deactivated, paused, or escaped through scene changes, the phone, or menus. There is no Stage VI cure.
+
+[b]Immunoblocker (Doc's Prescription)[/b]
+Three tiers, sold through street vendors and required to suppress neural strain accumulation.
+
+[list]
+[*][b]Common Immunoblocker[/b] - Rare quality (blue), 180 seconds, 6,000 eddies, 0.08 strain drain per second
+[*][b]Uncommon Immunoblocker (High Dosage)[/b] - Epic quality (purple), 360 seconds, 24,000 eddies, 0.18 strain drain per second
+[*][b]Military-Grade Immunoblocker[/b] - Legendary quality (gold), 600 seconds, 100,000 eddies, 0.35 strain drain per second
+[/list]
+
+Vendors: the Arroyo punk dealer stocks all three tiers (5 to 10 Common, 2 to 5 Uncommon, 1 to 2 Rare per visit). The Kabuki street kid stocks Common (3 to 6) and Uncommon (1 to 3) only. Prices and stock quantities are configurable.
+
+[b]Tolerance and Rebound[/b]
+Repeated use builds resistance. Common rolls a 70% chance to add +1.0 to a tolerance counter on each use. Uncommon rolls 50% at +1.0. Rare rolls 30% at +0.5. Crossing thresholds at 4.0, 8.0, and 12.0 advances tolerance to Mild, Moderate, and Severe. Each stage raises the prescription dose multiplier (x1.3, x1.6, x2.0) and reduces the effective tier of every blocker by 1. Sit clean for 24 game-time hours and tolerance decays at 1.0 per day. Visit a ripperdoc and the visit flushes 4.0 instantly.
+
+When the effect wears off, neural strain spikes. Doc warned about the slingshot. Tier 1 hits +5, tier 2 hits +15, tier 3 hits +30 strain, all multiplied by the tolerance multiplier. Tier 2 and up add tremor and nosebleed VFX. 10-second cooldown between rebounds.
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/svg/tolerance-rebound-lifecycle.svg[/img]
+
+[b]Auto-Injector Cyberware[/b]
+Optional Nervous System cyberware (Legendary, around 15,000 eddies, sold by Viktor). Automatically administers a single Rare-tier immunoblocker when V is on the brink: psycho stage 1 or higher, no immunoblocker already active, off cooldown, not in menu or Last Breath, and at least one Rare blocker in inventory. The cyberware consumes one Rare per trigger and re-arms after a 120-second cooldown. Keep Rare blockers in your stash if you want it to fire.
+
+[b]Treatment Protocol (Graduated Recovery)[/b]
+Recovery is a real process with three pillars: medication, ripperdoc visits, and rest. Viktor prescribes a full protocol per stage. The biomonitor tracks progress through doses, visits, rest hours, and treatment milestones. Hit 33% progress and episode cooldowns extend by 1.66x. Hit 66% and the multiplier rises to 2.33x. Following the protocol stops cyberpsychosis from getting worse. Ignoring it = normal degradation speed.
+
+[list]
+[*][b]Stage 1[/b] - 3 doses Common, 1 ripperdoc visit, 8h rest, around 1 day
+[*][b]Stage 2[/b] - 5 doses Common, 1 visit, 8h rest, around 2 days
+[*][b]Stage 3[/b] - 5 doses Uncommon, 2 visits, 12h rest, around 2 days
+[*][b]Stage 4[/b] - 7 doses Military-Grade, 3 visits, 16h rest, around 3 days
+[*][b]Stage 5[/b] - 10 doses Military-Grade, 5 visits, 24h rest, around 5 days
+[/list]
+
+Ripperdoc visits use a "Stabilize Sandevistan" button injected into the vanilla ripper menu. 24h game-time cooldown between visits, cost scales with stage from 2,000 to 20,000 eddies.
+
+[b]Runtime as Body Endurance[/b]
+The Sandy is not a battery. Runtime represents how much V's body can take. V can always reactivate the Sandy with no cooldown (David never had one in the anime). The cost is progressive physical deterioration. Below 30% runtime, tremor increases and strain ticks up at 0.15/s. Below 10%, stamina drops to 0.5x, speed to 0.6x, armor to 0.5x, strain ticks up at 0.5/s. At zero runtime, strain accumulates at 1.0/s. Max runtime also degrades with stage, from 100% baseline at stage 0 down to 35% at stage 5.
+
+[b]Non-Linear Drain[/b]
+Drain accelerates the longer V stays in dilation. After 60 seconds of continuous use, drain rate ramps as 1 + (minutesOver ^ 1.5). One minute past the threshold = 2x drain. Two minutes = ~4x. Three minutes = ~6x. Real tank lifetime is much shorter than the raw seconds suggest.
+
+[img]https://raw.githubusercontent.com/Y4rd13/david-sandevistan-plus/main/docs/svg/dilation-stages-comparison.svg[/img]
+
+Time dilation peaks decay through a `rtRatio^exp` curve. The exponent rises with stage so the peak fades faster at higher cyberpsychosis: exp 1.5 at stage 1, all the way to exp 2.8 at stage 5.
+
+[b]Activity Tracking and Sleep Multiplier[/b]
+Human connections reduce neural strain. Six activities are tracked per day: lover (-5 strain, +10% max runtime), sleep with lover (-8, +15%), shower (-5, +5%), social (-3), pet (-2), and apartment amenity (-2). On sleep, the activity count multiplies the strain drain through 1.0 + (activities x 0.25), capped at x2.5 if all six fire in one day. David stayed human through Lucy and his crew. Same idea here.
+
+[b]NCPD MaxTac Escalation[/b]
+Killing civilians or NCPD officers while cyberpsychosis is at stage 1 or higher forces heat to level 5 ("CALLMAXTAC"). MaxTac will come down on V with full force. Bribery can de-escalate, but only outside combat.
+
+[b]Custom HUD[/b]
+Minimal real-time overlay. Color-coded runtime bar with dilation percentage. Daily activation counter. Psycho bar visible when cyberpsychosis is active. Strain bar visible when strain is non-zero. Contextual status text (COMEDOWN, RECOVERING in safe areas, STABILIZED with immunosuppressant active, LAST BREATH FADING during Stage VI). Auto-hides during phone, inventory, and menu views. Uses Codeware's VirtualResolutionWatcher for clean auto-scaling on any resolution.
+
+[b]Biomonitor (Animated Medtech Panel)[/b]
+Animated medical panel that surfaces every treatment metric in one unified view: tolerance level, immunoblocker efficacy, neural load, cyberpsychosis stage, prescribed doses with countdown, visits remaining, rest hours, treatment milestone progress. A separate cyan substance-detection panel pops when V consumes an immunoblocker and explains exactly what was detected ("Insufficient for Stage V, Military-Grade required" or "Treatment dose registered, 3 remaining"). Auto-fade after 5 seconds for the substance panel, manual close for the main biomonitor. Position is fully configurable through Mod Settings.
+
+[size=3][b]Sensory Effects (Edgerunners-Accurate)[/b][/size]
+
+Physical and visual effects modeled directly on David Martinez's deterioration across Episodes 2 through 10:
+
+[list]
+[*][b]Camera shake[/b] - progressive intensity 0.001 to 0.008 across stages 1 to 5. David's hands shake from Episode 5 onward.
+[*][b]Manic laughter[/b] - random at psycho lvl 4 and 5, applies `perk_edgerunner_player` VFX. David laughing uncontrollably in Episode 10.
+[*][b]FOV pulse[/b] - +12 degrees for 0.4 seconds on every Sandy activation. Perception shift.
+[*][b]Heartbeat[/b] - audio pulse at psycho 2+ idle, or Sandy active with low health.
+[*][b]Nosebleed on activation[/b] - triggers when daily activations exceed safe limit. David bleeds from the nose in Episodes 2, 3, 5, 9.
+[*][b]Random nosebleed (no Sandy required)[/b] - independent of Sandy use at psycho 2+. Intervals: 5 to 10 min at lvl 2, 3 to 6 min at lvl 3, 90s to 3 min at lvl 4, 45 to 90s at lvl 5. David bled unprompted in Episodes 3, 5, 9, getting worse without ever activating the Sandy.
+[*][b]Blackout collapse[/b] - at 3x safe daily activations, V passes out and wakes up hours later at a safe location. David passes out after 8 uses in Episode 2.
+[*][b]Hallucinations[/b] - phantom NPCs spawn and vanish at psycho 3 to 5. Phantoms LINGER longer at higher stages: 4 to 6 seconds at stage 3, 8 to 14 seconds at stage 4, 10 to 20 seconds at stage 5. Lover phantoms (Lucy) always stay brief.
+[*][b]Pre-psychosis VFX[/b] - around 8 seconds of distortion before each episode fires, with a Blackwall scream at stages 4 and up firing 4 seconds into the pre-cue.
+[*][b]Terminal clarity[/b] - 4 seconds of cleared VFX right before death. David snaps out of psychosis just before he dies.
+[*][b]V's laugh during Last Breath[/b] - random voice line bursts during decay phase. Laughing through the pain.
+[*][b]Delusional messages[/b] - every 4 to 8 seconds during Last Breath decay. V's fragmented thoughts about Lucy and the Moon.
+[/list]
+
+[size=3][b]Audio[/b][/size]
+
+[list]
+[*][b]136 voice lines[/b] - V male, recorded for activations, overuse, exhaustion, hallucinations, attacks, sleep recovery, ripperdoc visits, the Last Breath sequence, and every contextual milestone in between. Plays through Audioware (independent audio engine), so they survive Sandy's 99.35% time dilation at normal speed.
+[*][b]Blackwall scream[/b] - extracted from `w_blackwall_haunted_gun_burnout_scream_short_m`, fires at stage 4+ pre-psychosis with a 4-second delay.
+[*][b]Last Breath song[/b] - "I Really Want to Stay at Your House" by Rosa Walton, played via Audioware with `affectedByTimeDilation = false` so the song plays at normal speed even during 99.35% Sandy.
+[*][b]Vanilla SFX hooks[/b] - `ui_gmpl_perk_edgerunner` for psychosis fury, `quickhack_cyberpsychosis_mech` for Sandy shutdown, plus the Kerenzikov entry cue for Martinez Rush.
+[/list]
+
+[size=3][b]Mod Settings (44 Tunables Across 7 Categories)[/b][/size]
+
+Every value above is exposed through the in-game Mod Settings tab. Open [b]Settings > Mods > David Sandevistan Plus[/b].
+
+[list]
+[*][b]Time Dilation[/b] - Require EdgeRunner Perk toggle (default on, gates the full 99.35% peak), Enable Session Fatigue.
+[*][b]Runtime and Drain[/b] - Runtime Tank seconds, recharge duration, cooldown base, activation cost, kill recharge value, full recharge hours, max recharge per sleep, drain acceleration threshold.
+[*][b]Combat Stats[/b] - Critical chance, critical damage, headshot multiplier, heal on kill %, stamina on kill.
+[*][b]Cyberpsychosis[/b] - Safe activations per day, strain buildup multiplier, strain recovery multiplier, episode cooldown multiplier, micro-episode frequency. Advanced toggles hide the deeper tuners by default.
+[*][b]Recovery[/b] - Sleep recovery %, tolerance decay hours.
+[*][b]Economy and Interface[/b] - Immunoblocker prices per tier, biomonitor position X/Y on a 3840x2160 canvas (auto-scales to your resolution), debug toggle, Sandevistan color grading LUT.
+[*][b]Martinez Rush[/b] - Edgerunner perk gate, chance multiplier, duration, cooldown, drain multiplier, and every individual stat bonus (fire rate, reload, melee, movement, crit chance, crit damage, armor, regen).
+[/list]
+
+Defaults are lore-accurate. Most chooms will not need to change anything. Tune what you want, leave the rest alone.
+
+[size=3][b]Requirements[/b][/size]
+
+All of these must be installed for the mod to work. They are standard tools in the Cyberpunk 2077 modding stack.
+
+[b]Loaders and frameworks:[/b]
+[list]
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/107]Cyber Engine Tweaks[/url] - CET, the Lua runtime that drives the core logic.
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/2380]RED4ext[/url] - native plugin loader (dependency of Codeware, ArchiveXL, TweakXL, Audioware).
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/1511]redscript[/url] - compiles every .reds file shipped with the mod.
+[/list]
+
+[b]Modding frameworks:[/b]
+[list]
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/4198]ArchiveXL[/url] - required by the custom .archive.xl (sectors, quest phases, journal).
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/4197]TweakXL[/url] - loads the immunoblocker items, vendors, status effects, and auto-injector cyberware records.
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/7780]Codeware[/url] - HUD auto-scaling via VirtualResolutionWatcher, ScriptableSystem helpers.
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/12001]Audioware[/url] - Last Breath song, 136 V male voice lines, Blackwall scream. Uses its own audio engine (Kira) so audio survives time dilation.
+[*][url=https://www.nexusmods.com/cyberpunk2077/mods/4885]Mod Settings[/url] - this is the in-game UI that exposes the 44 tunables. [b]Note:[/b] not the same as "Native Settings UI" (mod 3518). David Sandevistan Plus uses Jackhumbert's Mod Settings module.
+[/list]
+
+[size=3][b]How to Install[/b][/size]
+
+Extract the zip into your Cyberpunk 2077 install directory, preserving the folder structure. The archive lays out into:
+
+[list]
+[*][b]archive/pc/mod/[/b] - the .archive and .archive.xl pair (custom icon, localization, VFX, sector edits, vendor NPCs)
+[*][b]bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/[/b] - 14 Lua files plus the localization folder
+[*][b]r6/scripts/DavidSandevistanPlus/[/b] - 11 redscript files (DSPSettings, DSPHUDSystem, DSPAudioBridge, DSPBiomonitorSystem, DSPPlayerEvents, DSPKillTracker, DSPActivityTracker, DSPRipperdocHook, DSPConsumeOverride, DSPViktorBridge, DSPViktorPhone)
+[*][b]r6/scripts/AnimatedWidgets/[/b] - bundled Animated Widgets Library (by r457 & gh057) that drives the biomonitor animations
+[*][b]r6/tweaks/DavidSandevistanPlus/[/b] - TweakXL YAML files (REQUIRED, without these you get no vendors and no immunoblockers)
+[*][b]r6/audioware/DavidSandevistanPlus/[/b] - audios.yaml, last_breath_song.ogg, sfx/blackwall_scream.ogg, voice/v_male/ with 136 V male voice lines
+[/list]
+
+Vortex or MO2 can also install the zip directly. After install, launch the game once to compile the redscript files. The Mod Settings tab will be populated on first run.
+
+[size=3][b]Compatibility[/b][/size]
+
+[b]Dark Future[/b]
+Fully compatible with [url=https://www.nexusmods.com/cyberpunk2077/mods/12950]Dark Future[/url]. Different scripting systems (CET Lua vs Redscript), separate TweakDB records, independent Quest Fact namespaces. No conflicts.
+
+Both mods have their own cyberpsychosis systems and they coexist:
+[list]
+[*][b]Dark Future[/b] - Humanity Loss from cumulative cyberware installation
+[*][b]David Sandevistan Plus[/b] - Cyberpsychosis from overusing the Sandevistan specifically
+[/list]
+
+With both active, V faces double pressure. Lore-accurate: David's psychosis came from both excessive chrome AND pushing the Sandevistan past its limits.
+
+Dark Future consumables are detected automatically. The Immunosuppressant drains neural strain at -0.08/s and counts as a partial treatment dose. Endotrisine halves strain accumulation from Sandevistan use and Safety Off. No configuration needed, the checks are safely skipped when Dark Future is not installed.
+
+[b]Other mods[/b]
+Should be compatible with most Sandevistan overhauls that ship as separate TweakDB records. The mod uses its own `MartinezSandevistan_` TweakDB namespace so it does not collide with vanilla Sandevistan cyberware or third-party variants. HUD auto-hides during menus, phone calls, and braindances, so HUD overhauls and replacers should not conflict.
+
+[size=3][b]Credits[/b][/size]
+
+[list]
+[*][b]CD PROJEKT RED[/b] and the Edgerunners team for creating David Martinez and the source material this mod is built around.
+[*][b]r457 and gh057[/b] for the Animated Widgets Library, bundled in r6/scripts/AnimatedWidgets/ and driving the biomonitor panel.
+[*][b]Jackhumbert[/b] for the [url=https://www.nexusmods.com/cyberpunk2077/mods/4885]Mod Settings[/url] framework.
+[*][b]keanuWheeze[/b] for [url=https://www.nexusmods.com/cyberpunk2077/mods/3518]Native Settings UI[/url], the inspiration for the settings architecture.
+[*][b]The CET, redscript, RED4ext, TweakXL, ArchiveXL, Codeware, and Audioware teams[/b] for the modding stack that makes all of this possible.
+[/list]
+
+[size=3][b]Bug Reports[/b][/size]
+
+Found a glitch in the system? Use the [b]Bugs[/b] tab on this Nexus page or open an issue on [url=https://github.com/Y4rd13/david-sandevistan-plus/issues]GitHub[/url]. To help me track it down fast, include:
+
+[list]
+[*][b]Mod version[/b] (check the Files tab here).
+[*][b]Game version[/b] (vanilla 2.2x, Phantom Liberty, etc.).
+[*][b]Steps to reproduce[/b] - what exactly did you do, step by step.
+[*][b]Expected behavior[/b] vs actual behavior.
+[*][b]Screenshots or short video[/b] if the bug is visual.
+[*][b]CET console output[/b] - enable Debug Logs in Mod Settings, reproduce the bug, then attach the relevant lines.
+[*][b]Mod list[/b] - especially if another mod might be relevant (Dark Future, HUD overhauls, Sandevistan replacers, etc.).
+[/list]
+
+[b]Before reporting:[/b]
+[list]
+[*]Make sure all 8 required dependencies are installed and up to date.
+[*]Check the Bugs tab and GitHub issues to see if someone already reported it.
+[*]Try a clean save (load a save before installing the mod) to rule out persistent quest fact state.
+[/list]
+
+[size=3][b]Source[/b][/size]
+
+David Sandevistan Plus is open source under the [url=https://github.com/Y4rd13/david-sandevistan-plus/blob/main/LICENSE]MIT license[/url]. Source code, full design docs (the SVG diagrams above live there too), and contributions are welcome on [url=https://github.com/Y4rd13/david-sandevistan-plus]GitHub[/url].
+
+[size=2][i]David Sandevistan Plus is an independent fan project and is not affiliated with or endorsed by CD PROJEKT RED, Studio Trigger, or Nexus Mods. All trademarks belong to their respective owners.
+
+If this mod adds to your run, an endorsement on Nexus is the biggest support I can ask for. Stay choom, stay chrome, and remember: Doc said three times a day. He meant it.[/i][/size]
