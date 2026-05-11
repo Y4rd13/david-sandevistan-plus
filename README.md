@@ -30,7 +30,7 @@ An animated biomonitor panel (Animated Widgets Framework) showing all treatment 
 - **Status section**: Tolerance, Efficacy, Neural Load, Cyberpsychosis stage, Treatment RX progress
 - **Protocol section**: Prescribed doses + tier, Visits (with countdown to next), Rest hours, Milestone progress
 - **Substance detection**: Separate cyan notification panel when immunoblocker is consumed — shows detected substance and dynamic feedback ("Insufficient for Stage V" / "Treatment dose registered — 3 remaining")
-- **Auto-fade**: Substance detection fades after 8s, main biomonitor stays until manually closed
+- **Auto-fade**: Substance detection panel auto-closes ~5s after consumption. The main biomonitor stays open until the player closes it (no timed fade)
 - **Position configurable** via the in-game Mod Settings UI
 
 ### Progressive Cyberpsychosis
@@ -106,7 +106,7 @@ An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Sa
 |---------------|--------|------|
 | Sandy activation | +5 base | +3 per overuse beyond safe limit |
 | Sandy active | +2/min | Continuous accumulation |
-| Safety OFF | +0.15/s | Automatic at stage 5 |
+| Safety OFF | +0.10/s | Automatic at stage 5 |
 | Kill (Sandy active) | +2 to +6 | Faction-based (configurable): civilian=6, NCPD=5, corpo=3, gang=2 |
 | Low runtime (<10%) | +0.5/s | Body exhausted, Sandy stresses it more |
 | Zero runtime (0%) | +1.0/s | Death wish — body screams |
@@ -125,16 +125,16 @@ Strain sources are split into two categories with different scaling:
 - **Tolerance-based strain** (Sandy activation, overuse bonus, active time): scaled by a stage multiplier that reflects the body's growing tolerance to cyberware. Stage 0-1: x0.5, Stage 2: x0.75, Stage 3-5: x1.0.
 - **Psychological/physical strain** (kills, low/zero runtime, Safety OFF): bypasses the stage multiplier (`raw=true`). The psychological trauma of killing and the physical stress of pushing the body at zero runtime hit equally hard at all stages.
 
-When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
+When strain exceeds the threshold, a dice roll fires **every 15 seconds**: `chance = progress × 0.20`, where `progress = (strain - threshold) / (guaranteed - threshold)`, clamped to 1.0. So the chance ramps from 0 to a peak of 20% per roll as strain climbs from threshold to guaranteed. At guaranteed (or above), an episode is forced.
 
 | Level | Threshold | Guaranteed | Episode Cooldown | Experience |
 |-------|-----------|------------|-----------------|------------|
-| 0 | 100 | — | — | Hard to trigger — only dice rolls |
+| 0 | 100 | — | — | Only dice rolls fire — no guaranteed ceiling |
 | 1 | 85 | — | 48h | Manageable with care |
 | 2 | 70 | 120 | 36h | Casual overuse is dangerous |
 | 3 | 55 | 100 | 24h | Almost any aggressive session triggers |
-| 4 | 40 | 80 | 12h | Constant danger, passive strain +0.04/s |
-| 5 | 30 | 70 (forced) | 6h | Near-inevitable, passive strain +0.08/s |
+| 4 | 40 | 100 | 12h | Constant danger, passive strain +0.025/s |
+| 5 | 30 | 70 (forced) | 6h | Near-inevitable, passive strain +0.05/s |
 
 #### Immunoblocker (Consumable Item)
 
@@ -177,11 +177,13 @@ Stage 4-5 also applies a permanent ×0.85 stamina regen debuff even outside Sand
 
 V sees things that aren't real. Phantom NPCs spawn 5-15m from V, appear briefly with ghost VFX, then vanish.
 
-| Stage | Frequency | Despawn time | Intensity |
-|-------|-----------|-------------|-----------|
-| 3 | Every 3-5 min | 3-5s | Subtle — *"Thought I saw..."* |
-| 4 | Every 1-3 min | 5-8s | Unsettling — *"They're watching me..."* |
-| 5 | Every 30-60s | 2-4s | Constant — *"THEY'RE EVERYWHERE"* |
+| Stage | Frequency | Phantom lifetime | Intensity |
+|-------|-----------|-----------------|-----------|
+| 3 | Every 3-5 min | 4-6s (all behaviours) | Subtle — *"Thought I saw..."* |
+| 4 | Every 1-3 min | 8-14s (4-6s for lover phantoms) | Unsettling — *"They're watching me..."* |
+| 5 | Every 30-60s | 10-20s (4-6s for lover phantoms) | Constant — *"THEY'RE EVERYWHERE"* |
+
+> Phantom lifetime grows with stage — they linger longer as the brain loses grip. The exception is `lover_stare` behaviour (Lucy phantoms), which always stays brief. Phantoms also despawn early if V walks past a proximity threshold.
 
 Suppressed by immunoblocker (full/partial effectiveness).
 
@@ -189,14 +191,14 @@ Suppressed by immunoblocker (full/partial effectiveness).
 
 V involuntarily attacks nearby NPCs — loss of motor control. Uses `AIWeapon.Fire()` to fire V's weapon at a detected NPC, the same method used by Wannabe Edgerunner. Does not require aiming. If weapon is in hand, fires immediately with `ono_v_laughs_hard`. If no weapon is drawn, `DrawItemRequest` forces a draw from the weapon wheel slot, then fires after a 2s delay.
 
-Four trigger points, each with stage-scaled chances:
+Four trigger points, each with stage-scaled chances (stage 2 already has small chances for the three non-laugh triggers):
 
-| Trigger | Stage 3 | Stage 4 | Stage 5 | Context |
-|---------|---------|---------|---------|---------|
-| Manic laugh (micro-episode) | 30% | 50% | 70% | Laugh → hand fires on its own |
-| Stage change (BleedingEffect) | 40% | 60% | 80% | Psycho level escalation → violent outburst |
-| Low runtime (<10%, per second) | 10% | 20% | 35% | Body exhausted, Sandy stresses the nervous system |
-| Nosebleed (on activation) | 5% | 15% | 25% | Physical deterioration → involuntary trigger pull |
+| Trigger | Stage 2 | Stage 3 | Stage 4 | Stage 5 | Context |
+|---------|---------|---------|---------|---------|---------|
+| Manic laugh (micro-episode) | — | 30% | 50% | 70% | Laugh → hand fires on its own |
+| Stage change (BleedingEffect) | 15% | 40% | 60% | 80% | Psycho level escalation → violent outburst |
+| Low runtime (<10%, per second) | 5% | 10% | 20% | 35% | Body exhausted, Sandy stresses the nervous system |
+| Nosebleed (on activation) | 3% | 5% | 15% | 25% | Physical deterioration → involuntary trigger pull |
 
 30s cooldown between attacks. NPC within 15m, red outline 2s, target becomes hostile. Post-attack VFX (PsychoWarningEffect_Medium) + camera shake + contextual messages (*"What did I just do..."* / *"THEY WERE LOOKING AT ME"*).
 
@@ -304,13 +306,13 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **FOV pulse** | Every Sandy activation (+12° for 0.4s) | Perception shift on Sandevistan activation |
 | **Heartbeat** | Psycho lvl 2+ idle, or Sandy active with low health | Tension audio during David's deterioration |
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
-| **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 4–8min at lvl 2, 30–60s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
+| **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 5–10min at lvl 2, 3–6min at lvl 3, 90s–3min at lvl 4, 45–90s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
 | **Blackout collapse** | Sandy activation at 3× safe daily limit → teleport to safe location + time skip | David passes out after 8 uses in Ep 2 |
 | **Hallucinations** | Phantom NPCs appear and vanish at psycho lvl 3-5 | David seeing things in Eps 8-10 |
 | **Auto-attack** | Involuntary weapon fire (`AIWeapon.Fire()`) at nearby NPCs at psycho lvl 3-5, from 4 trigger points | David losing control in Ep 10 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
-| **Pre-psychosis VFX** | Before each psycho episode (`PrePsychosisEffect`: 2s blackout distortion, then 1.5s delay before episode fires) | David's vision distorting before losing control |
-| **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
+| **Pre-psychosis VFX** | Before each psycho episode (`PrePsychosisEffect`: ~8s of blackout distortion + Blackwall scream at stage 4+, with the scream firing 4s after VFX start) | David's vision distorting before losing control |
+| **Terminal clarity** | 4s before death at psycho lvl 5 (KillV → RemoveAllVFX → "..." → KillV_Execute) | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
 | **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
@@ -560,13 +562,13 @@ Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each
 ```
 Activate Sandy → strain accumulates (+5 base, +3 per overuse)
   ├─ Sandy active: +2/min strain
-  ├─ Safety OFF (stage 5): +0.15/s strain
-  ├─ Kills during Sandy: +2 to +8 strain (faction-based, configurable)
+  ├─ Safety OFF (stage 5): +0.10/s strain
+  ├─ Kills during Sandy: +2 to +6 strain (faction-based, configurable)
   ├─ Low runtime (<10%): +0.5/s strain (body exhausted)
   └─ Zero runtime (0%): +1.0/s strain (death wish)
 
-Strain exceeds threshold → dice roll each second:
-  ├─ chance = (strain - threshold) / 200
+Strain exceeds threshold → dice roll every 15 seconds:
+  ├─ chance = progress × 0.20  (progress = (strain - threshold) / (guaranteed - threshold))
   ├─ Stages 0-4: EPISODE → Sandy shuts down + Safety ON + psychoLevel++
   ├─ Stage 5 Safety OFF: EPISODE → Sandy stays active + FrightenNPCs
   └─ Strain hits guaranteed cap → forced episode (can't avoid)
