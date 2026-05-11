@@ -31,8 +31,8 @@ Tolerance-based strain (scaled by stage multiplier):
   Stage multiplier:   Stage 0-1: ×0.5, Stage 2: ×0.75, Stage 3-5: ×1.0
 
 Psychological/physical strain (raw — bypasses stage multiplier):
-  Safety OFF /sec     → +0.15
-  Kill during Sandy   → +2 to +8 (faction-based, configurable per faction)
+  Safety OFF /sec     → +0.10
+  Kill during Sandy   → +2 to +6 (faction-based, configurable per faction)
   Low runtime (<10%)  → +0.5/s
   Zero runtime        → +1.0/s
 
@@ -45,8 +45,9 @@ Actions reduce strain:
   Activities          → -2 to -8 immediate (lover -5, sleepWithLover -8, shower -5, social -3, pet -2, apartment -2)
   Sleep multiplier    → 1.0 + (activities × 0.25), max ×2.5 with all 6
 
-When strain >= threshold → dice roll each second:
-  chance = (strain - threshold) / 200
+When strain >= threshold → dice roll every 15 seconds:
+  progress = (strain - threshold) / (guaranteed - threshold)  (clamped 0..1)
+  chance   = progress × 0.20
   Success → EPISODE (MartinezFury, psycho++) + strain reset to 0
   At guaranteed → forced episode (can't avoid)
 ```
@@ -730,7 +731,7 @@ All parameters with their cfg key names:
 | `strainPerActivation` | int | 5 | Base strain per Sandy activation |
 | `strainPerOveruseBonus` | int | 3 | Extra strain per activation beyond safe limit |
 | `strainPerMinuteActive` | int | 2 | Strain per minute of Sandy use |
-| `strainPerSecSafetyOff` | float | 0.15 | Strain per second with Safety OFF (stage 5) |
+| `strainPerSecSafetyOff` | float | 0.10 | Strain per second with Safety OFF (stage 5) |
 | `strainPerKillBase` | int | 3 | Base kill strain (overridden by per-faction config) |
 | `strainPerSecLowRuntime` | float | 0.5 | Strain per second when runtime <10% |
 | `strainPerSecZeroRuntime` | float | 1.0 | Strain per second when runtime is 0% |
