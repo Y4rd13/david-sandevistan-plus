@@ -257,7 +257,7 @@ The digital distortion cascade (`johnny_sickness_blackout`) fires BEFORE the epi
 `AddStrain(amount, raw)` separates tolerance-based strain from psychological/physical strain:
 
 - **Tolerance-based** (`raw = false`): Sandy activation (+5), overuse bonus (+3 per excess), active time (+2/min). Scaled by stage multiplier: Stage 0-1 x0.5, Stage 2 x0.75, Stage 3-5 x1.0.
-- **Psychological/physical** (`raw = true`): Kills (+2 to +8), low runtime (+0.5/s), zero runtime (+1.0/s), Safety OFF (+0.15/s). Bypasses stage multiplier entirely.
+- **Psychological/physical** (`raw = true`): Kills (+2 to +6), low runtime (+0.5/s), zero runtime (+1.0/s), Safety OFF (+0.10/s). Bypasses stage multiplier entirely.
 
 The separation means: at stage 0, casual Sandy use is half as dangerous (body is fresh), but killing civilians still hits at full force. By stage 3+, the body no longer resists — all strain hits equally hard.
 

@@ -31,8 +31,8 @@ Tolerance-based strain (scaled by stage multiplier):
   Stage multiplier:   Stage 0-1: ×0.5, Stage 2: ×0.75, Stage 3-5: ×1.0
 
 Psychological/physical strain (raw — bypasses stage multiplier):
-  Safety OFF /sec     → +0.15
-  Kill during Sandy   → +2 to +8 (faction-based, configurable per faction)
+  Safety OFF /sec     → +0.10
+  Kill during Sandy   → +2 to +6 (faction-based, configurable per faction)
   Low runtime (<10%)  → +0.5/s
   Zero runtime        → +1.0/s
 
@@ -45,8 +45,9 @@ Actions reduce strain:
   Activities          → -2 to -8 immediate (lover -5, sleepWithLover -8, shower -5, social -3, pet -2, apartment -2)
   Sleep multiplier    → 1.0 + (activities × 0.25), max ×2.5 with all 6
 
-When strain >= threshold → dice roll each second:
-  chance = (strain - threshold) / 200
+When strain >= threshold → dice roll every 15 seconds:
+  progress = (strain - threshold) / (guaranteed - threshold)  (clamped 0..1)
+  chance   = progress × 0.20
   Success → EPISODE (MartinezFury, psycho++) + strain reset to 0
   At guaranteed → forced episode (can't avoid)
 ```
@@ -196,6 +197,16 @@ Timeline (~1.9s total):
 | 1909ms | `socket OnEnd` — animation complete | System |
 
 ![Immunoblocker Injection Timeline](immunoblocker-animation-timeline.svg)
+
+### Tolerance + Rebound
+
+Repeated use builds resistance. Each consumption rolls a tier-specific buildup chance: Common 70%, Uncommon 50%, Rare 30%. A successful roll adds +1.0 (or +0.5 for Rare) to an internal counter. Crossing thresholds at 4.0 / 8.0 / 12.0 advances tolerance to Mild / Moderate / Severe — each stage raises the prescription dose multiplier (×1.0 → ×1.3 → ×1.6 → ×2.0) and reduces the effective tier of every blocker by 1.
+
+When the effect window expires, neural strain spikes — Doc's "slingshot" warning. Rebound strain is +5 / +15 / +30 by tier, multiplied by the same tolerance multiplier. Tier 2+ also adds a Nosebleed VFX and tier-scaled tremor.
+
+Tolerance decays passively at -1.0 per game-day after `Tolerance Decay Hours` of abstinence (default 24h), or instantly by -4.0 per ripperdoc visit.
+
+![Immunoblocker Tolerance + Rebound Lifecycle](svg/tolerance-rebound-lifecycle.svg)
 
 ## System 3: Runtime-Based Penalties
 
@@ -424,16 +435,18 @@ Phantom NPCs spawn near V during Sandy use via `exEntitySpawner`. These hallucin
 
 V's weapon fires involuntarily via `AIWeapon.Fire()`, the same method used by Wannabe Edgerunner. Does not require aiming. If weapon is in hand, fires immediately with `ono_v_laughs_hard`. If no weapon is drawn, `DrawItemRequest` forces a draw, then fires after a 2s delay with `ono_v_laughs_hard`. 30s cooldown, 15m NPC range, red outline 2s on target, target becomes hostile.
 
-Four trigger points with stage-scaled chances:
+Four trigger points with stage-scaled chances (stage 2 also has small chances for the three non-laugh triggers):
 
-| Trigger | Stage 3 | Stage 4 | Stage 5 |
-|---------|---------|---------|---------|
-| Manic laugh (micro-episode) | 30% | 50% | 70% |
-| Stage change (FrightenNPCs) | 40% | 60% | 80% |
-| Low runtime (<10%, per second) | 10% | 20% | 35% |
-| Nosebleed (on activation) | 5% | 15% | 25% |
+| Trigger | Stage 2 | Stage 3 | Stage 4 | Stage 5 |
+|---------|---------|---------|---------|---------|
+| Manic laugh (micro-episode) | — | 30% | 50% | 70% |
+| Stage change (FrightenNPCs) | 15% | 40% | 60% | 80% |
+| Low runtime (<10%, per second) | 5% | 10% | 20% | 35% |
+| Nosebleed (on activation) | 3% | 5% | 15% | 25% |
 
 Post-attack effects: PsychoWarningEffect_Medium VFX, PsychoLaughEffect (unless triggered from laugh), camera shake (0.008), gunshot stimulus broadcast.
+
+![Auto-Attack Trigger Matrix + Execution Flow](svg/auto-attack-trigger-matrix.svg)
 
 ### Safety ON/OFF
 
@@ -580,6 +593,8 @@ Each value is exposed as its own Mod Setting in the Martinez Rush category.
 ### Edgerunner Perk Gate
 
 When `rushRequireEdgerunner` is on, Rush only procs if V has the vanilla Edgerunner perk unlocked in the Reflexes tree. The resolver probes a list of known perk TweakDBID candidates (`NewPerks.Reflexes_Central_Master_Perk_1` and four variants) and caches the first one the live TweakDB accepts, so the check survives perk-tree renames across game patches without a code change. Fails closed if no candidate matches — safer than silently bypassing the gate.
+
+![Martinez Rush — Proc Decision + Active Window](svg/martinez-rush-timeline.svg)
 
 ## Cross-System Interactions
 
@@ -730,7 +745,7 @@ All parameters with their cfg key names:
 | `strainPerActivation` | int | 5 | Base strain per Sandy activation |
 | `strainPerOveruseBonus` | int | 3 | Extra strain per activation beyond safe limit |
 | `strainPerMinuteActive` | int | 2 | Strain per minute of Sandy use |
-| `strainPerSecSafetyOff` | float | 0.15 | Strain per second with Safety OFF (stage 5) |
+| `strainPerSecSafetyOff` | float | 0.10 | Strain per second with Safety OFF (stage 5) |
 | `strainPerKillBase` | int | 3 | Base kill strain (overridden by per-faction config) |
 | `strainPerSecLowRuntime` | float | 0.5 | Strain per second when runtime <10% |
 | `strainPerSecZeroRuntime` | float | 1.0 | Strain per second when runtime is 0% |

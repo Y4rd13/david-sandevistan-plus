@@ -6,7 +6,7 @@ Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every game
 
 - **Lore-accurate defaults** — Safety ON/OFF is automatic based on psycho stage (stage 5+ = limiters fail)
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- In-game settings via Native Settings UI tab: "Martinez Sandy+"
+- In-game settings via Mod Settings tab: **David Sandevistan Plus** (7 categories, 44 tunables)
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
 - No health brake by default — David never had an auto-stop
 - Progressive dilation — stage 0 starts at 90%, power increases with psychosis (up to 99.35% at stage 6)
@@ -30,7 +30,7 @@ An animated biomonitor panel (Animated Widgets Framework) showing all treatment 
 - **Status section**: Tolerance, Efficacy, Neural Load, Cyberpsychosis stage, Treatment RX progress
 - **Protocol section**: Prescribed doses + tier, Visits (with countdown to next), Rest hours, Milestone progress
 - **Substance detection**: Separate cyan notification panel when immunoblocker is consumed — shows detected substance and dynamic feedback ("Insufficient for Stage V" / "Treatment dose registered — 3 remaining")
-- **Auto-fade**: Substance detection fades after 8s, main biomonitor stays until manually closed
+- **Auto-fade**: Substance detection panel auto-closes ~5s after consumption. The main biomonitor stays open until the player closes it (no timed fade)
 - **Position configurable** via the in-game Mod Settings UI
 
 ### Progressive Cyberpsychosis
@@ -106,7 +106,7 @@ An accumulation pool + dice roll system. Strain builds from Sandy use, kills, Sa
 |---------------|--------|------|
 | Sandy activation | +5 base | +3 per overuse beyond safe limit |
 | Sandy active | +2/min | Continuous accumulation |
-| Safety OFF | +0.15/s | Automatic at stage 5 |
+| Safety OFF | +0.10/s | Automatic at stage 5 |
 | Kill (Sandy active) | +2 to +6 | Faction-based (configurable): civilian=6, NCPD=5, corpo=3, gang=2 |
 | Low runtime (<10%) | +0.5/s | Body exhausted, Sandy stresses it more |
 | Zero runtime (0%) | +1.0/s | Death wish — body screams |
@@ -125,16 +125,16 @@ Strain sources are split into two categories with different scaling:
 - **Tolerance-based strain** (Sandy activation, overuse bonus, active time): scaled by a stage multiplier that reflects the body's growing tolerance to cyberware. Stage 0-1: x0.5, Stage 2: x0.75, Stage 3-5: x1.0.
 - **Psychological/physical strain** (kills, low/zero runtime, Safety OFF): bypasses the stage multiplier (`raw=true`). The psychological trauma of killing and the physical stress of pushing the body at zero runtime hit equally hard at all stages.
 
-When strain exceeds the threshold, a dice roll fires each second: `chance = (strain - threshold) / 200`. At the guaranteed cap, an episode is forced.
+When strain exceeds the threshold, a dice roll fires **every 15 seconds**: `chance = progress × 0.20`, where `progress = (strain - threshold) / (guaranteed - threshold)`, clamped to 1.0. So the chance ramps from 0 to a peak of 20% per roll as strain climbs from threshold to guaranteed. At guaranteed (or above), an episode is forced.
 
 | Level | Threshold | Guaranteed | Episode Cooldown | Experience |
 |-------|-----------|------------|-----------------|------------|
-| 0 | 100 | — | — | Hard to trigger — only dice rolls |
+| 0 | 100 | — | — | Only dice rolls fire — no guaranteed ceiling |
 | 1 | 85 | — | 48h | Manageable with care |
 | 2 | 70 | 120 | 36h | Casual overuse is dangerous |
 | 3 | 55 | 100 | 24h | Almost any aggressive session triggers |
-| 4 | 40 | 80 | 12h | Constant danger, passive strain +0.04/s |
-| 5 | 30 | 70 (forced) | 6h | Near-inevitable, passive strain +0.08/s |
+| 4 | 40 | 100 | 12h | Constant danger, passive strain +0.025/s |
+| 5 | 30 | 70 (forced) | 6h | Near-inevitable, passive strain +0.05/s |
 
 #### Immunoblocker (Consumable Item)
 
@@ -147,6 +147,45 @@ Doc's prescribed medication — *"Nine times your customary dosage."* Reduces st
 | Rare | Military-Grade Immunoblocker | Legendary (gold) | 600s (10 min) | 100,000€$ | 0.35/s | Uncommonly present |
 
 Sold exclusively through street vendors (VendorsXL): Arroyo punk dealer (all 3 tiers) and Kabuki street kid (Common + Uncommon only). Prices and kill strain per faction are configurable via in-game Settings UI.
+
+Per-vendor stock (random quantity rolled on visit):
+
+| Vendor | Common | Uncommon | Rare |
+|---|---|---|---|
+| Arroyo punk dealer | 5–10 | 2–5 | 1–2 |
+| Kabuki street kid | 3–6 | 1–3 | — |
+
+##### Tolerance
+
+Repeated immunoblocker use builds resistance — your body learns to ignore the drug. Each consumption rolls for a tolerance buildup; if it triggers, an internal counter ticks up. When the counter crosses a stage threshold, tolerance level advances and Viktor sends an SMS warning.
+
+| Tier consumed | Buildup chance | Counter increment | Threshold to next stage |
+|---|---|---|---|
+| Common | 70% | +1.0 | 4.0 (stage 0→1) |
+| Uncommon | 50% | +1.0 | 8.0 (stage 1→2) |
+| Rare | 30% | +0.5 | 12.0 (stage 2→3) |
+
+Each tolerance stage reduces the effective tier of every immunoblocker by 1 (so at Severe tolerance, a Rare blocker behaves like Common). Tolerance stages also scale prescription doses required: ×1.3 / ×1.6 / ×2.0 at stages 1 / 2 / 3.
+
+**Decay:** abstain for `Tolerance Decay Hours` (default 24h game-time), and the counter decays at -1.0 per game-day. **Flush:** every ripperdoc visit reduces tolerance by -4.0 instantly.
+
+##### Rebound / Slingshot
+
+When the immunoblocker wears off, V's neural strain spikes — Doc warned about the "slingshot the other way." Higher tiers crash harder, and tolerance compounds the crash.
+
+| Tier | Strain spike (base) | Tolerance multiplier | Side effects |
+|---|---|---|---|
+| Common | +5 | ×1.0 / ×1.3 / ×1.6 / ×2.0 (stages 0/1/2/3) | Mild tremor (0.006), warning message |
+| Uncommon | +15 | (same multipliers) | Tremor 0.008 + nosebleed VFX |
+| Rare | +30 | (same multipliers) | Tremor 0.012 + nosebleed VFX, *"the slingshot..."* |
+
+Rebound has a 10s real-time cooldown and is suppressed during Last Breath, menus, and braindances.
+
+##### Auto-Injector Cyberware
+
+Optional Nervous System cyberware (Legendary, ~15,000€$, sold by Viktor) that auto-administers a **Rare** immunoblocker when V is on the brink — at psycho stage ≥1, no immunoblocker already active, off cooldown, not in menu/Last Breath, and at least one Rare blocker in inventory. The cyberware consumes one Rare from inventory per trigger and re-arms after a 120s cooldown.
+
+> Rare-tier only — the auto-injector won't fall back to Common/Uncommon. If you want it to fire, keep at least one Military-Grade Immunoblocker stocked.
 
 #### Runtime as Body Endurance
 
@@ -177,11 +216,13 @@ Stage 4-5 also applies a permanent ×0.85 stamina regen debuff even outside Sand
 
 V sees things that aren't real. Phantom NPCs spawn 5-15m from V, appear briefly with ghost VFX, then vanish.
 
-| Stage | Frequency | Despawn time | Intensity |
-|-------|-----------|-------------|-----------|
-| 3 | Every 3-5 min | 3-5s | Subtle — *"Thought I saw..."* |
-| 4 | Every 1-3 min | 5-8s | Unsettling — *"They're watching me..."* |
-| 5 | Every 30-60s | 2-4s | Constant — *"THEY'RE EVERYWHERE"* |
+| Stage | Frequency | Phantom lifetime | Intensity |
+|-------|-----------|-----------------|-----------|
+| 3 | Every 3-5 min | 4-6s (all behaviours) | Subtle — *"Thought I saw..."* |
+| 4 | Every 1-3 min | 8-14s (4-6s for lover phantoms) | Unsettling — *"They're watching me..."* |
+| 5 | Every 30-60s | 10-20s (4-6s for lover phantoms) | Constant — *"THEY'RE EVERYWHERE"* |
+
+> Phantom lifetime grows with stage — they linger longer as the brain loses grip. The exception is `lover_stare` behaviour (Lucy phantoms), which always stays brief. Phantoms also despawn early if V walks past a proximity threshold.
 
 Suppressed by immunoblocker (full/partial effectiveness).
 
@@ -189,14 +230,14 @@ Suppressed by immunoblocker (full/partial effectiveness).
 
 V involuntarily attacks nearby NPCs — loss of motor control. Uses `AIWeapon.Fire()` to fire V's weapon at a detected NPC, the same method used by Wannabe Edgerunner. Does not require aiming. If weapon is in hand, fires immediately with `ono_v_laughs_hard`. If no weapon is drawn, `DrawItemRequest` forces a draw from the weapon wheel slot, then fires after a 2s delay.
 
-Four trigger points, each with stage-scaled chances:
+Four trigger points, each with stage-scaled chances (stage 2 already has small chances for the three non-laugh triggers):
 
-| Trigger | Stage 3 | Stage 4 | Stage 5 | Context |
-|---------|---------|---------|---------|---------|
-| Manic laugh (micro-episode) | 30% | 50% | 70% | Laugh → hand fires on its own |
-| Stage change (BleedingEffect) | 40% | 60% | 80% | Psycho level escalation → violent outburst |
-| Low runtime (<10%, per second) | 10% | 20% | 35% | Body exhausted, Sandy stresses the nervous system |
-| Nosebleed (on activation) | 5% | 15% | 25% | Physical deterioration → involuntary trigger pull |
+| Trigger | Stage 2 | Stage 3 | Stage 4 | Stage 5 | Context |
+|---------|---------|---------|---------|---------|---------|
+| Manic laugh (micro-episode) | — | 30% | 50% | 70% | Laugh → hand fires on its own |
+| Stage change (BleedingEffect) | 15% | 40% | 60% | 80% | Psycho level escalation → violent outburst |
+| Low runtime (<10%, per second) | 5% | 10% | 20% | 35% | Body exhausted, Sandy stresses the nervous system |
+| Nosebleed (on activation) | 3% | 5% | 15% | 25% | Physical deterioration → involuntary trigger pull |
 
 30s cooldown between attacks. NPC within 15m, red outline 2s, target becomes hostile. Post-attack VFX (PsychoWarningEffect_Medium) + camera shake + contextual messages (*"What did I just do..."* / *"THEY WERE LOOKING AT ME"*).
 
@@ -304,16 +345,17 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **FOV pulse** | Every Sandy activation (+12° for 0.4s) | Perception shift on Sandevistan activation |
 | **Heartbeat** | Psycho lvl 2+ idle, or Sandy active with low health | Tension audio during David's deterioration |
 | **Nosebleed** | Sandy activation after exceeding safe daily limit | David bleeds from the nose in Ep 2, 3, 5, 9 |
-| **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 4–8min at lvl 2, 30–60s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
+| **Random nosebleed** | Psycho lvl 2+ independent of Sandy (intervals: 5–10min at lvl 2, 3–6min at lvl 3, 90s–3min at lvl 4, 45–90s at lvl 5) | David bled unprompted in Ep 3, 5, 9 — getting worse without using the Sandy |
 | **Blackout collapse** | Sandy activation at 3× safe daily limit → teleport to safe location + time skip | David passes out after 8 uses in Ep 2 |
 | **Hallucinations** | Phantom NPCs appear and vanish at psycho lvl 3-5 | David seeing things in Eps 8-10 |
 | **Auto-attack** | Involuntary weapon fire (`AIWeapon.Fire()`) at nearby NPCs at psycho lvl 3-5, from 4 trigger points | David losing control in Ep 10 |
 | **Micro-episodes** | Random at psycho lvl 1–5 (frequency scales with level) | David's involuntary twitches, glitches, and nosebleeds throughout Eps 5–10 |
-| **Pre-psychosis VFX** | Before each psycho episode (`PrePsychosisEffect`: 2s blackout distortion, then 1.5s delay before episode fires) | David's vision distorting before losing control |
-| **Terminal clarity** | 2.5s before death at psycho lvl 5 | David snaps out of psychosis right before death in Ep 10 |
+| **Pre-psychosis VFX** | Before each psycho episode (`PrePsychosisEffect`: ~8s of blackout distortion + Blackwall scream at stage 4+, with the scream firing 4s after VFX start) | David's vision distorting before losing control |
+| **Terminal clarity** | 4s before death at psycho lvl 5 (KillV → RemoveAllVFX → "..." → KillV_Execute) | David snaps out of psychosis right before death in Ep 10 |
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
 | **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
+| **NCPD MaxTac escalation** | Killing/damaging civilians or NCPD officers while cyberpsychosis stage ≥1 forces heat to level 5 ("CALLMAXTAC"). Bribery can de-escalate, but only outside combat. | The vanilla wanted system reacting to cyberpsycho-grade violence |
 
 ### Martinez Rush (Kill-Triggered Combat Burst)
 
@@ -353,66 +395,179 @@ Detection uses two phases: **Phase 2** (primary) is redscript `DSPActivityTracke
 
 ## Requirements
 
-- [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107)
-- [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
-- [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198)
-- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) (HUD auto-scaling via VirtualResolutionWatcher)
-- [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001) (Last Breath song playback, independent of Wwise)
+All listed mods must be installed for David Sandevistan Plus to function.
+
+**Loaders and frameworks:**
+- [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107) — CET, the Lua runtime that drives the core logic
+- [RED4ext](https://www.nexusmods.com/cyberpunk2077/mods/2380) — native plugin loader (dependency of Codeware / ArchiveXL / TweakXL / Audioware)
+- [redscript](https://www.nexusmods.com/cyberpunk2077/mods/1511) — compiles every `.reds` file in `r6/scripts/`
+
+**Modding frameworks:**
+- [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198) — required by the custom `.archive.xl` (sectors, quest phases, journal)
+- [TweakXL](https://www.nexusmods.com/cyberpunk2077/mods/4197) — loads `r6/tweaks/DavidSandevistanPlus/*.yaml` (immunoblocker items, vendors, status effects, auto-injector cyberware)
+- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) — HUD auto-scaling via `VirtualResolutionWatcher`, ScriptableSystem helpers
+- [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001) — Last Breath song + 136 V male voice lines + Blackwall scream (independent of Wwise, supports `affectedByTimeDilation = false`)
+- [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885) — the in-game UI tab that exposes every tunable declared via `@runtimeProperty` in `DSPSettings.reds`. **Not the same as "Native Settings UI" (mod 3518)** — `DSPSettings.reds` uses the newer Mod Settings module by Jackhumbert.
 
 ## Installation
 
-Extract into your Cyberpunk 2077 installation directory:
+Extract into your Cyberpunk 2077 installation directory, preserving the folder structure:
 
 ```
 Cyberpunk 2077/
 ├── archive/pc/mod/
 │   ├── david-sandevistan-plus.archive
 │   └── david-sandevistan-plus.archive.xl
+│
 ├── bin/x64/plugins/cyber_engine_tweaks/mods/
 │   └── DavidSandevistanPlus/
-│       ├── init.lua
-│       ├── martinez.lua
-│       ├── strain.lua
-│       ├── psychosis.lua
-│       ├── death.lua
-│       ├── immunoblocker_logic.lua
-│       ├── loreEffects.lua
-│       ├── gameListeners.lua
-│       ├── entEffects.lua
-│       ├── ncpd.lua
-│       ├── hud.lua
-│       ├── sms.lua
-│       ├── voice.lua
-│       └── gui.lua
-├── r6/audioware/DavidSandevistanPlus/
-│   ├── audios.yaml
-│   └── last_breath_song.ogg
-├── r6/scripts/DavidSandevistanPlus/
-│   ├── DSPHUDSystem.reds
-│   ├── DSPRipperdocHook.reds
-│   ├── DSPKillTracker.reds
-│   ├── DSPActivityTracker.reds
-│   ├── DSPViktorBridge.reds
-│   └── DSPConsumeOverride.reds
-└── r6/scripts/AnimatedWidgets/
-    ├── AnimatedGlobals.reds
-    ├── AnimatedWidgetsLib.reds
-    ├── AnimatedMonitor.reds
-    └── AnimatedBiomonitor.reds
+│       ├── init.lua                  ← entry point + main loop
+│       ├── martinez.lua              ← TweakDB status effect factory
+│       ├── strain.lua                ← neural strain system
+│       ├── psychosis.lua             ← stage progression + hallucinations
+│       ├── death.lua                 ← Last Breath / Stage VI
+│       ├── immunoblocker_logic.lua   ← tolerance + auto-injector
+│       ├── loreEffects.lua           ← tremor, nosebleed, blackout
+│       ├── gameListeners.lua         ← game event registration
+│       ├── entEffects.lua            ← entity-level effects
+│       ├── ncpd.lua                  ← NCPD / MaxTac escalation
+│       ├── hud.lua                   ← CET→redscript HUD bridge
+│       ├── sms.lua                   ← Viktor SMS + vendor proximity
+│       ├── voice.lua                 ← Audioware voice line bridge
+│       ├── gui.lua                   ← CET ImGui debug window
+│       └── localization/
+│           └── en-us.lua
+│
+├── r6/scripts/DavidSandevistanPlus/  ← 11 redscript files
+│   ├── DSPSettings.reds              ← Mod Settings UI (44 tunables)
+│   ├── DSPHUDSystem.reds             ← HUD rendering
+│   ├── DSPAudioBridge.reds           ← Audioware bridge (song, voice, SFX)
+│   ├── DSPBiomonitorSystem.reds      ← animated biomonitor panel
+│   ├── DSPPlayerEvents.reds          ← @wrapMethod hooks (attach / detach / immuno)
+│   ├── DSPKillTracker.reds           ← kill faction → strain
+│   ├── DSPActivityTracker.reds       ← dialog LocKey → activity type
+│   ├── DSPRipperdocHook.reds         ← "Stabilize Sandevistan" button
+│   ├── DSPConsumeOverride.reds       ← bypass vanilla HealthBooster pipeline
+│   ├── DSPViktorBridge.reds          ← PhoneExtension SMS bridge
+│   └── DSPViktorPhone.reds           ← Viktor phone contact
+│
+├── r6/scripts/AnimatedWidgets/       ← Animated Widgets Library (r457 & gh057, bundled)
+│   ├── AnimatedGlobals.reds
+│   ├── AnimatedWidgetsLib.reds
+│   ├── AnimatedMonitor.reds
+│   └── AnimatedBiomonitor.reds
+│
+├── r6/tweaks/DavidSandevistanPlus/   ← TweakXL YAML (REQUIRED — items + vendors)
+│   ├── immunoblocker_effects.yaml    ← 3 tiers + auto-injector cyberware
+│   └── immunoblocker_vendors.yaml    ← Arroyo dealer + Kabuki kid
+│
+└── r6/audioware/DavidSandevistanPlus/
+    ├── audios.yaml                   ← 138 entries (2 SFX + 136 voice lines)
+    ├── last_breath_song.ogg
+    ├── sfx/
+    │   └── blackwall_scream.ogg
+    └── voice/v_male/
+        └── *.ogg                     ← 136 V male voice lines
 ```
 
-> **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
+> **Critical:** missing `r6/tweaks/` means no vendors and no working immunoblocker items. Missing `r6/scripts/DavidSandevistanPlus/DSPSettings.reds` means the Mod Settings UI fails to compile and the whole mod silently breaks. Missing `voice/v_male/*.ogg` leaves V mute in every contextual scene.
+
+> **Audioware note:** The Last Breath song plays at normal speed even during Sandy's 99.35% time dilation because `DSPAudioBridge.reds` passes `affectedByTimeDilation = false` to the Audioware `Play()` call. Audioware uses its own audio engine (Kira) independent of Wwise.
 
 ## Settings
 
-Open the game menu: **Settings > Mods > Martinez Sandy+**
+Open the game menu: **Settings > Mods > David Sandevistan Plus**.
 
-### Time Dilation
-| Setting | Options | Default | Description |
-|---------|---------|---------|-------------|
-| Time Dilation (No Perk) | 85%–99.5% | 95% | Time dilation without EdgeRunner perk |
-| Time Dilation (With Perk) | 85%–99.5% | 99.35% | Time dilation with EdgeRunner perk |
-| Require EdgeRunner Perk | on/off | on | Require perk for enhanced dilation (off = full access from day 1) |
+44 tunables across 7 categories. Defaults are lore-accurate — most users won't need to change anything. Changes take effect immediately (no game restart) unless noted.
+
+### 1. Time Dilation (2 settings)
+
+| Setting | Default | Notes |
+|---|---|---|
+| Require EdgeRunner Perk | on | When **on**, the perk gates the full Sandy: without it, runtime caps at 33% of max and base dilation drops 99.35% → 95% for stages 1-5. Stage 0 already caps at 90% from the stage curve. When **off**, full 99.35% dilation and full runtime tank are available from level 1. |
+| Enable Session Fatigue | on | Each activation past `Safe Activations per Day` reduces time dilation by 2% (cap -10% total). Resets on sleep. Disabled while Safety OFF (that state already caps at 95%). |
+
+> Time dilation peak values (99.35% with perk, 95% without, 90% stage 0 cap) are **hardcoded** — not exposed as tunables. The per-stage curve is shown under "Progressive Dilation Degradation" below.
+
+### 2. Runtime & Drain (8 settings)
+
+| Setting | Range | Default |
+|---|---|---|
+| Runtime Tank (seconds) | 1–600 | 300 |
+| Recharge Duration | 0.5–30 | 2.0 |
+| Cooldown Base | 0.1–10 | 0.5 |
+| Activation Cost | 0.0–1.0 | 0.0 |
+| Kill Recharge Value | 0–50 | 2.0 |
+| Full Recharge Hours | 1–48 | 16 |
+| Max Recharge per Sleep | 1–24 | 10 |
+| Drain Accel Start (sec) | 10–180 | 60 |
+
+After `Drain Accel Start` seconds of continuous use, drain accelerates as `1 + (minutesOver ^ 1.5)` — doubles ~1 min past the threshold, ~4× after 2 min, ~6× after 3 min. Lower threshold = more pressure to act fast.
+
+### 3. Combat Stats (5 settings)
+
+Bonuses applied while Sandy is active.
+
+| Setting | Range | Default |
+|---|---|---|
+| Critical Chance | 0–100 | 30 |
+| Critical Damage | 0–500 | 35 |
+| Headshot Damage Multiplier | 1.0–5.0 | 1.5 |
+| Heal on Kill (%) | 0.0–50.0 | 3.0 |
+| Stamina on Kill | 0–100 | 22 |
+
+### 4. Cyberpsychosis (6 settings, advanced-gated)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Advanced Settings | on/off | off | Toggle to reveal the 5 settings below in the UI |
+| Safe Activations per Day | 1–20 | 3 | Doc's "three times a day" warning. Scaled per stage: 0=×1, 1=×1.7, 2=×2.3, 3=×3, 4=×4, 5=unlimited. Each activation past the limit adds +3 base strain. |
+| Strain Buildup Speed | 0.25–3.0 | 1.0 | Multiplier on activation, overuse, active-time and passive strain. Kill strain (faction-based) bypasses this and stays at +2/+3/+5/+6 (gang/corpo/ncpd/civilian). |
+| Strain Recovery Speed | 0.25–3.0 | 1.0 | Multiplier on sleep, ripper, safe area, immunoblocker, and natural decay |
+| Episode Cooldown Multiplier | 0.25–3.0 | 1.0 | Scales the 48/36/24/12/6h game-time minimums between stage escalations. Active treatment milestones extend further. |
+| Micro-Episode Frequency | 0.25–3.0 | 1.0 | 0.5 = half as often, 2.0 = twice |
+
+### 5. Recovery (3 settings, advanced-gated)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Advanced Settings | on/off | off | Toggle to reveal the 2 settings below |
+| Sleep Recovery (%) | 0.25–1.0 | 0.75 | % of remaining degraded max runtime recovered per sleep. Multiplicative — diminishing returns across sessions. Full restore requires a ripperdoc visit. |
+| Tolerance Decay Hours | 6–72 | 24 | Game-time hours of immunoblocker abstinence before tolerance starts decaying (fixed -1.0 per game-day once decay begins). Ripperdoc visits flush -4.0 instantly. |
+
+### 6. Economy & Interface (7 settings)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Immunoblocker Price: Common | 500–20,000 | 6,000€$ | 3 min duration |
+| Immunoblocker Price: Uncommon | 1,000–50,000 | 24,000€$ | 6 min duration |
+| Immunoblocker Price: Rare | 5,000–200,000 | 100,000€$ | 10 min duration |
+| Enable Debug Logs | on/off | off | Detailed CET console output for troubleshooting |
+| Biomonitor Position X | 0–3000 | 80 | On a 3840×2160 canvas. Auto-scales to your resolution. |
+| Biomonitor Position Y | 0–2000 | 600 | (same canvas) |
+| Sandevistan Color Grading | Vanilla / GreenI / GreenII / GreenIII / Neon / Clean | Neon | Requires game restart to apply |
+
+### 7. Martinez Rush (13 settings)
+
+Kill-triggered combat burst during Sandy. Every value below is individually tunable; setting a stat to 0 disables just that bonus. The feature itself is always live (it intentionally has no global toggle — set the chance to 0.25× and the bonuses to 0 if you don't want it).
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Require Edgerunner Perk | on/off | on | On: Rush only procs if V has the vanilla Edgerunner perk in Reflexes. Off: Rush works regardless. |
+| Rush Chance Multiplier | 0.25–3.0 | 1.0 | Base chance per kill scales by stage: 2% / 4% / 7% / 12% / 18% / 25%. Multiplied by this value. |
+| Rush Duration (sec) | 6–30 | 12 | Safety OFF extends by +25% (so 12s → 15s) |
+| Rush Cooldown (sec) | 15–180 | 45 | Real-time minimum between procs |
+| Rush Runtime Drain Multiplier | 1.0–3.0 | 1.5 | Drain rate during the Rush window — the primary cost |
+| Rush Fire Rate Bonus (%) | 0–150 | 67 | +67% rate of fire on ranged weapons |
+| Rush Reload Speed Bonus (%) | 0–150 | 82 | Reloads take 45% of normal time |
+| Rush Melee Attack Speed Bonus (%) | 0–150 | 40 | +40% swing rate for blades and blunt |
+| Rush Movement Speed Bonus (%) | 0–100 | 25 | +25% run/sprint speed |
+| Rush Crit Chance Bonus | 0–100 | 20 | Flat +20 crit chance points |
+| Rush Crit Damage Bonus | 0–200 | 35 | Flat +35 crit damage points |
+| Rush Armor Bonus (%) | 0–200 | 45 | +45% damage reduction |
+| Rush Combat Regen Multiplier | 1.0–20.0 | 6.0 | 6× normal in-combat health regen |
+
+Rush does **not** add neural strain — it intentionally stays out of the cyberpsychosis progression budget so stage cadence stays intact. The cost is the runtime drain plus a 3-second stamina crash that lands the moment Sandy deactivates.
 
 #### Progressive Dilation Degradation
 
@@ -430,91 +585,9 @@ Time dilation degrades as runtime depletes — higher psychosis stages degrade f
 
 For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dilation-curves.md)**. For Stage 6 song-synced timeline, see **[docs/last-breath.md](docs/last-breath.md)**.
 
-### Duration & Cooldown
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Runtime Tank (sec) | 1–600 | 300 | Total runtime reservoir (drains at different rates) |
-| Recharge Duration | 0.5–30 | 2.0 | Base recharge time after deactivation |
-| Cooldown Base | 0.1–10 | 0.5 | Cooldown multiplier between activations |
-| Activation Cost | 0–1 | 0.0 | Stamina cost to activate (0 = free) |
-| Kill Recharge Value | 0–50 | 2.0 | Runtime recharged per kill during Sandy |
-
-### Combat Stats (while Sandy active)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Critical Chance | 0–100 | 30 | Bonus crit chance |
-| Critical Damage | 0–500 | 35 | Bonus crit damage |
-| Headshot Damage Multiplier | 1.0–5.0 | 1.5 | Headshot damage multiplier |
-
-### On-Kill Effects (while Sandy active)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Heal on Kill | 0–50% | 3 | Health restored per kill |
-| Stamina on Kill | 0–100 | 22 | Stamina restored per kill |
-
-### Health Drain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Health Drain | on/off | on | Toggle health cost while Sandy is active |
-| Minimum Damage per Tick (%) | 0–10% | 1.0 | Health drain at full runtime |
-| Maximum Damage per Tick (%) | 0–50% | 15.0 | Health drain at zero runtime |
-
-### Health Brake (Emergency Stop)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Health Brake | on/off | off | Auto-stop Sandy on low health |
-| Health Brake Threshold | 15–80% | 50 | Health % to trigger brake |
-| Minimum Required Health | 5–50% | 15 | Absolute minimum health threshold |
-
 > **Safety ON/OFF** is automatic and hidden from the player — stages 0-4 have Safety ON, stage 5+ Safety OFF engages automatically.
-
-### Recharge & Recovery
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Full Recharge Hours | 1–48 | 16 | In-game hours for full recharge |
-| Max Recharge Per Sleep | 1–24 | 10 | Max recharge hours per sleep |
-| Enable Runtime Degradation | on/off | on | Each session costs max runtime (1%/60s, cap 50%) |
-| Sleep Recovery (%) | 0.25–1.0 | 0.75 | % of degraded runtime recovered by sleep |
-| Ripper Full Restore | on/off | on | Ripperdoc fully restores max runtime |
-
-### Cyberpsychosis
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
-| Safe Activations per Day | 1–20 | 3 | Activations before strain acceleration |
-| Enable Session Fatigue | on/off | on | Repeated activations reduce dilation effectiveness |
-| Fatigue Penalty per Overuse | 0.01–0.10 | 0.02 | Dilation loss per excess activation (2% default) |
-| Max Fatigue Penalty | 0.05–0.30 | 0.10 | Maximum dilation penalty cap (10% default) |
-
-### Neural Strain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Strain Buildup Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain accumulation |
-| Strain Recovery Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain drain |
-
-> Individual strain values (per-activation, per-kill, drain rates, etc.) are preconfigured with lore-accurate defaults. Advanced users can tune them via `config.json`.
-
-> **Comedown** has been removed. Penalties are now runtime-based — V's body deteriorates progressively during Sandy use, not after. No reactivation block (lore-accurate: David never had a cooldown).
-
-### Doc Prescription (Graduated Recovery)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Prescription | on/off | on | Require multiple treatments to cure psychosis |
-| Max Recovery Per Sleep | 1–5 | 1 | Maximum psycho levels recovered per sleep |
-| Ripper Recovery Levels | 1–3 | 1 | Psycho levels recovered per ripperdoc visit |
-
-### Non-Linear Runtime Drain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Non-Linear Drain | on/off | on | Drain accelerates with sustained use |
-| Drain Exponent | 1.0–3.0 | 1.5 | Acceleration curve steepness |
-| Drain Acceleration Start | 10–180 sec | 60 | Seconds before acceleration kicks in |
-
-### Micro-Episodes (Random Symptoms)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Micro-Episodes | on/off | on | Random involuntary symptoms at psycho 1+ |
-| Frequency Multiplier | 0.25–3.0 | 1.0 | Scale episode frequency (0.5 = half, 2.0 = double) |
+>
+> **Comedown** has been removed. Penalties are runtime-based — V's body deteriorates during Sandy use, not after. No reactivation block (lore-accurate: David never had a cooldown).
 
 ## How It Works
 
@@ -529,13 +602,13 @@ Inspired by Doc's warning to David: "don't use it more than 3 times a day." Each
 ```
 Activate Sandy → strain accumulates (+5 base, +3 per overuse)
   ├─ Sandy active: +2/min strain
-  ├─ Safety OFF (stage 5): +0.15/s strain
-  ├─ Kills during Sandy: +2 to +8 strain (faction-based, configurable)
+  ├─ Safety OFF (stage 5): +0.10/s strain
+  ├─ Kills during Sandy: +2 to +6 strain (faction-based, configurable)
   ├─ Low runtime (<10%): +0.5/s strain (body exhausted)
   └─ Zero runtime (0%): +1.0/s strain (death wish)
 
-Strain exceeds threshold → dice roll each second:
-  ├─ chance = (strain - threshold) / 200
+Strain exceeds threshold → dice roll every 15 seconds:
+  ├─ chance = progress × 0.20  (progress = (strain - threshold) / (guaranteed - threshold))
   ├─ Stages 0-4: EPISODE → Sandy shuts down + Safety ON + psychoLevel++
   ├─ Stage 5 Safety OFF: EPISODE → Sandy stays active + FrightenNPCs
   └─ Strain hits guaranteed cap → forced episode (can't avoid)
@@ -620,7 +693,10 @@ Our **Immunoblocker** is stronger than DF's Immunosuppressant: it reduces strain
 
 ## Credits
 
-- **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
+- **r457 & gh057** — [Animated Widgets Library](https://github.com/) (bundled in `r6/scripts/AnimatedWidgets/`, drives the biomonitor animations)
+- **Jackhumbert** — [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885) framework
+- **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518) (referenced as inspiration for the settings architecture)
+- **CDPR & the Edgerunners team** — for David Martinez and the source material this mod is built around
 
 ## License
 

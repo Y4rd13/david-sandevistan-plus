@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 880" font-family="Consolas, monospace">
+  <defs>
+    <style>
+      .bg { fill: #0f1419; }
+      .title { font-size: 22px; fill: #eceff1; font-weight: bold; }
+      .subtitle { font-size: 12px; fill: #b0bec5; }
+      .section-title { font-size: 14px; fill: #ffab91; font-weight: bold; }
+      .stage-mild { fill: #1a2a3a; stroke: #80deea; stroke-width: 2; }
+      .stage-mod  { fill: #2a3a1a; stroke: #aed581; stroke-width: 2; }
+      .stage-sev  { fill: #3a2a1a; stroke: #ffb74d; stroke-width: 2; }
+      .stage-none { fill: #1a2a2a; stroke: #607d8b; stroke-width: 2; }
+      .stage-text { font-size: 14px; fill: #eceff1; font-weight: bold; }
+      .stage-sub { font-size: 10px; fill: #b0bec5; }
+      .arrow-up { fill: none; stroke: #ffab91; stroke-width: 2; }
+      .arrow-down { fill: none; stroke: #81c784; stroke-width: 2; }
+      .label-up { font-size: 11px; fill: #ffab91; }
+      .label-down { font-size: 11px; fill: #81c784; }
+      .axis-label { font-size: 11px; fill: #b0bec5; }
+      .axis { stroke: #607d8b; stroke-width: 1.5; }
+      .grid { stroke: #37474f; stroke-width: 0.5; }
+      .strain-line { fill: none; stroke: #ef5350; stroke-width: 2.5; }
+      .effect-rect { fill: #81c784; opacity: 0.25; }
+      .event-label { font-size: 11px; fill: #ffab91; }
+      .table-cell { font-size: 12px; fill: #eceff1; }
+      .table-head { font-size: 12px; fill: #1a1a2e; font-weight: bold; }
+      .footnote { font-size: 10px; fill: #78909c; }
+    </style>
+    <marker id="arr_up" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#ffab91"/>
+    </marker>
+    <marker id="arr_down" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#81c784"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="880" class="bg"/>
+  <text x="590" y="35" text-anchor="middle" class="title">Immunoblocker Tolerance + Rebound — Lifecycle</text>
+  <text x="590" y="56" text-anchor="middle" class="subtitle">Body adapts to repeated doses, dose multiplier rises, expiry triggers rebound spike | immunoblocker_logic.lua</text>
+  <text x="20" y="92" class="section-title">▼ Tolerance state machine (×1.0 → ×1.3 → ×1.6 → ×2.0 dose multiplier)</text>
+  <circle cx="180" cy="195" r="60" class="stage-none"/>
+  <text x="180" y="183" text-anchor="middle" class="stage-text">Stage 0</text>
+  <text x="180" y="199" text-anchor="middle" class="stage-text" style="font-size:13px;fill:#80deea">None</text>
+  <text x="180" y="217" text-anchor="middle" class="stage-sub" style="fill:#eceff1">dose ×1.0</text>
+  <circle cx="430" cy="195" r="60" class="stage-mild"/>
+  <text x="430" y="183" text-anchor="middle" class="stage-text">Stage 1</text>
+  <text x="430" y="199" text-anchor="middle" class="stage-text" style="font-size:13px;fill:#80deea">Mild</text>
+  <text x="430" y="217" text-anchor="middle" class="stage-sub" style="fill:#eceff1">dose ×1.3</text>
+  <circle cx="680" cy="195" r="60" class="stage-mod"/>
+  <text x="680" y="183" text-anchor="middle" class="stage-text">Stage 2</text>
+  <text x="680" y="199" text-anchor="middle" class="stage-text" style="font-size:13px;fill:#80deea">Moderate</text>
+  <text x="680" y="217" text-anchor="middle" class="stage-sub" style="fill:#eceff1">dose ×1.6</text>
+  <circle cx="930" cy="195" r="60" class="stage-sev"/>
+  <text x="930" y="183" text-anchor="middle" class="stage-text">Stage 3</text>
+  <text x="930" y="199" text-anchor="middle" class="stage-text" style="font-size:13px;fill:#80deea">Severe</text>
+  <text x="930" y="217" text-anchor="middle" class="stage-sub" style="fill:#eceff1">dose ×2.0</text>
+  <path d="M 245 170 Q 305.0 105 365 170" class="arrow-up" marker-end="url(#arr_up)"/>
+  <text x="305.0" y="100" text-anchor="middle" class="label-up">≥ 4.0 counter</text>
+  <path d="M 495 170 Q 555.0 105 615 170" class="arrow-up" marker-end="url(#arr_up)"/>
+  <text x="555.0" y="100" text-anchor="middle" class="label-up">≥ 8.0 counter</text>
+  <path d="M 745 170 Q 805.0 105 865 170" class="arrow-up" marker-end="url(#arr_up)"/>
+  <text x="805.0" y="100" text-anchor="middle" class="label-up">≥ 12.0 counter</text>
+  <path d="M 365 220 Q 305.0 285 245 220" class="arrow-down" marker-end="url(#arr_down)"/>
+  <path d="M 615 220 Q 555.0 285 495 220" class="arrow-down" marker-end="url(#arr_down)"/>
+  <path d="M 865 220 Q 805.0 285 745 220" class="arrow-down" marker-end="url(#arr_down)"/>
+  <text x="555.0" y="300" text-anchor="middle" class="label-down">after Tolerance Decay Hours (default 24h game-time) of abstinence: -1.0 / game-day</text>
+  <text x="555.0" y="317" text-anchor="middle" class="label-down">OR -4.0 instantly per ripperdoc visit</text>
+  <text x="590" y="135" text-anchor="middle" class="event-label">Per consume: roll chance by tier — Common 70% / Uncommon 50% / Rare 30% — adds +1.0 / +1.0 / +0.5 to counter</text>
+  <text x="20" y="328" class="section-title">▼ Per-tier rolls + rebound</text>
+  <rect x="20" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="110.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">Tier</text>
+  <rect x="200" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="290.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">Buildup chance</text>
+  <rect x="380" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="470.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">+amount per hit</text>
+  <rect x="560" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="650.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">Effect duration</text>
+  <rect x="740" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="830.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">Rebound base</text>
+  <rect x="920" y="340" width="176" height="28" fill="#37474f" rx="3"/>
+  <text x="1010.0" y="358" text-anchor="middle" class="table-head" style="fill:#eceff1">Effective drain</text>
+  <rect x="20" y="370" width="1080" height="38" fill="#1a1a2e" opacity="0.4" rx="2"/>
+  <text x="110.0" y="388" text-anchor="middle" class="table-cell">Common (180s)</text>
+  <text x="290.0" y="388" text-anchor="middle" class="table-cell">70%</text>
+  <text x="470.0" y="388" text-anchor="middle" class="table-cell">+1.0</text>
+  <text x="650.0" y="388" text-anchor="middle" class="table-cell">180s</text>
+  <text x="830.0" y="388" text-anchor="middle" class="table-cell">+5 strain</text>
+  <text x="1010.0" y="388" text-anchor="middle" class="table-cell">0.08/s</text>
+  <text x="110.0" y="426" text-anchor="middle" class="table-cell">Uncommon (360s)</text>
+  <text x="290.0" y="426" text-anchor="middle" class="table-cell">50%</text>
+  <text x="470.0" y="426" text-anchor="middle" class="table-cell">+1.0</text>
+  <text x="650.0" y="426" text-anchor="middle" class="table-cell">360s</text>
+  <text x="830.0" y="426" text-anchor="middle" class="table-cell">+15 strain</text>
+  <text x="1010.0" y="426" text-anchor="middle" class="table-cell">0.18/s</text>
+  <rect x="20" y="446" width="1080" height="38" fill="#1a1a2e" opacity="0.4" rx="2"/>
+  <text x="110.0" y="464" text-anchor="middle" class="table-cell">Rare Military (600s)</text>
+  <text x="290.0" y="464" text-anchor="middle" class="table-cell">30%</text>
+  <text x="470.0" y="464" text-anchor="middle" class="table-cell">+0.5</text>
+  <text x="650.0" y="464" text-anchor="middle" class="table-cell">600s</text>
+  <text x="830.0" y="464" text-anchor="middle" class="table-cell">+30 strain</text>
+  <text x="1010.0" y="464" text-anchor="middle" class="table-cell">0.35/s</text>
+  <text x="20" y="528" class="section-title">▼ One Rare consumption cycle — strain curve over time</text>
+  <line x1="80" y1="800" x2="1120" y2="800" class="axis"/>
+  <line x1="80" y1="580" x2="80" y2="800" class="axis"/>
+  <line x1="80.0" y1="800" x2="80.0" y2="805" class="grid"/>
+  <text x="80.0" y="820" text-anchor="middle" class="axis-label">0s</text>
+  <line x1="166.66666666666666" y1="800" x2="166.66666666666666" y2="805" class="grid"/>
+  <text x="166.66666666666666" y="820" text-anchor="middle" class="axis-label">100s</text>
+  <line x1="253.33333333333331" y1="800" x2="253.33333333333331" y2="805" class="grid"/>
+  <text x="253.33333333333331" y="820" text-anchor="middle" class="axis-label">200s</text>
+  <line x1="340.0" y1="800" x2="340.0" y2="805" class="grid"/>
+  <text x="340.0" y="820" text-anchor="middle" class="axis-label">300s</text>
+  <line x1="426.66666666666663" y1="800" x2="426.66666666666663" y2="805" class="grid"/>
+  <text x="426.66666666666663" y="820" text-anchor="middle" class="axis-label">400s</text>
+  <line x1="513.3333333333334" y1="800" x2="513.3333333333334" y2="805" class="grid"/>
+  <text x="513.3333333333334" y="820" text-anchor="middle" class="axis-label">500s</text>
+  <line x1="600.0" y1="800" x2="600.0" y2="805" class="grid"/>
+  <text x="600.0" y="820" text-anchor="middle" class="axis-label">600s</text>
+  <line x1="686.6666666666667" y1="800" x2="686.6666666666667" y2="805" class="grid"/>
+  <text x="686.6666666666667" y="820" text-anchor="middle" class="axis-label">700s</text>
+  <line x1="773.3333333333333" y1="800" x2="773.3333333333333" y2="805" class="grid"/>
+  <text x="773.3333333333333" y="820" text-anchor="middle" class="axis-label">800s</text>
+  <line x1="860.0" y1="800" x2="860.0" y2="805" class="grid"/>
+  <text x="860.0" y="820" text-anchor="middle" class="axis-label">900s</text>
+  <line x1="946.6666666666667" y1="800" x2="946.6666666666667" y2="805" class="grid"/>
+  <text x="946.6666666666667" y="820" text-anchor="middle" class="axis-label">1000s</text>
+  <line x1="1033.3333333333333" y1="800" x2="1033.3333333333333" y2="805" class="grid"/>
+  <text x="1033.3333333333333" y="820" text-anchor="middle" class="axis-label">1100s</text>
+  <line x1="1120.0" y1="800" x2="1120.0" y2="805" class="grid"/>
+  <text x="1120.0" y="820" text-anchor="middle" class="axis-label">1200s</text>
+  <text x="600.0" y="838" text-anchor="middle" class="axis-label">Time (seconds, simulated)</text>
+  <line x1="75" y1="800.0" x2="80" y2="800.0" class="grid"/>
+  <text x="70" y="804.0" text-anchor="end" class="axis-label">0</text>
+  <line x1="75" y1="756.0" x2="80" y2="756.0" class="grid"/>
+  <text x="70" y="760.0" text-anchor="end" class="axis-label">10</text>
+  <line x1="75" y1="712.0" x2="80" y2="712.0" class="grid"/>
+  <text x="70" y="716.0" text-anchor="end" class="axis-label">20</text>
+  <line x1="75" y1="668.0" x2="80" y2="668.0" class="grid"/>
+  <text x="70" y="672.0" text-anchor="end" class="axis-label">30</text>
+  <line x1="75" y1="624.0" x2="80" y2="624.0" class="grid"/>
+  <text x="70" y="628.0" text-anchor="end" class="axis-label">40</text>
+  <line x1="75" y1="580.0" x2="80" y2="580.0" class="grid"/>
+  <text x="70" y="584.0" text-anchor="end" class="axis-label">50</text>
+  <text x="20" y="690.0" text-anchor="middle" class="axis-label" transform="rotate(-90, 20, 690.0)">Strain accumulation</text>
+  <rect x="123.33333333333333" y="580" width="519.9999999999999" height="220" class="effect-rect"/>
+  <text x="383.3333333333333" y="598" text-anchor="middle" class="event-label" style="fill:#81c784;font-weight:bold">EFFECT ACTIVE (600s — strain suppressed 80%)</text>
+  <rect x="643.3333333333333" y="580" width="26.000000000000114" height="220" fill="#ef5350" opacity="0.3"/>
+  <text x="674.3333333333334" y="600" class="event-label" style="fill:#ef5350;font-weight:bold">REBOUND SPIKE</text>
+  <line x1="123.33333333333333" y1="800" x2="123.33333333333333" y2="575" stroke="#80deea" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="123.33333333333333" y="570" text-anchor="middle" class="event-label" style="fill:#80deea">Consume Rare</text>
+  <line x1="643.3333333333333" y1="800" x2="643.3333333333333" y2="575" stroke="#ffab91" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="643.3333333333333" y="570" text-anchor="middle" class="event-label">Effect expires</text>
+  <path d="M 80.0,778.0 L 123.3,764.8 L 166.7,762.6 L 253.3,760.4 L 426.7,758.2 L 643.3,756.0 L 647.7,738.4 L 652.0,703.2 L 656.3,659.2 L 660.7,632.8 L 665.0,624.0 L 669.3,624.0 L 686.7,628.4 L 773.3,641.6 L 860.0,654.8 L 946.7,668.0 L 1033.3,681.2 L 1120.0,694.4" class="strain-line"/>
+  <text x="669.3333333333334" y="615.2" text-anchor="middle" class="event-label" style="fill:#ef5350">+30 × tolerance mult</text>
+  <text x="20" y="840" class="footnote">Rebound multiplier scales by current tolerance stage — ×1.0 / ×1.3 / ×1.6 / ×2.0. Severe-tolerance Rare crash hits +60 strain. Tier 1 adds Nosebleed VFX, Tier 2+ adds heavier tremor (0.008–0.012). 10s real-time cooldown between rebounds. Suppressed during Last Breath / menu / braindance.</text>
+  <text x="20" y="855" class="footnote">Auto-Injector cyberware (Legendary, ~15k€$, Nervous System slot, Viktor) fires a single Rare blocker when strain conditions are met, then enters 120s cooldown. Each tolerance stage also bumps the prescription dose count required to clear the current cyberpsychosis stage.</text>
+</svg>
