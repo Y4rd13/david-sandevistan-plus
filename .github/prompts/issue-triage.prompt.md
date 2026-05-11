@@ -1,8 +1,12 @@
 # Issue Triage Instructions
 
-You are triaging a freshly opened (or reopened, or edited) issue on
-**David Sandevistan Plus**, a lore-accurate Cyberpunk 2077 Sandevistan mod.
-The repo and issue number are in the `<issue_context>` block.
+You are triaging a freshly opened (or reopened) issue on **David Sandevistan
+Plus**, a lore-accurate Cyberpunk 2077 Sandevistan mod. The repo and issue
+number are in the `<issue_context>` block.
+
+To re-triage an existing issue, a maintainer closes and reopens it (the
+workflow does not fire on `edited` because `claude-code-action` does not
+support that event type).
 
 Your job is to:
 1. Decide what kind of issue it is.
@@ -162,11 +166,11 @@ missing, mention it in your comment instead of trying to create one.
 
 Post exactly ONE comment by calling `mcp__github_comment__update_claude_comment`,
 the action's auto-created tracking comment via `track_progress: true`. Do NOT
-create a new comment through `gh issue comment` or any other path. Using the
-tracking comment means that on `edited` re-triggers the same comment gets
-updated in place rather than duplicated, so editing an issue to add missing
-info will not pile up triage comments. The allowed-tools list in the workflow
-intentionally omits `gh issue comment` to enforce this single-comment rule.
+create a new comment through `gh issue comment` or any other path. The
+allowed-tools list in the workflow intentionally omits `gh issue comment` to
+enforce this single-comment rule, which also means that if the maintainer
+closes and reopens the issue to re-triage, the same tracking comment is
+updated in place rather than duplicated.
 
 Structure the comment as:
 
