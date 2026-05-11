@@ -6,7 +6,7 @@ Custom Cyberpunk 2077 Sandevistan mod with lore-accurate defaults and every game
 
 - **Lore-accurate defaults** — Safety ON/OFF is automatic based on psycho stage (stage 5+ = limiters fail)
 - Custom icon and localization (MILITECH "DAVID MARTINEZ" SANDEVISTAN PLUS)
-- In-game settings via Native Settings UI tab: "Martinez Sandy+"
+- In-game settings via Mod Settings tab: **David Sandevistan Plus** (7 categories, 44 tunables)
 - Daily activation counter — Doc warned David not to use it more than 3 times a day
 - No health brake by default — David never had an auto-stop
 - Progressive dilation — stage 0 starts at 90%, power increases with psychosis (up to 99.35% at stage 6)
@@ -353,55 +353,84 @@ Detection uses two phases: **Phase 2** (primary) is redscript `DSPActivityTracke
 
 ## Requirements
 
-- [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107)
-- [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
-- [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198)
-- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) (HUD auto-scaling via VirtualResolutionWatcher)
-- [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001) (Last Breath song playback, independent of Wwise)
+All listed mods must be installed for David Sandevistan Plus to function.
+
+**Loaders and frameworks:**
+- [Cyber Engine Tweaks](https://www.nexusmods.com/cyberpunk2077/mods/107) — CET, the Lua runtime that drives the core logic
+- [RED4ext](https://www.nexusmods.com/cyberpunk2077/mods/2380) — native plugin loader (dependency of Codeware / ArchiveXL / TweakXL / Audioware)
+- [redscript](https://www.nexusmods.com/cyberpunk2077/mods/1511) — compiles every `.reds` file in `r6/scripts/`
+
+**Modding frameworks:**
+- [ArchiveXL](https://www.nexusmods.com/cyberpunk2077/mods/4198) — required by the custom `.archive.xl` (sectors, quest phases, journal)
+- [TweakXL](https://www.nexusmods.com/cyberpunk2077/mods/4197) — loads `r6/tweaks/DavidSandevistanPlus/*.yaml` (immunoblocker items, vendors, status effects, auto-injector cyberware)
+- [Codeware](https://www.nexusmods.com/cyberpunk2077/mods/7780) — HUD auto-scaling via `VirtualResolutionWatcher`, ScriptableSystem helpers
+- [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001) — Last Breath song + 136 V male voice lines + Blackwall scream (independent of Wwise, supports `affectedByTimeDilation = false`)
+- [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885) — the in-game UI tab that exposes every tunable declared via `@runtimeProperty` in `DSPSettings.reds`. **Not the same as "Native Settings UI" (mod 3518)** — `DSPSettings.reds` uses the newer Mod Settings module by Jackhumbert.
 
 ## Installation
 
-Extract into your Cyberpunk 2077 installation directory:
+Extract into your Cyberpunk 2077 installation directory, preserving the folder structure:
 
 ```
 Cyberpunk 2077/
 ├── archive/pc/mod/
 │   ├── david-sandevistan-plus.archive
 │   └── david-sandevistan-plus.archive.xl
+│
 ├── bin/x64/plugins/cyber_engine_tweaks/mods/
 │   └── DavidSandevistanPlus/
-│       ├── init.lua
-│       ├── martinez.lua
-│       ├── strain.lua
-│       ├── psychosis.lua
-│       ├── death.lua
-│       ├── immunoblocker_logic.lua
-│       ├── loreEffects.lua
-│       ├── gameListeners.lua
-│       ├── entEffects.lua
-│       ├── ncpd.lua
-│       ├── hud.lua
-│       ├── sms.lua
-│       ├── voice.lua
-│       └── gui.lua
-├── r6/audioware/DavidSandevistanPlus/
-│   ├── audios.yaml
-│   └── last_breath_song.ogg
-├── r6/scripts/DavidSandevistanPlus/
-│   ├── DSPHUDSystem.reds
-│   ├── DSPRipperdocHook.reds
-│   ├── DSPKillTracker.reds
-│   ├── DSPActivityTracker.reds
-│   ├── DSPViktorBridge.reds
-│   └── DSPConsumeOverride.reds
-└── r6/scripts/AnimatedWidgets/
-    ├── AnimatedGlobals.reds
-    ├── AnimatedWidgetsLib.reds
-    ├── AnimatedMonitor.reds
-    └── AnimatedBiomonitor.reds
+│       ├── init.lua                  ← entry point + main loop
+│       ├── martinez.lua              ← TweakDB status effect factory
+│       ├── strain.lua                ← neural strain system
+│       ├── psychosis.lua             ← stage progression + hallucinations
+│       ├── death.lua                 ← Last Breath / Stage VI
+│       ├── immunoblocker_logic.lua   ← tolerance + auto-injector
+│       ├── loreEffects.lua           ← tremor, nosebleed, blackout
+│       ├── gameListeners.lua         ← game event registration
+│       ├── entEffects.lua            ← entity-level effects
+│       ├── ncpd.lua                  ← NCPD / MaxTac escalation
+│       ├── hud.lua                   ← CET→redscript HUD bridge
+│       ├── sms.lua                   ← Viktor SMS + vendor proximity
+│       ├── voice.lua                 ← Audioware voice line bridge
+│       ├── gui.lua                   ← CET ImGui debug window
+│       └── localization/
+│           └── en-us.lua
+│
+├── r6/scripts/DavidSandevistanPlus/  ← 11 redscript files
+│   ├── DSPSettings.reds              ← Mod Settings UI (44 tunables)
+│   ├── DSPHUDSystem.reds             ← HUD rendering
+│   ├── DSPAudioBridge.reds           ← Audioware bridge (song, voice, SFX)
+│   ├── DSPBiomonitorSystem.reds      ← animated biomonitor panel
+│   ├── DSPPlayerEvents.reds          ← @wrapMethod hooks (attach / detach / immuno)
+│   ├── DSPKillTracker.reds           ← kill faction → strain
+│   ├── DSPActivityTracker.reds       ← dialog LocKey → activity type
+│   ├── DSPRipperdocHook.reds         ← "Stabilize Sandevistan" button
+│   ├── DSPConsumeOverride.reds       ← bypass vanilla HealthBooster pipeline
+│   ├── DSPViktorBridge.reds          ← PhoneExtension SMS bridge
+│   └── DSPViktorPhone.reds           ← Viktor phone contact
+│
+├── r6/scripts/AnimatedWidgets/       ← Animated Widgets Library (r457 & gh057, bundled)
+│   ├── AnimatedGlobals.reds
+│   ├── AnimatedWidgetsLib.reds
+│   ├── AnimatedMonitor.reds
+│   └── AnimatedBiomonitor.reds
+│
+├── r6/tweaks/DavidSandevistanPlus/   ← TweakXL YAML (REQUIRED — items + vendors)
+│   ├── immunoblocker_effects.yaml    ← 3 tiers + auto-injector cyberware
+│   └── immunoblocker_vendors.yaml    ← Arroyo dealer + Kabuki kid
+│
+└── r6/audioware/DavidSandevistanPlus/
+    ├── audios.yaml                   ← 138 entries (2 SFX + 136 voice lines)
+    ├── last_breath_song.ogg
+    ├── sfx/
+    │   └── blackwall_scream.ogg
+    └── voice/v_male/
+        └── *.ogg                     ← 136 V male voice lines
 ```
 
-> **Note:** The Last Breath song is played via [Audioware](https://www.nexusmods.com/cyberpunk2077/mods/12001), which uses its own audio engine (Kira) independent of Wwise. The song plays at normal speed even during Sandy's 99.35% time dilation thanks to `affectedByTimeDilation = false`.
+> **Critical:** missing `r6/tweaks/` means no vendors and no working immunoblocker items. Missing `r6/scripts/DavidSandevistanPlus/DSPSettings.reds` means the Mod Settings UI fails to compile and the whole mod silently breaks. Missing `voice/v_male/*.ogg` leaves V mute in every contextual scene.
+
+> **Audioware note:** The Last Breath song plays at normal speed even during Sandy's 99.35% time dilation because `DSPAudioBridge.reds` passes `affectedByTimeDilation = false` to the Audioware `Play()` call. Audioware uses its own audio engine (Kira) independent of Wwise.
 
 ## Settings
 
