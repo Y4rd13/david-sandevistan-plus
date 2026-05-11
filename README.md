@@ -148,6 +148,45 @@ Doc's prescribed medication — *"Nine times your customary dosage."* Reduces st
 
 Sold exclusively through street vendors (VendorsXL): Arroyo punk dealer (all 3 tiers) and Kabuki street kid (Common + Uncommon only). Prices and kill strain per faction are configurable via in-game Settings UI.
 
+Per-vendor stock (random quantity rolled on visit):
+
+| Vendor | Common | Uncommon | Rare |
+|---|---|---|---|
+| Arroyo punk dealer | 5–10 | 2–5 | 1–2 |
+| Kabuki street kid | 3–6 | 1–3 | — |
+
+##### Tolerance
+
+Repeated immunoblocker use builds resistance — your body learns to ignore the drug. Each consumption rolls for a tolerance buildup; if it triggers, an internal counter ticks up. When the counter crosses a stage threshold, tolerance level advances and Viktor sends an SMS warning.
+
+| Tier consumed | Buildup chance | Counter increment | Threshold to next stage |
+|---|---|---|---|
+| Common | 70% | +1.0 | 4.0 (stage 0→1) |
+| Uncommon | 50% | +1.0 | 8.0 (stage 1→2) |
+| Rare | 30% | +0.5 | 12.0 (stage 2→3) |
+
+Each tolerance stage reduces the effective tier of every immunoblocker by 1 (so at Severe tolerance, a Rare blocker behaves like Common). Tolerance stages also scale prescription doses required: ×1.3 / ×1.6 / ×2.0 at stages 1 / 2 / 3.
+
+**Decay:** abstain for `Tolerance Decay Hours` (default 24h game-time), and the counter decays at -1.0 per game-day. **Flush:** every ripperdoc visit reduces tolerance by -4.0 instantly.
+
+##### Rebound / Slingshot
+
+When the immunoblocker wears off, V's neural strain spikes — Doc warned about the "slingshot the other way." Higher tiers crash harder, and tolerance compounds the crash.
+
+| Tier | Strain spike (base) | Tolerance multiplier | Side effects |
+|---|---|---|---|
+| Common | +5 | ×1.0 / ×1.3 / ×1.6 / ×2.0 (stages 0/1/2/3) | Mild tremor (0.006), warning message |
+| Uncommon | +15 | (same multipliers) | Tremor 0.008 + nosebleed VFX |
+| Rare | +30 | (same multipliers) | Tremor 0.012 + nosebleed VFX, *"the slingshot..."* |
+
+Rebound has a 10s real-time cooldown and is suppressed during Last Breath, menus, and braindances.
+
+##### Auto-Injector Cyberware
+
+Optional Nervous System cyberware (Legendary, ~15,000€$, sold by Viktor) that auto-administers a **Rare** immunoblocker when V is on the brink — at psycho stage ≥1, no immunoblocker already active, off cooldown, not in menu/Last Breath, and at least one Rare blocker in inventory. The cyberware consumes one Rare from inventory per trigger and re-arms after a 120s cooldown.
+
+> Rare-tier only — the auto-injector won't fall back to Common/Uncommon. If you want it to fire, keep at least one Military-Grade Immunoblocker stocked.
+
 #### Runtime as Body Endurance
 
 Runtime represents how much V's body can take — not a battery charge. V can always reactivate the Sandy (no cooldown — David never had one in Edgerunners). The cost is progressive physical deterioration:
@@ -316,6 +355,7 @@ Lore-accurate physical effects inspired by David Martinez's deterioration across
 | **V's laugh** | Random during Last Breath decay phase | David laughing through the pain in Ep 10 |
 | **"I Really Want to Stay at Your House"** | Plays during Last Breath peace phase | The song from the anime's final scenes |
 | **Delusional messages** | Every 4–8s during Last Breath decay | David's fragmented thoughts about Lucy and the Moon |
+| **NCPD MaxTac escalation** | Killing/damaging civilians or NCPD officers while cyberpsychosis stage ≥1 forces heat to level 5 ("CALLMAXTAC"). Bribery can de-escalate, but only outside combat. | The vanilla wanted system reacting to cyberpsycho-grade violence |
 
 ### Martinez Rush (Kill-Triggered Combat Burst)
 
@@ -653,7 +693,10 @@ Our **Immunoblocker** is stronger than DF's Immunosuppressant: it reduces strain
 
 ## Credits
 
-- **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518)
+- **r457 & gh057** — [Animated Widgets Library](https://github.com/) (bundled in `r6/scripts/AnimatedWidgets/`, drives the biomonitor animations)
+- **Jackhumbert** — [Mod Settings](https://www.nexusmods.com/cyberpunk2077/mods/4885) framework
+- **keanuWheeze** — [Native Settings UI](https://www.nexusmods.com/cyberpunk2077/mods/3518) (referenced as inspiration for the settings architecture)
+- **CDPR & the Edgerunners team** — for David Martinez and the source material this mod is built around
 
 ## License
 
