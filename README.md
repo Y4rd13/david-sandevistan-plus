@@ -434,14 +434,98 @@ Cyberpunk 2077/
 
 ## Settings
 
-Open the game menu: **Settings > Mods > Martinez Sandy+**
+Open the game menu: **Settings > Mods > David Sandevistan Plus**.
 
-### Time Dilation
-| Setting | Options | Default | Description |
-|---------|---------|---------|-------------|
-| Time Dilation (No Perk) | 85%–99.5% | 95% | Time dilation without EdgeRunner perk |
-| Time Dilation (With Perk) | 85%–99.5% | 99.35% | Time dilation with EdgeRunner perk |
-| Require EdgeRunner Perk | on/off | on | Require perk for enhanced dilation (off = full access from day 1) |
+44 tunables across 7 categories. Defaults are lore-accurate — most users won't need to change anything. Changes take effect immediately (no game restart) unless noted.
+
+### 1. Time Dilation (2 settings)
+
+| Setting | Default | Notes |
+|---|---|---|
+| Require EdgeRunner Perk | on | When **on**, the perk gates the full Sandy: without it, runtime caps at 33% of max and base dilation drops 99.35% → 95% for stages 1-5. Stage 0 already caps at 90% from the stage curve. When **off**, full 99.35% dilation and full runtime tank are available from level 1. |
+| Enable Session Fatigue | on | Each activation past `Safe Activations per Day` reduces time dilation by 2% (cap -10% total). Resets on sleep. Disabled while Safety OFF (that state already caps at 95%). |
+
+> Time dilation peak values (99.35% with perk, 95% without, 90% stage 0 cap) are **hardcoded** — not exposed as tunables. The per-stage curve is shown under "Progressive Dilation Degradation" below.
+
+### 2. Runtime & Drain (8 settings)
+
+| Setting | Range | Default |
+|---|---|---|
+| Runtime Tank (seconds) | 1–600 | 300 |
+| Recharge Duration | 0.5–30 | 2.0 |
+| Cooldown Base | 0.1–10 | 0.5 |
+| Activation Cost | 0.0–1.0 | 0.0 |
+| Kill Recharge Value | 0–50 | 2.0 |
+| Full Recharge Hours | 1–48 | 16 |
+| Max Recharge per Sleep | 1–24 | 10 |
+| Drain Accel Start (sec) | 10–180 | 60 |
+
+After `Drain Accel Start` seconds of continuous use, drain accelerates as `1 + (minutesOver ^ 1.5)` — doubles ~1 min past the threshold, ~4× after 2 min, ~6× after 3 min. Lower threshold = more pressure to act fast.
+
+### 3. Combat Stats (5 settings)
+
+Bonuses applied while Sandy is active.
+
+| Setting | Range | Default |
+|---|---|---|
+| Critical Chance | 0–100 | 30 |
+| Critical Damage | 0–500 | 35 |
+| Headshot Damage Multiplier | 1.0–5.0 | 1.5 |
+| Heal on Kill (%) | 0.0–50.0 | 3.0 |
+| Stamina on Kill | 0–100 | 22 |
+
+### 4. Cyberpsychosis (6 settings, advanced-gated)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Advanced Settings | on/off | off | Toggle to reveal the 5 settings below in the UI |
+| Safe Activations per Day | 1–20 | 3 | Doc's "three times a day" warning. Scaled per stage: 0=×1, 1=×1.7, 2=×2.3, 3=×3, 4=×4, 5=unlimited. Each activation past the limit adds +3 base strain. |
+| Strain Buildup Speed | 0.25–3.0 | 1.0 | Multiplier on activation, overuse, active-time and passive strain. Kill strain (faction-based) bypasses this and stays at +2/+3/+5/+6 (gang/corpo/ncpd/civilian). |
+| Strain Recovery Speed | 0.25–3.0 | 1.0 | Multiplier on sleep, ripper, safe area, immunoblocker, and natural decay |
+| Episode Cooldown Multiplier | 0.25–3.0 | 1.0 | Scales the 48/36/24/12/6h game-time minimums between stage escalations. Active treatment milestones extend further. |
+| Micro-Episode Frequency | 0.25–3.0 | 1.0 | 0.5 = half as often, 2.0 = twice |
+
+### 5. Recovery (3 settings, advanced-gated)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Advanced Settings | on/off | off | Toggle to reveal the 2 settings below |
+| Sleep Recovery (%) | 0.25–1.0 | 0.75 | % of remaining degraded max runtime recovered per sleep. Multiplicative — diminishing returns across sessions. Full restore requires a ripperdoc visit. |
+| Tolerance Decay Hours | 6–72 | 24 | Game-time hours of immunoblocker abstinence before tolerance starts decaying (fixed -1.0 per game-day once decay begins). Ripperdoc visits flush -4.0 instantly. |
+
+### 6. Economy & Interface (7 settings)
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Immunoblocker Price: Common | 500–20,000 | 6,000€$ | 3 min duration |
+| Immunoblocker Price: Uncommon | 1,000–50,000 | 24,000€$ | 6 min duration |
+| Immunoblocker Price: Rare | 5,000–200,000 | 100,000€$ | 10 min duration |
+| Enable Debug Logs | on/off | off | Detailed CET console output for troubleshooting |
+| Biomonitor Position X | 0–3000 | 80 | On a 3840×2160 canvas. Auto-scales to your resolution. |
+| Biomonitor Position Y | 0–2000 | 600 | (same canvas) |
+| Sandevistan Color Grading | Vanilla / GreenI / GreenII / GreenIII / Neon / Clean | Neon | Requires game restart to apply |
+
+### 7. Martinez Rush (13 settings)
+
+Kill-triggered combat burst during Sandy. Every value below is individually tunable; setting a stat to 0 disables just that bonus. The feature itself is always live (it intentionally has no global toggle — set the chance to 0.25× and the bonuses to 0 if you don't want it).
+
+| Setting | Range | Default | Notes |
+|---|---|---|---|
+| Require Edgerunner Perk | on/off | on | On: Rush only procs if V has the vanilla Edgerunner perk in Reflexes. Off: Rush works regardless. |
+| Rush Chance Multiplier | 0.25–3.0 | 1.0 | Base chance per kill scales by stage: 2% / 4% / 7% / 12% / 18% / 25%. Multiplied by this value. |
+| Rush Duration (sec) | 6–30 | 12 | Safety OFF extends by +25% (so 12s → 15s) |
+| Rush Cooldown (sec) | 15–180 | 45 | Real-time minimum between procs |
+| Rush Runtime Drain Multiplier | 1.0–3.0 | 1.5 | Drain rate during the Rush window — the primary cost |
+| Rush Fire Rate Bonus (%) | 0–150 | 67 | +67% rate of fire on ranged weapons |
+| Rush Reload Speed Bonus (%) | 0–150 | 82 | Reloads take 45% of normal time |
+| Rush Melee Attack Speed Bonus (%) | 0–150 | 40 | +40% swing rate for blades and blunt |
+| Rush Movement Speed Bonus (%) | 0–100 | 25 | +25% run/sprint speed |
+| Rush Crit Chance Bonus | 0–100 | 20 | Flat +20 crit chance points |
+| Rush Crit Damage Bonus | 0–200 | 35 | Flat +35 crit damage points |
+| Rush Armor Bonus (%) | 0–200 | 45 | +45% damage reduction |
+| Rush Combat Regen Multiplier | 1.0–20.0 | 6.0 | 6× normal in-combat health regen |
+
+Rush does **not** add neural strain — it intentionally stays out of the cyberpsychosis progression budget so stage cadence stays intact. The cost is the runtime drain plus a 3-second stamina crash that lands the moment Sandy deactivates.
 
 #### Progressive Dilation Degradation
 
@@ -459,91 +543,9 @@ Time dilation degrades as runtime depletes — higher psychosis stages degrade f
 
 For curve visualizations and formulas, see **[docs/dilation-curves.md](docs/dilation-curves.md)**. For Stage 6 song-synced timeline, see **[docs/last-breath.md](docs/last-breath.md)**.
 
-### Duration & Cooldown
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Runtime Tank (sec) | 1–600 | 300 | Total runtime reservoir (drains at different rates) |
-| Recharge Duration | 0.5–30 | 2.0 | Base recharge time after deactivation |
-| Cooldown Base | 0.1–10 | 0.5 | Cooldown multiplier between activations |
-| Activation Cost | 0–1 | 0.0 | Stamina cost to activate (0 = free) |
-| Kill Recharge Value | 0–50 | 2.0 | Runtime recharged per kill during Sandy |
-
-### Combat Stats (while Sandy active)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Critical Chance | 0–100 | 30 | Bonus crit chance |
-| Critical Damage | 0–500 | 35 | Bonus crit damage |
-| Headshot Damage Multiplier | 1.0–5.0 | 1.5 | Headshot damage multiplier |
-
-### On-Kill Effects (while Sandy active)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Heal on Kill | 0–50% | 3 | Health restored per kill |
-| Stamina on Kill | 0–100 | 22 | Stamina restored per kill |
-
-### Health Drain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Health Drain | on/off | on | Toggle health cost while Sandy is active |
-| Minimum Damage per Tick (%) | 0–10% | 1.0 | Health drain at full runtime |
-| Maximum Damage per Tick (%) | 0–50% | 15.0 | Health drain at zero runtime |
-
-### Health Brake (Emergency Stop)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Health Brake | on/off | off | Auto-stop Sandy on low health |
-| Health Brake Threshold | 15–80% | 50 | Health % to trigger brake |
-| Minimum Required Health | 5–50% | 15 | Absolute minimum health threshold |
-
 > **Safety ON/OFF** is automatic and hidden from the player — stages 0-4 have Safety ON, stage 5+ Safety OFF engages automatically.
-
-### Recharge & Recovery
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Full Recharge Hours | 1–48 | 16 | In-game hours for full recharge |
-| Max Recharge Per Sleep | 1–24 | 10 | Max recharge hours per sleep |
-| Enable Runtime Degradation | on/off | on | Each session costs max runtime (1%/60s, cap 50%) |
-| Sleep Recovery (%) | 0.25–1.0 | 0.75 | % of degraded runtime recovered by sleep |
-| Ripper Full Restore | on/off | on | Ripperdoc fully restores max runtime |
-
-### Cyberpsychosis
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Cyberpsychosis | on/off | on | Toggle the cyberpsychosis system |
-| Safe Activations per Day | 1–20 | 3 | Activations before strain acceleration |
-| Enable Session Fatigue | on/off | on | Repeated activations reduce dilation effectiveness |
-| Fatigue Penalty per Overuse | 0.01–0.10 | 0.02 | Dilation loss per excess activation (2% default) |
-| Max Fatigue Penalty | 0.05–0.30 | 0.10 | Maximum dilation penalty cap (10% default) |
-
-### Neural Strain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Strain Buildup Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain accumulation |
-| Strain Recovery Speed | 0.25–3.0 | 1.0 | Global multiplier for all strain drain |
-
-> Individual strain values (per-activation, per-kill, drain rates, etc.) are preconfigured with lore-accurate defaults. Advanced users can tune them via `config.json`.
-
-> **Comedown** has been removed. Penalties are now runtime-based — V's body deteriorates progressively during Sandy use, not after. No reactivation block (lore-accurate: David never had a cooldown).
-
-### Doc Prescription (Graduated Recovery)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Prescription | on/off | on | Require multiple treatments to cure psychosis |
-| Max Recovery Per Sleep | 1–5 | 1 | Maximum psycho levels recovered per sleep |
-| Ripper Recovery Levels | 1–3 | 1 | Psycho levels recovered per ripperdoc visit |
-
-### Non-Linear Runtime Drain
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Non-Linear Drain | on/off | on | Drain accelerates with sustained use |
-| Drain Exponent | 1.0–3.0 | 1.5 | Acceleration curve steepness |
-| Drain Acceleration Start | 10–180 sec | 60 | Seconds before acceleration kicks in |
-
-### Micro-Episodes (Random Symptoms)
-| Setting | Range | Default | Description |
-|---------|-------|---------|-------------|
-| Enable Micro-Episodes | on/off | on | Random involuntary symptoms at psycho 1+ |
-| Frequency Multiplier | 0.25–3.0 | 1.0 | Scale episode frequency (0.5 = half, 2.0 = double) |
+>
+> **Comedown** has been removed. Penalties are runtime-based — V's body deteriorates during Sandy use, not after. No reactivation block (lore-accurate: David never had a cooldown).
 
 ## How It Works
 
