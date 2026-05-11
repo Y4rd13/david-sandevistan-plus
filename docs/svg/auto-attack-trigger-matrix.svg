@@ -44,7 +44,7 @@
   <text x="690.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">loreEffects.lua:136</text>
   <rect x="840" y="110" width="220" height="50" rx="6" class="trigger"/>
   <text x="950.0" y="128" text-anchor="middle" class="node-text">Low runtime</text>
-  <text x="950.0" y="144" text-anchor="middle" class="node-sub"><10% rt, per second</text>
+  <text x="950.0" y="144" text-anchor="middle" class="node-sub">&lt;10% rt, per second</text>
   <text x="950.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">psychosis.lua:2004</text>
   <rect x="460" y="210" width="260" height="50" rx="6" class="converge"/>
   <text x="590.0" y="232" text-anchor="middle" class="node-text">TryAutoAttack(stageChance)</text>
