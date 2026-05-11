@@ -1,0 +1,53 @@
+name: ⚖️ Balance Feedback
+description: A mechanic feels too aggressive, too slow, too punishing, or trivial
+title: "[balance] "
+labels: ["type:balance-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Balance is the part of this mod where player feedback matters most. Defaults aim at "lore-accurate" but lore is interpretation, so concrete reports help calibrate them.
+
+        Before submitting, check whether the value you want to change is already a Mod Settings tunable. The Cyberpsychosis and Recovery categories have Advanced toggles that reveal strain multipliers, episode cooldowns, micro-episode frequency, sleep recovery, and tolerance decay. The Martinez Rush category has 13 separate stat tunables.
+
+  - type: input
+    id: subsystem
+    attributes:
+      label: Which subsystem
+      description: Strain / cyberpsychosis stages, Martinez Rush, immunoblocker tiers, tolerance, runtime drain, hallucinations, auto-attack, etc.
+      placeholder: cyberpsychosis stage progression
+    validations:
+      required: true
+
+  - type: textarea
+    id: observation
+    attributes:
+      label: What you observed
+      description: Be concrete. "I reached stage 4 in 2 in-game days of normal use" beats "stages escalate too fast".
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Based on the README or your read of the lore. What pace or magnitude felt right?
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings_tried
+    attributes:
+      label: Settings you have already tuned
+      description: List any Mod Settings you adjusted from the default before submitting. If you have not adjusted any, write "stock defaults".
+      placeholder: stock defaults
+    validations:
+      required: true
+
+  - type: textarea
+    id: playstyle
+    attributes:
+      label: Playstyle context
+      description: Stealth vs combat, faction breakdown of kills, average activation count per in-game day, EdgeRunner perk unlocked yes/no, current cyberpsychosis stage. This shapes how strain accumulates.
+    validations:
+      required: false

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Nexus Mods Bugs Tab
+    url: https://www.nexusmods.com/cyberpunk2077/mods/REPLACE_WITH_NEXUS_ID?tab=bugs
+    about: If you came from Nexus, you can also open the bug there. This GitHub tracker and the Nexus Bugs tab are both monitored, just pick one.
+  - name: Discussion / question
+    url: https://github.com/Y4rd13/david-sandevistan-plus/discussions
+    about: For general questions about how a mechanic works, balance feedback, or modding setup help, prefer Discussions. Issues are for concrete bugs and feature requests.
