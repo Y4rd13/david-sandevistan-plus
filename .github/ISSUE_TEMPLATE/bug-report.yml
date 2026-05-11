@@ -1,0 +1,127 @@
+name: 🐛 Bug Report
+description: Something in the mod is not working as it should
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. The triage bot will read this and add area labels automatically, so you do not need to pick them yourself.
+
+        **Please fill every required field below.** Vague reports waste time on both sides. If you really cannot reproduce the issue or you do not know one of the answers, write that explicitly instead of leaving the field blank.
+
+  - type: input
+    id: mod_version
+    attributes:
+      label: Mod version
+      description: Found on the Files tab on Nexus, or in the GitHub Release tag you downloaded. Example, v1.0.0.
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: game_version
+    attributes:
+      label: Cyberpunk 2077 game version
+      description: Found in Settings, Software, or on the Steam / GOG store page. Include whether Phantom Liberty is installed.
+      placeholder: "2.21 + Phantom Liberty"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_source
+    attributes:
+      label: How did you install the mod
+      options:
+        - Manual extraction of the zip from the GitHub Release
+        - Vortex
+        - Mod Organizer 2
+        - Nexus website Manual Download
+        - Other (describe in repro steps)
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Required dependencies installed
+      description: Confirm each of these is installed and up to date. Just list any you are unsure about.
+      value: |
+        - [ ] Cyber Engine Tweaks
+        - [ ] RED4ext
+        - [ ] redscript
+        - [ ] ArchiveXL
+        - [ ] TweakXL
+        - [ ] Codeware
+        - [ ] Audioware
+        - [ ] Mod Settings (not Native Settings UI, those are different mods)
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro_steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list, from a clean load. The more specific the better.
+      placeholder: |
+        1. Load save X
+        2. Walk to Kabuki
+        3. Activate Sandy
+        4. Kill 3 enemies
+        5. Observe Y
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include exact text from any error message or HUD readout.
+    validations:
+      required: true
+
+  - type: textarea
+    id: save_state
+    attributes:
+      label: Save state context
+      description: New save, mid-playthrough, after sleeping at apartment, etc. If reproducible only from a specific save state, mention it.
+      placeholder: New character, level 8, before The Heist
+    validations:
+      required: false
+
+  - type: textarea
+    id: mod_list
+    attributes:
+      label: Other mods installed
+      description: Especially Sandevistan replacers, HUD overhauls, Dark Future, Wannabe Edgerunner, or any other mod that could interact with cyberpsychosis or time dilation. Drag and drop your modlist.txt if you use MO2, or paste the relevant subset.
+    validations:
+      required: false
+
+  - type: textarea
+    id: cet_console
+    attributes:
+      label: CET console output
+      description: |
+        1. Enable Debug Logs in `Settings > Mods > David Sandevistan Plus > Economy & Interface > Enable Debug Logs`
+        2. Reproduce the bug
+        3. Open the CET overlay (default `~` key, then click the console window) and copy/paste the lines starting with `[DSP]`.
+        Attach the raw output as a code block. If there is no DSP output, write "no DSP output observed".
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or short video
+      description: Drag and drop. Especially helpful for visual bugs (HUD layering, biomonitor positioning, VFX issues).
+    validations:
+      required: false

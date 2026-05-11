@@ -1,0 +1,45 @@
+name: ✨ Feature Request
+description: Suggest a new mechanic, configuration option, or improvement
+title: "[feat] "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. The triage bot will read this and add area labels automatically, so do not worry about picking them yourself.
+
+        Before submitting, please check:
+        - Is the mechanic already configurable via `Settings > Mods > David Sandevistan Plus`? The mod has 44 tunables across 7 categories. Many "feature requests" are actually settings that already exist.
+        - Is this clearly out of scope for a lore-accurate David Martinez Sandevistan mod? For example, a feature that contradicts the Edgerunners source material will probably get declined. Adjacent enhancements that fit the lore are welcome.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve
+      description: Describe the gameplay friction or missing piece, not the solution. Example, "after 40 minutes of playing I never see hallucinations even at stage 4" is more useful than "make hallucinations more frequent".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Your proposed mechanic or option
+      description: Be specific. New mechanic? New Mod Settings tunable? Adjusted default for an existing tunable? Mention any lore reference (Episode number, scene) if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you tried using existing settings? Tuning the Advanced toggles? If yes, explain why those did not solve the problem.
+    validations:
+      required: false
+
+  - type: textarea
+    id: lore_anchor
+    attributes:
+      label: Lore anchor (optional but appreciated)
+      description: David Sandevistan Plus is intentionally lore-accurate. If the feature ties to something specific in Edgerunners, drop the reference here (Episode number, character moment, etc.). Features without a lore anchor are still considered, just lower priority.
+    validations:
+      required: false
