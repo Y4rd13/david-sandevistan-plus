@@ -1,0 +1,21 @@
+{
+  "name": "david-sandevistan-plus",
+  "version": "0.0.0-semantic-release-managed",
+  "private": true,
+  "description": "Release tooling only. The mod itself ships from archive/, bin/, and r6/. This package.json exists so semantic-release and its plugins have a home; nothing in this file is shipped to end users.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Y4rd13/david-sandevistan-plus.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "semantic-release": "^24.2.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/exec": "^7.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.1",
+    "@semantic-release/release-notes-generator": "^14.0.3",
+    "conventional-changelog-conventionalcommits": "^8.0.0"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "branches": [
+    "main",
+    { "name": "beta", "prerelease": true }
+  ],
+  "tagFormat": "v${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "type": "balance", "release": "patch" },
+          { "type": "tweak", "release": "patch" },
+          { "type": "docs", "release": false },
+          { "type": "chore", "release": false },
+          { "type": "ci", "release": false },
+          { "type": "test", "release": false },
+          { "type": "style", "release": false },
+          { "type": "refactor", "release": false },
+          { "type": "perf", "release": "patch" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "Features" },
+            { "type": "fix", "section": "Bug Fixes" },
+            { "type": "balance", "section": "Balance Changes" },
+            { "type": "tweak", "section": "Tweaks" },
+            { "type": "perf", "section": "Performance" },
+            { "type": "revert", "section": "Reverts" },
+            { "type": "docs", "section": "Documentation", "hidden": true },
+            { "type": "chore", "section": "Chores", "hidden": true },
+            { "type": "ci", "section": "CI", "hidden": true },
+            { "type": "test", "section": "Tests", "hidden": true },
+            { "type": "refactor", "section": "Refactoring", "hidden": true },
+            { "type": "style", "section": "Style", "hidden": true }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog\n\nAll notable changes to David Sandevistan Plus are tracked here. Versions follow [Semantic Versioning](https://semver.org/) and entries are generated automatically by [semantic-release](https://github.com/semantic-release/semantic-release) from Conventional Commits on the squashed PR titles."
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "bash .github/scripts/build-mod-zip.sh ${nextRelease.version}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/DavidSandevistanPlus-v*.zip",
+            "label": "DavidSandevistanPlus v${nextRelease.version} (extract into your Cyberpunk 2077 install)"
+          }
+        ],
+        "successComment": false,
+        "failComment": false
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
