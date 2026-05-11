@@ -1,0 +1,99 @@
+name: PR Title
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        id: lint_pr_title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            style
+            test
+            docs
+            build
+            ci
+            chore
+            revert
+            tweak
+            balance
+          requireScope: false
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            PR title must follow Conventional Commits format:
+
+              <type>(optional-scope): description
+
+            Types that trigger a release once semantic-release is wired up:
+              feat:    -> minor bump (x.Y.z)
+              fix:     -> patch bump (x.y.Z)
+              feat!:   -> major bump (X.y.z)
+
+            Types that do NOT trigger a release (docs / maintenance / tuning):
+              chore, ci, docs, refactor, test, style, build, perf, revert,
+              tweak, balance
+
+            Examples:
+              feat(martinez-rush): add stamina crash deferral
+              fix(strain): correct Safety OFF rate to 0.10/s
+              balance(strain): bump stage 4 passive to 0.025/s
+              tweak(hud): default rushRequireEdgerunner to true
+              ci: add Claude PR review workflow
+          validateSingleCommit: false
+
+      - name: Post sticky comment on invalid PR title
+        if: always() && (steps.lint_pr_title.outputs.error_message != null)
+        uses: marocchino/sticky-pull-request-comment@v2
+        env:
+          ERROR_MESSAGE: ${{ steps.lint_pr_title.outputs.error_message }}
+        with:
+          header: pr-title-lint-error
+          message: |
+            ## ❌ PR title doesn't follow Conventional Commits
+
+            ${{ env.ERROR_MESSAGE }}
+
+            ### How to fix
+
+            Edit this PR's **title** (not commit messages, semantic-release reads the PR title on squash-merge) to match:
+
+            ```
+            <type>(optional-scope): description
+            ```
+
+            **Examples that pass:**
+            - `feat(martinez-rush): add stamina crash deferral`
+            - `fix(strain): correct Safety OFF rate to 0.10/s`
+            - `balance(strain): bump stage 4 passive to 0.025/s`
+            - `tweak(hud): default rushRequireEdgerunner to true`
+            - `docs(readme): rewrite Settings section against DSPSettings.reds`
+            - `ci: add Claude PR review workflow`
+
+            **Release impact by type (once semantic-release is wired up):**
+            - `feat:`  -> minor bump
+            - `fix:`   -> patch bump
+            - `feat!:` (or any `<type>!:`) -> major bump
+            - `chore`, `ci`, `docs`, `refactor`, `test`, `style`, `build`, `perf`, `revert`, `tweak`, `balance` -> no release
+
+            *This comment auto-deletes once the title is valid.*
+
+      - name: Remove sticky comment when title becomes valid
+        if: ${{ steps.lint_pr_title.outputs.error_message == null }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          delete: true
