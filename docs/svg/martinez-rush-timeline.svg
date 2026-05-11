@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 680" font-family="Consolas, monospace">
+  <defs>
+    <style>
+      .bg { fill: #0f1419; }
+      .title { font-size: 22px; fill: #eceff1; font-weight: bold; }
+      .subtitle { font-size: 12px; fill: #b0bec5; }
+      .section-title { font-size: 14px; fill: #ffab91; font-weight: bold; }
+      .node-bg { fill: #1a2a3a; stroke: #4fc3f7; stroke-width: 1.5; }
+      .node-bg-pos { fill: #1a3a1a; stroke: #81c784; stroke-width: 1.5; }
+      .node-bg-neg { fill: #3a1a1a; stroke: #ef5350; stroke-width: 1.5; }
+      .node-bg-proc { fill: #4b1b1b; stroke: #ef5350; stroke-width: 2.5; }
+      .node-text { font-size: 13px; fill: #eceff1; font-weight: bold; }
+      .node-sub { font-size: 10px; fill: #b0bec5; }
+      .branch { font-size: 11px; fill: #ffab91; font-style: italic; }
+      .stage-chance { font-size: 11px; fill: #80deea; font-family: Consolas, monospace; }
+      .timeline-axis { stroke: #607d8b; stroke-width: 1.5; }
+      .timeline-tick { stroke: #455a64; stroke-width: 1; }
+      .tick-label { font-size: 10px; fill: #b0bec5; }
+      .event-label { font-size: 11px; fill: #ffab91; }
+      .buff-label { font-size: 11px; fill: #eceff1; }
+      .buff-val { font-size: 11px; fill: #80deea; font-family: Consolas, monospace; }
+      .drain-text { font-size: 11px; fill: #ef5350; font-weight: bold; }
+      .arrow { fill: #b0bec5; }
+    </style>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="680" class="bg"/>
+  <text x="590" y="35" text-anchor="middle" class="title">Martinez Rush — Proc Decision + Active Window</text>
+  <text x="590" y="56" text-anchor="middle" class="subtitle">Edgerunner-inspired kill-triggered combat burst | init.lua TryProcMartinezRush + martinez.lua factory</text>
+  <text x="20" y="92" class="section-title">▼ Per-kill decision chain</text>
+  <rect x="80" y="110" width="280" height="50" rx="6" class="node-bg"/>
+  <text x="220.0" y="133.0" text-anchor="middle" class="node-text">ENEMY KILLED while Sandy active</text>
+  <text x="220.0" y="148.0" text-anchor="middle" class="node-sub">init.lua:1624 hook</text>
+  <line x1="220.0" y1="160" x2="220.0" y2="173" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="80" y="175" width="280" height="50" rx="6" class="node-bg"/>
+  <text x="220.0" y="198.0" text-anchor="middle" class="node-text">Has Edgerunner perk?</text>
+  <text x="220.0" y="213.0" text-anchor="middle" class="node-sub">rushRequireEdgerunner (default on)</text>
+  <line x1="220.0" y1="225" x2="220.0" y2="238" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="228.0" y="243" class="branch">yes</text>
+  <line x1="360" y1="200.0" x2="450" y2="200.0" stroke="#ef5350" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="405" y="195.0" text-anchor="middle" class="branch" style="fill:#ef5350">no</text>
+  <rect x="450" y="180" width="130" height="38" rx="6" class="node-bg-neg"/>
+  <text x="515.0" y="197.0" text-anchor="middle" class="node-text">Skip</text>
+  <text x="515.0" y="212.0" text-anchor="middle" class="node-sub">no proc</text>
+  <rect x="80" y="240" width="280" height="50" rx="6" class="node-bg"/>
+  <text x="220.0" y="263.0" text-anchor="middle" class="node-text">Off cooldown?</text>
+  <text x="220.0" y="278.0" text-anchor="middle" class="node-sub">now - lastRushProcTime ≥ rushCooldown (45s)</text>
+  <line x1="220.0" y1="290" x2="220.0" y2="303" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="228.0" y="308" class="branch">yes</text>
+  <line x1="360" y1="265.0" x2="450" y2="265.0" stroke="#ef5350" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="405" y="260.0" text-anchor="middle" class="branch" style="fill:#ef5350">no</text>
+  <rect x="450" y="245" width="130" height="38" rx="6" class="node-bg-neg"/>
+  <text x="515.0" y="262.0" text-anchor="middle" class="node-text">Skip</text>
+  <text x="515.0" y="277.0" text-anchor="middle" class="node-sub">wait for cooldown</text>
+  <rect x="80" y="305" width="280" height="60" rx="6" class="node-bg"/>
+  <text x="220.0" y="333.0" text-anchor="middle" class="node-text">Roll chance per stage × multiplier</text>
+  <text x="220.0" y="348.0" text-anchor="middle" class="node-sub">baseChance × rushChanceMultiplier (default 1.0)</text>
+  <line x1="220.0" y1="365" x2="220.0" y2="378" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="228.0" y="381" class="branch">hit</text>
+  <rect x="420" y="295" width="380" height="115" rx="6" class="node-bg"/>
+  <text x="610" y="315" text-anchor="middle" class="node-text">Base proc chance by cyberpsychosis stage</text>
+  <text x="432" y="340" class="node-sub">0 Normal</text>
+  <text x="550" y="340" text-anchor="end" class="stage-chance">2%</text>
+  <text x="554" y="340" class="node-sub">1 Unstable</text>
+  <text x="672" y="340" text-anchor="end" class="stage-chance">4%</text>
+  <text x="676" y="340" class="node-sub">2 Glitching</text>
+  <text x="794" y="340" text-anchor="end" class="stage-chance">7%</text>
+  <text x="432" y="370" class="node-sub">3 Losing It</text>
+  <text x="550" y="370" text-anchor="end" class="stage-chance">12%</text>
+  <text x="554" y="370" class="node-sub">4 On The Edge</text>
+  <text x="672" y="370" text-anchor="end" class="stage-chance">18%</text>
+  <text x="676" y="370" class="node-sub">5 Cyberpsycho</text>
+  <text x="794" y="370" text-anchor="end" class="stage-chance">25%</text>
+  <rect x="80" y="380" width="280" height="50" rx="6" class="node-bg"/>
+  <text x="220.0" y="403.0" text-anchor="middle" class="node-text">Safety OFF?</text>
+  <text x="220.0" y="418.0" text-anchor="middle" class="node-sub">stage 5 → ×1.25 duration extension</text>
+  <line x1="190.0" y1="430" x2="190.0" y2="458" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="170.0" y="448" class="branch">no → 12s</text>
+  <line x1="250.0" y1="430" x2="250.0" y2="458" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="275.0" y="448" class="branch">yes → 15s</text>
+  <rect x="80" y="460" width="280" height="50" rx="6" class="node-bg-proc"/>
+  <text x="220.0" y="483.0" text-anchor="middle" class="node-text">★ PROC: Martinez Rush</text>
+  <text x="220.0" y="498.0" text-anchor="middle" class="node-sub">pre-cue VFX → buffs → drain ×1.5</text>
+  <text x="20" y="510" class="section-title">▼ Active window timeline + buffs</text>
+  <line x1="90" y1="540" x2="1090" y2="540" class="timeline-axis"/>
+  <line x1="90.0" y1="535" x2="90.0" y2="545" class="timeline-tick"/>
+  <text x="90.0" y="562" text-anchor="middle" class="tick-label">0s</text>
+  <line x1="121.11111111111111" y1="535" x2="121.11111111111111" y2="545" class="timeline-tick"/>
+  <text x="121.11111111111111" y="562" text-anchor="middle" class="tick-label">0.56s</text>
+  <line x1="256.66666666666663" y1="535" x2="256.66666666666663" y2="545" class="timeline-tick"/>
+  <text x="256.66666666666663" y="562" text-anchor="middle" class="tick-label">3s</text>
+  <line x1="423.3333333333333" y1="535" x2="423.3333333333333" y2="545" class="timeline-tick"/>
+  <text x="423.3333333333333" y="562" text-anchor="middle" class="tick-label">6s</text>
+  <line x1="590.0" y1="535" x2="590.0" y2="545" class="timeline-tick"/>
+  <text x="590.0" y="562" text-anchor="middle" class="tick-label">9s</text>
+  <line x1="756.6666666666666" y1="535" x2="756.6666666666666" y2="545" class="timeline-tick"/>
+  <text x="756.6666666666666" y="562" text-anchor="middle" class="tick-label">12s</text>
+  <line x1="923.3333333333334" y1="535" x2="923.3333333333334" y2="545" class="timeline-tick"/>
+  <text x="923.3333333333334" y="562" text-anchor="middle" class="tick-label">15s</text>
+  <line x1="1090.0" y1="535" x2="1090.0" y2="545" class="timeline-tick"/>
+  <text x="1090.0" y="562" text-anchor="middle" class="tick-label">18s</text>
+  <rect x="90.0" y="490" width="31.111111111111114" height="100" fill="#ffab91" opacity="0.18" rx="2"/>
+  <text x="105.55555555555556" y="482" text-anchor="middle" class="event-label">pre-cue</text>
+  <text x="105.55555555555556" y="496" text-anchor="middle" class="event-label">VFX</text>
+  <rect x="121.11111111111111" y="490" width="635.5555555555555" height="100" fill="#81c784" opacity="0.22" rx="2"/>
+  <text x="438.88888888888886" y="482" text-anchor="middle" class="event-label" style="fill:#81c784;font-weight:bold;font-size:12px">ACTIVE WINDOW (12s base, +25% if Safety OFF → 15s)</text>
+  <rect x="756.6666666666666" y="490" width="166.66666666666674" height="100" fill="#a5d6a7" opacity="0.15" rx="2"/>
+  <text x="840.0" y="508" text-anchor="middle" class="event-label" style="fill:#a5d6a7">+Safety OFF</text>
+  <rect x="923.3333333333334" y="490" width="166.66666666666663" height="100" fill="#ef5350" opacity="0.20" rx="2"/>
+  <text x="1006.6666666666667" y="482" text-anchor="middle" class="drain-text">3s stamina crash</text>
+  <text x="1006.6666666666667" y="496" text-anchor="middle" class="event-label" style="fill:#ef5350">(deferred to Sandy end)</text>
+  <circle cx="78" cy="596" r="3" fill="#80deea"/>
+  <text x="90" y="600" class="buff-label">Fire rate</text>
+  <text x="290" y="600" class="buff-val">+67% (CycleTime ×0.6)</text>
+  <circle cx="78" cy="618" r="3" fill="#80deea"/>
+  <text x="90" y="622" class="buff-label">Reload speed</text>
+  <text x="290" y="622" class="buff-val">+82% (ReloadTime ×0.55)</text>
+  <circle cx="78" cy="640" r="3" fill="#80deea"/>
+  <text x="90" y="644" class="buff-label">Melee attack speed</text>
+  <text x="290" y="644" class="buff-val">+40% (AttackSpeed ×1.4)</text>
+  <circle cx="78" cy="662" r="3" fill="#80deea"/>
+  <text x="90" y="666" class="buff-label">Movement speed</text>
+  <text x="290" y="666" class="buff-val">+25% (MaxSpeed ×1.25)</text>
+  <circle cx="78" cy="684" r="3" fill="#80deea"/>
+  <text x="90" y="688" class="buff-label">Critical chance</text>
+  <text x="290" y="688" class="buff-val">+20 flat</text>
+  <circle cx="608" cy="596" r="3" fill="#80deea"/>
+  <text x="620" y="600" class="buff-label">Critical damage</text>
+  <text x="820" y="600" class="buff-val">+35 flat</text>
+  <circle cx="608" cy="618" r="3" fill="#80deea"/>
+  <text x="620" y="622" class="buff-label">Armor</text>
+  <text x="820" y="622" class="buff-val">+45% (Armor ×1.45)</text>
+  <circle cx="608" cy="640" r="3" fill="#80deea"/>
+  <text x="620" y="644" class="buff-label">Combat regen</text>
+  <text x="820" y="644" class="buff-val">×6.0 (HealthInCombatRegenRate)</text>
+  <circle cx="608" cy="662" r="3" fill="#80deea"/>
+  <text x="620" y="666" class="buff-label">Runtime drain</text>
+  <text x="820" y="666" class="buff-val">×1.5 — primary cost</text>
+  <circle cx="608" cy="684" r="3" fill="#80deea"/>
+  <text x="620" y="688" class="buff-label">On-kill laugh</text>
+  <text x="820" y="688" class="buff-val">35% chance, 3.5s cd (ono_v_laughs_*)</text>
+</svg>

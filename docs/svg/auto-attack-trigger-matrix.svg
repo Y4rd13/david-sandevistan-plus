@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 820" font-family="Consolas, monospace">
+  <defs>
+    <style>
+      .bg { fill: #0f1419; }
+      .title { font-size: 22px; fill: #eceff1; font-weight: bold; }
+      .subtitle { font-size: 12px; fill: #b0bec5; }
+      .section-title { font-size: 14px; fill: #ffab91; font-weight: bold; }
+      .trigger { fill: #1a2a3a; stroke: #80deea; stroke-width: 1.5; }
+      .converge { fill: #3a2a1a; stroke: #ffab91; stroke-width: 2; }
+      .step { fill: #1a3a2a; stroke: #81c784; stroke-width: 1.5; }
+      .branch-armed { fill: #2a3a1a; stroke: #aed581; stroke-width: 1.5; }
+      .branch-unarmed { fill: #3a2a1a; stroke: #ffb74d; stroke-width: 1.5; }
+      .execute { fill: #4b1b1b; stroke: #ef5350; stroke-width: 2.5; }
+      .node-text { font-size: 13px; fill: #eceff1; font-weight: bold; }
+      .node-sub { font-size: 10px; fill: #b0bec5; }
+      .branch-label { font-size: 11px; fill: #ffab91; font-style: italic; }
+      .arrow { fill: #b0bec5; }
+      .matrix-stage { font-size: 12px; fill: #1a1a2e; font-weight: bold; }
+      .matrix-trigger { font-size: 12px; fill: #eceff1; }
+      .matrix-val { font-size: 13px; fill: #eceff1; font-family: Consolas, monospace; }
+      .matrix-zero { font-size: 13px; fill: #455a64; }
+      .grid { stroke: #263238; stroke-width: 0.5; }
+      .footnote { font-size: 10px; fill: #78909c; }
+    </style>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" class="arrow"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="820" class="bg"/>
+  <text x="590" y="35" text-anchor="middle" class="title">Auto-Attack — Trigger Matrix + Execution Flow</text>
+  <text x="590" y="56" text-anchor="middle" class="subtitle">Involuntary AIWeapon.Fire calls when cyberpsychosis takes over | psychosis.lua + loreEffects.lua</text>
+  <text x="20" y="92" class="section-title">▼ Execution flow</text>
+  <rect x="60" y="110" width="220" height="50" rx="6" class="trigger"/>
+  <text x="170.0" y="128" text-anchor="middle" class="node-text">Stage change</text>
+  <text x="170.0" y="144" text-anchor="middle" class="node-sub">BleedingEffect (psycho++)</text>
+  <text x="170.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">psychosis.lua:506</text>
+  <rect x="320" y="110" width="220" height="50" rx="6" class="trigger"/>
+  <text x="430.0" y="128" text-anchor="middle" class="node-text">Manic laugh</text>
+  <text x="430.0" y="144" text-anchor="middle" class="node-sub">Micro-episode (stage 3+)</text>
+  <text x="430.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">psychosis.lua:305</text>
+  <rect x="580" y="110" width="220" height="50" rx="6" class="trigger"/>
+  <text x="690.0" y="128" text-anchor="middle" class="node-text">Nosebleed</text>
+  <text x="690.0" y="144" text-anchor="middle" class="node-sub">Sandy activation overuse</text>
+  <text x="690.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">loreEffects.lua:136</text>
+  <rect x="840" y="110" width="220" height="50" rx="6" class="trigger"/>
+  <text x="950.0" y="128" text-anchor="middle" class="node-text">Low runtime</text>
+  <text x="950.0" y="144" text-anchor="middle" class="node-sub"><10% rt, per second</text>
+  <text x="950.0" y="156" text-anchor="middle" class="node-sub" style="fill:#78909c">psychosis.lua:2004</text>
+  <rect x="460" y="210" width="260" height="50" rx="6" class="converge"/>
+  <text x="590.0" y="232" text-anchor="middle" class="node-text">TryAutoAttack(stageChance)</text>
+  <text x="590.0" y="250" text-anchor="middle" class="node-sub">strain ratio × stage chance → roll</text>
+  <line x1="170.0" y1="160" x2="590.0" y2="208" stroke="#b0bec5" stroke-width="1.2" marker-end="url(#arr)" opacity="0.7"/>
+  <line x1="430.0" y1="160" x2="590.0" y2="208" stroke="#b0bec5" stroke-width="1.2" marker-end="url(#arr)" opacity="0.7"/>
+  <line x1="690.0" y1="160" x2="590.0" y2="208" stroke="#b0bec5" stroke-width="1.2" marker-end="url(#arr)" opacity="0.7"/>
+  <line x1="950.0" y1="160" x2="590.0" y2="208" stroke="#b0bec5" stroke-width="1.2" marker-end="url(#arr)" opacity="0.7"/>
+  <line x1="590.0" y1="260" x2="590.0" y2="288" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="598.0" y="278" class="branch-label">hit</text>
+  <rect x="460" y="290" width="260" height="50" rx="6" class="step"/>
+  <text x="590.0" y="312" text-anchor="middle" class="node-text">Find target NPC ≤ 15m</text>
+  <text x="590.0" y="330" text-anchor="middle" class="node-sub">line of sight, not crew, not friendly</text>
+  <line x1="540.0" y1="340" x2="400.0" y2="378" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="380.0" y="372" text-anchor="middle" class="branch-label">weapon in hand</text>
+  <rect x="280" y="380" width="240" height="60" rx="6" class="branch-armed"/>
+  <text x="400.0" y="402" text-anchor="middle" class="node-text">Fire immediately</text>
+  <text x="400.0" y="418" text-anchor="middle" class="node-sub">AIWeapon.Fire(V, weapon, 1.0)</text>
+  <text x="400.0" y="432" text-anchor="middle" class="node-sub">ono_v_laughs_hard immediate</text>
+  <line x1="640.0" y1="340" x2="780.0" y2="378" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="790.0" y="372" text-anchor="middle" class="branch-label">no weapon drawn</text>
+  <rect x="660" y="380" width="240" height="60" rx="6" class="branch-unarmed"/>
+  <text x="780.0" y="402" text-anchor="middle" class="node-text">DrawItemRequest → wait 2s</text>
+  <text x="780.0" y="418" text-anchor="middle" class="node-sub">force draw from wheel slot</text>
+  <text x="780.0" y="432" text-anchor="middle" class="node-sub">then fire + laugh</text>
+  <line x1="400.0" y1="440" x2="560.0" y2="478" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="780.0" y1="440" x2="620.0" y2="478" stroke="#b0bec5" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="430.0" y="480" width="320" height="64" rx="6" class="execute"/>
+  <text x="590.0" y="502" text-anchor="middle" class="node-text">★ EXECUTE</text>
+  <text x="590.0" y="520" text-anchor="middle" class="node-sub">red outline (2s) + target becomes hostile</text>
+  <text x="590.0" y="536" text-anchor="middle" class="node-sub">PsychoWarningEffect_Medium + tremor + 30s cooldown</text>
+  <text x="20" y="588" class="section-title">▼ Per-stage chance matrix (4 triggers × 6 stages)</text>
+  <rect x="20" y="600" width="240" height="32" fill="#37474f" rx="3"/>
+  <text x="140.0" y="621.0" text-anchor="middle" class="node-text">Trigger \ Stage</text>
+  <rect x="260" y="600" width="126" height="32" fill="#90caf9" rx="3"/>
+  <text x="323.0" y="616" text-anchor="middle" class="matrix-stage">Stage 0</text>
+  <text x="323.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">Normal</text>
+  <rect x="390" y="600" width="126" height="32" fill="#80deea" rx="3"/>
+  <text x="453.0" y="616" text-anchor="middle" class="matrix-stage">Stage 1</text>
+  <text x="453.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">Unstable</text>
+  <rect x="520" y="600" width="126" height="32" fill="#a5d6a7" rx="3"/>
+  <text x="583.0" y="616" text-anchor="middle" class="matrix-stage">Stage 2</text>
+  <text x="583.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">Glitching</text>
+  <rect x="650" y="600" width="126" height="32" fill="#fff59d" rx="3"/>
+  <text x="713.0" y="616" text-anchor="middle" class="matrix-stage">Stage 3</text>
+  <text x="713.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">Losing It</text>
+  <rect x="780" y="600" width="126" height="32" fill="#ffab91" rx="3"/>
+  <text x="843.0" y="616" text-anchor="middle" class="matrix-stage">Stage 4</text>
+  <text x="843.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">On The Edge</text>
+  <rect x="910" y="600" width="126" height="32" fill="#ef9a9a" rx="3"/>
+  <text x="973.0" y="616" text-anchor="middle" class="matrix-stage">Stage 5</text>
+  <text x="973.0" y="628" text-anchor="middle" class="node-sub" style="fill:#1a1a2e">Cyberpsycho</text>
+  <rect x="20" y="636" width="1016" height="42" fill="#1a1a2e" opacity="0.4" rx="2"/>
+  <text x="40" y="661.0" class="matrix-trigger">Stage change</text>
+  <text x="323.0" y="666.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="453.0" y="666.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="583.0" y="666.0" text-anchor="middle" class="matrix-val">15%</text>
+  <text x="713.0" y="666.0" text-anchor="middle" class="matrix-val">40%</text>
+  <text x="843.0" y="666.0" text-anchor="middle" class="matrix-val">60%</text>
+  <text x="973.0" y="666.0" text-anchor="middle" class="matrix-val">80%</text>
+  <text x="40" y="703.0" class="matrix-trigger">Manic laugh</text>
+  <text x="323.0" y="708.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="453.0" y="708.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="583.0" y="708.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="713.0" y="708.0" text-anchor="middle" class="matrix-val">30%</text>
+  <text x="843.0" y="708.0" text-anchor="middle" class="matrix-val">50%</text>
+  <text x="973.0" y="708.0" text-anchor="middle" class="matrix-val">70%</text>
+  <rect x="20" y="720" width="1016" height="42" fill="#1a1a2e" opacity="0.4" rx="2"/>
+  <text x="40" y="745.0" class="matrix-trigger">Nosebleed</text>
+  <text x="323.0" y="750.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="453.0" y="750.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="583.0" y="750.0" text-anchor="middle" class="matrix-val">3%</text>
+  <text x="713.0" y="750.0" text-anchor="middle" class="matrix-val">5%</text>
+  <text x="843.0" y="750.0" text-anchor="middle" class="matrix-val">15%</text>
+  <text x="973.0" y="750.0" text-anchor="middle" class="matrix-val">25%</text>
+  <text x="40" y="787.0" class="matrix-trigger">Low runtime</text>
+  <text x="323.0" y="792.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="453.0" y="792.0" text-anchor="middle" class="matrix-zero">—</text>
+  <text x="583.0" y="792.0" text-anchor="middle" class="matrix-val">5%</text>
+  <text x="713.0" y="792.0" text-anchor="middle" class="matrix-val">10%</text>
+  <text x="843.0" y="792.0" text-anchor="middle" class="matrix-val">20%</text>
+  <text x="973.0" y="792.0" text-anchor="middle" class="matrix-val">35%</text>
+  <text x="20" y="835" class="footnote">Per-trigger chance is the BASE roll — the actual probability is scaled by current strain ratio (more strain → higher chance). Stage 0-1 never trigger Auto-Attack regardless of strain.</text>
+  <text x="20" y="850" class="footnote">Global 30s cooldown between Auto-Attack executions, NPC must be within 15m and visible. After firing, target is forced hostile and V gets a PsychoWarningEffect_Medium plus tremor spike.</text>
+  <text x="20" y="865" class="footnote">Implementation: psychosis.lua:1924/1986 (AIWeapon.Fire), psychosis.lua:305/506 (chance tables), loreEffects.lua:136 (nosebleed trigger), psychosis.lua:2004 (low runtime trigger).</text>
+</svg>
