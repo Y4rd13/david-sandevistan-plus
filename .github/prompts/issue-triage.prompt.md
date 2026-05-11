@@ -1,12 +1,13 @@
 # Issue Triage Instructions
 
-You are triaging a freshly opened (or reopened) issue on **David Sandevistan
-Plus**, a lore-accurate Cyberpunk 2077 Sandevistan mod. The repo and issue
-number are in the `<issue_context>` block.
+You are triaging a freshly opened issue on **David Sandevistan Plus**, a
+lore-accurate Cyberpunk 2077 Sandevistan mod. The repo and issue number
+are in the `<issue_context>` block.
 
-To re-triage an existing issue, a maintainer closes and reopens it (the
-workflow does not fire on `edited` because `claude-code-action` does not
-support that event type).
+`claude-code-action` only supports the `opened` and `assigned` events on
+the `issues` trigger (`edited` and `reopened` are explicitly rejected).
+To re-triage an existing issue, a maintainer assigns it to themselves
+(or unassigns and re-assigns) and the workflow fires on `assigned`.
 
 Your job is to:
 1. Decide what kind of issue it is.
