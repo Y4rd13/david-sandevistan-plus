@@ -2,7 +2,7 @@ name: Issue Triage
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened, assigned]
 
 concurrency:
   group: issue-triage-${{ github.event.issue.number }}
