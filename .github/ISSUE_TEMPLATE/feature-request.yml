@@ -1,7 +1,7 @@
 name: ✨ Feature Request
 description: Suggest a new mechanic, configuration option, or improvement
 title: "[feat] "
-labels: ["type:enhancement"]
+labels: ["feature"]
 body:
   - type: markdown
     attributes:

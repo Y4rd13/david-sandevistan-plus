@@ -46,11 +46,16 @@ in unrelated ways), classify as `type:multi-issue` and recommend splitting.
 | Type | When to use | Label |
 |---|---|---|
 | Bug | Something behaves differently than the README or docs say it should | `bug` |
-| Multi-issue | Reporter listed 2+ distinct bugs in one issue | `type:multi-issue` |
+| Multi-issue | Reporter listed 2+ distinct bugs in one issue | `type:multi-issue` (plus `bug` if all sub-items are bugs) |
 | Enhancement | Reporter wants new feature or option | `feature` |
 | Balance feedback | Reporter says a mechanic feels off but works as designed | `type:balance-feedback` |
 | Question | Reporter is asking how something works | `type:question` |
 | Invalid | Spam, off-topic, or clearly missing every required field even after the template | `type:invalid` |
+
+The repo intentionally mixes prefixed (`type:*`, `status:*`, `area:*`) and
+unprefixed (`bug`, `feature`) labels because `bug` and `feature` are
+GitHub-default labels reused across PRs and issues. Do NOT add `type:bug` or
+`type:enhancement` (they do not exist in this repo).
 
 ## 4. Area labels
 
@@ -146,7 +151,7 @@ Avoid:
 Apply labels through the gh CLI:
 
 ```
-gh issue edit <number> --add-label "type:bug,area:hud,status:needs-info" -R "${REPO}"
+gh issue edit <number> --add-label "bug,area:hud,status:needs-info" -R "${REPO}"
 ```
 
 Verify labels exist before applying. The full list of labels in this
@@ -155,10 +160,18 @@ missing, mention it in your comment instead of trying to create one.
 
 ## 10. Output: single triage comment
 
-Post exactly ONE comment, structured as:
+Post exactly ONE comment by calling `mcp__github_comment__update_claude_comment`,
+the action's auto-created tracking comment via `track_progress: true`. Do NOT
+create a new comment through `gh issue comment` or any other path. Using the
+tracking comment means that on `edited` re-triggers the same comment gets
+updated in place rather than duplicated, so editing an issue to add missing
+info will not pile up triage comments. The allowed-tools list in the workflow
+intentionally omits `gh issue comment` to enforce this single-comment rule.
+
+Structure the comment as:
 
 ### Verdict
-One line stating the classification (e.g. `type:bug, area:hud, status:needs-info`).
+One line stating the classification (e.g. `bug, area:hud, status:needs-info`).
 
 ### What I found
 A short paragraph or table summarizing how you read the issue. If

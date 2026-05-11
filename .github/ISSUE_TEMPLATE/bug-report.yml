@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 description: Something in the mod is not working as it should
 title: "[bug] "
-labels: ["type:bug"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:

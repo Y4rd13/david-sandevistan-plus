@@ -58,4 +58,4 @@ jobs:
             --model claude-opus-4-6
             --verbose
             --max-turns 20
-            --allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh api:*),mcp__github_comment__update_claude_comment"
+            --allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*),Bash(gh api:*),mcp__github_comment__update_claude_comment"
