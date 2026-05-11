@@ -1,0 +1,92 @@
+"area:hud":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/hud.lua"
+          - "r6/scripts/DavidSandevistanPlus/DSPHUDSystem.reds"
+
+"area:biomonitor":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/scripts/DavidSandevistanPlus/DSPBiomonitorSystem.reds"
+          - "r6/scripts/AnimatedWidgets/**"
+
+"area:strain":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/strain.lua"
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/psychosis.lua"
+          - "r6/scripts/DavidSandevistanPlus/DSPKillTracker.reds"
+
+"area:last-breath":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/death.lua"
+          - "docs/last-breath.md"
+          - "docs/svg/last-breath-*.svg"
+
+"area:martinez-rush":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/martinez.lua"
+          - "docs/svg/martinez-rush-timeline.svg"
+
+"area:immunoblocker":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/immunoblocker_logic.lua"
+          - "r6/tweaks/DavidSandevistanPlus/immunoblocker_effects.yaml"
+          - "r6/scripts/DavidSandevistanPlus/DSPConsumeOverride.reds"
+          - "docs/svg/tolerance-rebound-lifecycle.svg"
+          - "docs/immunoblocker-animation-timeline.svg"
+
+"area:vendor":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/tweaks/DavidSandevistanPlus/immunoblocker_vendors.yaml"
+          - "wolven/**"
+
+"area:audio":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/audioware/**"
+          - "r6/scripts/DavidSandevistanPlus/DSPAudioBridge.reds"
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/voice.lua"
+
+"area:activity":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/scripts/DavidSandevistanPlus/DSPActivityTracker.reds"
+
+"area:ripperdoc":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/scripts/DavidSandevistanPlus/DSPRipperdocHook.reds"
+
+"area:viktor":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/scripts/DavidSandevistanPlus/DSPViktorBridge.reds"
+          - "r6/scripts/DavidSandevistanPlus/DSPViktorPhone.reds"
+          - "bin/x64/plugins/cyber_engine_tweaks/mods/DavidSandevistanPlus/sms.lua"
+
+"area:settings":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "r6/scripts/DavidSandevistanPlus/DSPSettings.reds"
+
+"area:archive":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "archive/**"
+
+"area:docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+          - "**/*.md"
+
+"area:ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
